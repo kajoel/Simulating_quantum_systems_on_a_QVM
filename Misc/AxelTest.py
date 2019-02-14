@@ -9,13 +9,10 @@ Created on Tue Feb 12 16:21:55 2019
 import matplotlib
 import sympy
 
-np.set_printoptions(precision=2)
-
-# sign of sqrt: u221A
 
 eps = Symbol('\u03B5')
 V = Symbol('V')
-N = 9
+N = 5
 j = N/2
 
 
@@ -34,17 +31,11 @@ def J2(n):
         H[n,n-2] = V/2 * sqrt((j+m)*(j-m+1)*(j+m-1)*(j-m+2))
     
 
-
-
 for x in range(0,N+1):
     Jz(x)
     J2(x)
 
-
-
-
-
-print(H)
 pprint(cse(H), use_unicode=True)
+
 
 
