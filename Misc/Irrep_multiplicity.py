@@ -2,6 +2,8 @@
 """
 Script for calculating cj koefficients
 cj = irrep multiplicity, related to energy degeneracy
+
+@author: Joel
 """
 
 # Imports:
