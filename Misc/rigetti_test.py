@@ -52,6 +52,7 @@ from pyquil import Program, get_qc
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 
+
 def ansatz():
     program = Program()
     theta = program.declare('theta', memory_type='REAL')
@@ -60,7 +61,9 @@ def ansatz():
     program += qg.MEASURE(0, ro[0])
     return program
 
+
 # Create executable
+qc = get_qc("9q-square-qvm")
 program = ansatz()  # look ma, no arguments!
 program.wrap_in_numshots_loop(shots=1000)
 executable = qc.compile(program)
@@ -83,9 +86,11 @@ def objective_function(thetas):
     result = np.mean(bitstrings[:, 0])
     return -result
 
+
 res = minimize(objective_function, x0=[0.1], method='COBYLA')
 
 # Plot
 plt.plot(thetas, results, label='scan')
 plt.plot([res.x], [-res.fun], '*', ms=20, label='optimization result')
 plt.legend()
+plt.show()
