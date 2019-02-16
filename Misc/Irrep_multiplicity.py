@@ -2,6 +2,8 @@
 """
 Script for calculating cj koefficients
 cj = irrep multiplicity, related to energy degeneracy
+
+@author: Joel
 """
 
 # Imports:
@@ -26,8 +28,9 @@ for n in N:
     # Calulate result
     j_n = j(n)
     cj_n = cj(n)
+    # Print value of N
     print("\nN = " + str(n))
-    # Check for bad dimension
+    # Check for bad dimension and print result
     if np.sum((2*j_n+1)*cj_n) != 2**n:
         print("The dimensions doesn't add up.")
     else:
