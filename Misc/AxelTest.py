@@ -7,7 +7,7 @@ Created on Tue Feb 12 16:21:55 2019
 """
 
 import matplotlib
-import sympy
+from sympy import *
 
 
 eps = Symbol('\u03B5')
