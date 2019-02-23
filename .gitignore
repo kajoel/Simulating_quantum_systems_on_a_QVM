@@ -1,2 +1,4 @@
 .spyproject/**/*
 .idea/**/*
+\.vscode/
+__pycache__/
