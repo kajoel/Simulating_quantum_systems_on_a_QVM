@@ -3,11 +3,6 @@ import numpy as np
 import math
 import lib_joel as lib
 
-# TODO: window management, size and layout
-# TODO: raise error if sizes are not compatible...
-
-# TODO: remove DEBUG after debugging...
-
 # NOTE: The dataplotter tries to interpret the values. This can lead to weird behaviour in
 #          edge-cases. If uncertain:
 #           - initialize without x and y
@@ -37,7 +32,6 @@ class dataplotter:
             y = dataplotter._format_type(y)
 
         # INPUT CHECKS
-        # TODO: checks (re: tpause) perhaps try to pause?
         self.tpause = tpause
 
         # Defining:
@@ -83,14 +77,11 @@ class dataplotter:
         if showlegend is None:
             showlegend = True
 
-        # TODO: add more plottypes (?)
         if not lib.subscriptdepth(plottype) or type(plottype) is str:
             plottype = [plottype]
         self.plottype = []
         for temp in plottype:
             if callable(temp):
-                # TODO: checks (e.g that it takes two arguments
-                #       and (?) can handle list/ndarray)
                 self.plottype.append(temp)
             elif temp == 'linear':
                 self.plottype.append(lambda x, y: (x, y))
@@ -127,7 +118,6 @@ class dataplotter:
         else:
             try:
                 self.nbrfigures = int(nbrfigures)
-                # TODO: Is this really a good solution? regarding "if" below
                 if self.nbrfigures != nbrfigures:
                     print("Warning! nbrfigures was not an integer and have been typecasted")
             except:
@@ -219,7 +209,6 @@ class dataplotter:
                 self._colors = colormap
                 self.colormap = lambda x: self._colors[x % nbrcolors]
             elif callable(colormap):
-                # TODO: checks
                 self.colormap = lambda x: colormap(x % nbrcolors)
             else:
                 raise ValueError('Colormap could not be interpreted by pyplot.cm.get_cmap, ' +
@@ -234,7 +223,6 @@ class dataplotter:
         if legendplot is None and self.nbrfigures == 1:
             legendplot = [0, 0]
 
-        # TODO: might be better alternatives
         for temp in ['c', 'marker']:
             if temp in kwargs:
                 del kwargs[temp]
@@ -318,7 +306,6 @@ class dataplotter:
                 for k in range(self.nbrlinesperplot):
                     (tempx, tempy) = self.plottype[j](x[i][k], y[i][k])
                     (oldx, oldy) = self.lines[i][j][k].get_data()
-                    # TODO: perhaps np.array(myarray, copy=False) ?
                     if not lib.iterable(tempx):
                         tempx = [tempx]
                     if not lib.iterable(tempy):
@@ -360,7 +347,6 @@ class dataplotter:
             if depth == 0:
                 x = [[[x] * nbrvalues] * self.nbrlinesperplot] * self.nbrfigures
             elif depth == 1:
-                # TODO: perhaps reorder if/elif to get a better default behaviour in edge-cases
                 if len(x) == nbrvalues:
                     x = [[x] * self.nbrlinesperplot] * self.nbrfigures
                 elif len(x) == self.nbrlinesperplot:
