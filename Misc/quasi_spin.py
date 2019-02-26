@@ -12,6 +12,7 @@ Created on Fri Feb 15 14:16:40 2019
 import math
 import numpy as np
 import scipy.sparse as sparse
+from scipy.sparse.linalg import eigsh
 
 
 """
@@ -43,13 +44,14 @@ def eigenvalues(j, V, e=1):
         H = _quasi_internal(j, -j+i, V, e)
         n = H.shape[0]
         if n > 1:
-            eigvals[idx:idx+n-1] = sparse.linalg.eigsh(H, n-1)[0]
+            eigvals[idx:idx+n-1] = eigsh(H, n-1)[0]
             # Since eigsh can only calculate n-1 eigenvalues, use the fact
             # that sum(eigs) = trace(H)
             eigvals[idx+n-1] = np.sum(H.diagonal()) - np.sum(eigvals[idx:idx+n-1])
         else:
             eigvals[idx] = H[0,0]
         idx = idx+n
+    eigvals.sort()  # sort the eigenvalues (important for plotting)
     return eigvals
 
 
