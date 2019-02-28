@@ -3,7 +3,9 @@
 Functions for calculating Hamiltonian and corresponding eigenvalues using
 the quasi-spin formalism.
 
-Note: currently the code doesn't work for j=0 (corresponding to N=0)
+Note: - Currently the code doesn't work for j=0 (corresponding to N=0).
+    - eigsh can returns eigenvalues and -vectors so this code could be used
+      for the latter as well (with minimal modification)
 
 Created on Fri Feb 15 14:16:40 2019
 @author: Joel
@@ -58,7 +60,8 @@ def eigenvalues(j, V, e=1):
 
 """
 Function which returns eigenvalues for specified value of j. The output is
-a 1D ndarray. The eigenvalues are sorted by size.
+a 1D ndarray. The eigenvalues are sorted by size and only the positive
+eigenvalues are returned.
 
 The input parameter e is epsilon in the Lipkin-model
 """
