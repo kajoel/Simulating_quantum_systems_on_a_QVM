@@ -32,27 +32,44 @@ def hamiltonian(j, V, e=1):
 
 """
 Function which returns eigenvalues for specified value of j. The output is
-a 1D ndarray. The eigenvalues are not sorted by size.
+two 1D ndarrays with sorted eigenvalues corresponding to H1 and H2.
 
 The input parameter e is epsilon in the Lipkin-model
 """
 def eigenvalues(j, V, e=1):
-    eigvals = np.empty(round(2*j+1))
-    eigvals[:] = np.NaN
-    idx = 0
+    # Preallocate and store in tuple to keep DRY
+    eigvals= (np.empty(math.ceil((2*j+1)/2)), np.empty(math.floor((2*j+1)/2)))
+
+    # Get matrices
+    H = hamiltonian(j, V, e)
+
     for i in range(2):
-        H = _quasi_internal(j, -j+i, V, e)
-        n = H.shape[0]
-        if n > 1:
-            eigvals[idx:idx+n-1] = eigsh(H, n-1)[0]
-            # Since eigsh can only calculate n-1 eigenvalues, use the fact
-            # that sum(eigs) = trace(H)
-            eigvals[idx+n-1] = np.sum(H.diagonal()) - np.sum(eigvals[idx:idx+n-1])
+        # eigsh can only calculate all but one eigenvalue, so the last one is
+        # calculated using sum(eigs) = trace(H).
+        if H[i].shape[0] > 1:
+            eigvals[i][0:-1] = eigsh(H[i], H[i].shape[0]-1)[0]
+            eigvals[i][-1] = np.sum(H[i].diagonal()) \
+                             - np.sum(eigvals[i][0:-1])
         else:
-            eigvals[idx] = H[0,0]
-        idx = idx+n
-    eigvals.sort()  # sort the eigenvalues (important for plotting)
+            eigvals[i][-1] = H[i][0,0]
+        eigvals[i].sort()
     return eigvals
+
+
+"""
+Function which returns eigenvalues for specified value of j. The output is
+a 1D ndarray. The eigenvalues are sorted by size.
+
+The input parameter e is epsilon in the Lipkin-model
+"""
+def eigenvalues_positive(j, V, e=1):
+    # We use that we now that there are floor((2j+1)/2) strictly positive
+    # eigenvalues. This avoids numerical problems with eigenvalues
+    # that are 0 but calculated to (say) 1.7e-15
+    eigvals = eigenvalues(j, V, e)
+    eigvals = np.concatenate(eigvals)
+    eigvals.sort()
+    return eigvals[math.ceil((eigvals.shape[0])/2):]
 
 
 # Internal function to keep DRY
@@ -63,7 +80,7 @@ def _quasi_internal(j, m_start, V, e):
 
     idx = np.array(range(size))
     data = np.sqrt((j-m[0:-1])*(j+m[0:-1]+1)*(j-m[0:-1]-1)*(j+m[0:-1]+2))
-    J_p2 = sparse.coo_matrix((data, (1+idx[0:-1],idx[0:-1])), shape=(size,size))
+    J_p2 = sparse.coo_matrix((data,(1+idx[0:-1],idx[0:-1])),shape=(size,size))
     J_p2 = J_p2.tocsr()
     J_m2 = J_p2.transpose()
 
