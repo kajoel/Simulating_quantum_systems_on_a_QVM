@@ -259,7 +259,12 @@ if __name__ == "__main__":
     # stop (int), size to stop at
     # step (function), return stepsize as a function of current size (logarithmic per default)
     # labels (list of strings), labels for the competitors (to legend)
+    # args (list of lists), additional arguments to the competitors
     # objgenerator (function of size), returns objects to use as first argument to competitors. For example, if
     #   you are comparing methods for determining the parity of permutations this would take the length of the
     #   permutation as input and output permutations (either one or several in a list)
     compete([test1, test2], start=10, stop=3000, plottype="loglog", labels=["a", "b"])
+
+    # another example (using functions from lipkin_quasi_spin)
+    # compete([eigenvalues_positive, eigenvalues, hamiltonian],
+    #         objgenerator= lambda x: x/2, args = [[1]]*3)
