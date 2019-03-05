@@ -15,6 +15,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 from scipy.sparse.linalg import eigsh
+from functools import lru_cache
 
 
 """
@@ -26,6 +27,7 @@ H2 has m \in {-j+1, -j+3, ...}
 
 The input parameter e is epsilon in the Lipkin-model
 """
+@lru_cache(maxsize=1)
 def hamiltonian(j, V, e=1):
     H1 = _quasi_internal(j, -j, V, e)
     H2 = _quasi_internal(j, -j+1, V, e)
@@ -43,7 +45,9 @@ def eigenvalues(j, V, e=1):
     eigvals= (np.empty(math.ceil((2*j+1)/2)), np.empty(math.floor((2*j+1)/2)))
 
     # Get matrices
-    H = hamiltonian(j, V, e)
+    args = [j, V]
+    args.extend([e] if e!=1 else [])  # to get cache to work with default e
+    H = hamiltonian(*args)
 
     for i in range(2):
         # eigsh can only calculate all but one eigenvalue, so the last one is
