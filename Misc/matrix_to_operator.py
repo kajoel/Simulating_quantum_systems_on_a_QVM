@@ -88,7 +88,8 @@ def matrix_to_operator_2(H):
 ###############################################################################
 """
 Tests that eigenvalues computed using a function that generates hamiltonian
-operators are correct.
+operators are correct. This test doesn't check for extra eigenvalues but
+only that the ones that should be there is there.
 @author: kajoel
 """
 def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
@@ -97,8 +98,8 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
     from lipkin_quasi_spin import hamiltonian, eigenvalues
     from openfermion.transforms import get_sparse_operator
 
+    no_error = True
     for j2 in range(round(2*jmin), round(2*jmax)+1):
-        no_error = True
         j = j2/2
         print("j = " + str(j))
         V = float(np.random.randn(1))
@@ -107,12 +108,13 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
         for i in range(len(H)):
             H_op = hamiltonian_operator(H[i])
             H_op = get_sparse_operator(H_op).toarray()
-            E_ops = np.linalg.eigvals(H_op)
-            for E_op in E_ops:
-                if abs(E_op) > tol:  # Extra 0:s might be created
-                    if all(abs(E[i]-E_op) > tol):
-                        no_error = False
-                        print("Max diff: " + str(max(abs(E[i]-E_op))))
+            E_op = np.linalg.eigvals(H_op)
+            # Check that E_op contains all eigenvalues in E[i]
+            for E_ in E[i]:
+                if all(abs(E_op - E_) > tol):
+                    no_error = False
+                    print("Max diff: " + str(max(abs(E_op-E_))))
+
     if no_error:
         print("Success!")
     else:
@@ -122,6 +124,8 @@ if __name__ == "__main__":
     pass
     # The following tests has (successfully) been completed:
     #_test_mat_to_op(matrix_to_operator_1)
+    #_test_mat_to_op(matrix_to_operator_1, jmax=11)
+
 
     # The following tests have failed:
     #_test_mat_to_op(matrix_to_operator_1) # H_op has additional non-zero eigs
