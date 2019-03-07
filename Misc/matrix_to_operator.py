@@ -62,8 +62,10 @@ value (using an analogue to the counting operator) to not get extra terms
 """
 def matrix_to_operator_2(H):
     # Convert to sparse coo_matrix
-    if not sparse.issparse(H) or H.getformat() != "coo":
+    if not sparse.issparse(H):
         H = sparse.coo_matrix(H)
+    elif H.getformat() != "coo":
+        H = H.tocoo()
     # The main part of the function
     H_op = QubitOperator()
     for i,j,data in zip(H.row, H.col, H.data):
@@ -120,6 +122,10 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
     else:
         print("Fail!")
 
+
+###############################################################################
+# MAIN
+###############################################################################
 if __name__ == "__main__":
     pass
     # The following tests has (successfully) been completed:
@@ -127,9 +133,6 @@ if __name__ == "__main__":
     #_test_mat_to_op(matrix_to_operator_1, jmax=11)
 
 
-    # The following tests have failed:
-    #_test_mat_to_op(matrix_to_operator_1) # H_op has additional non-zero eigs
-
-
 # get_sparse_operator seems to permute the basis. For 2 qubits:
 # the permutation is (0 2 1 3) and for 3 qubits it's (0 4 2 6 1 5 3 7)
+# or, in binary, (00, 10, 01, 11) and (000, 100, 010, 110, 001, 101, 011, 111).
