@@ -16,7 +16,6 @@ def one_particle_ansatz(theta):
     """
     TODO: doc
     """
-    vector = np.zeros(2**(theta.shape[0]))
-    vector[[2**i for i in range(theta.shape[0])]] = theta
+    vector = np.zeros(2 ** (theta.shape[0]))
+    vector[[2 ** i for i in range(theta.shape[0])]] = theta
     return create_arbitrary_state(vector)
-
