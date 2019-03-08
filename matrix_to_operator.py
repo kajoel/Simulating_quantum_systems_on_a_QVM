@@ -9,6 +9,8 @@ import scipy.sparse as sparse
 import numpy as np
 from openfermion.ops import FermionOperator
 from openfermion.ops import QubitOperator
+from forestopenfermion import qubitop_to_pyquilpauli
+from openfermion.transforms import jordan_wigner
 
 
 ###############################################################################
@@ -22,7 +24,15 @@ Hilbert space.
 
 @author: axelnathanson
 """
-def matrix_to_operator_1(H,transform=None):
+def matrix_to_operator_1(H):
+    """[Generates a PauliSum(pyquil) given a Hamiltonian-matrix]
+    
+    Arguments:
+        H {[sparse.matrix]} -- [Hamiltonian matrix]
+    
+    Returns:
+        [PauliSum] -- [Matrix representation of pauli-operators in pyquil]
+    """
     # Create the Hamiltonian with a and a^dagger
     Hamiltonian = FermionOperator()
     if sparse.issparse(H):
@@ -33,9 +43,9 @@ def matrix_to_operator_1(H,transform=None):
         for i in range(H.shape[0]):
             for j in range(H.shape[1]):
                 Hamiltonian += H[i,j]*FermionOperator(((i,1), (j,0)))
-    # Optional transformation to quibit operators
-    if callable(transform):
-        Hamiltonian = transform(Hamiltonian)
+
+    Hamiltonian = jordan_wigner(Hamiltonian)
+    Hamiltonian = qubitop_to_pyquilpauli(Hamiltonian)
     return Hamiltonian
 
 
@@ -82,7 +92,7 @@ def matrix_to_operator_2(H):
                             QubitOperator((qubit, "Z"),
                                           1/2-int(j & (1 << qubit) != 0))
         H_op += data*new_term
-    return H_op
+    return qubitop_to_pyquilpauli(H_op)
 
 
 ###############################################################################
