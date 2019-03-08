@@ -27,30 +27,23 @@ from forestopenfermion import qubitop_to_pyquilpauli as Fermion_to_Pyquil
 
 
 def matrix_to_pyquil(H):
-    return Fermion_to_Pyquil(matrix_to_hamiltonian(H,'JW'))
+    return Fermion_to_Pyquil(matrix_to_hamiltonian(H, 'JW'))
 
 
-
-def matrix_to_hamiltonian(H, transform='none'):    
+def matrix_to_hamiltonian(H, transform='none'):
     Hamiltonian = FermionOperator()
-        
+
     if issparse(H):
-        H_sparse = H.tocoo()    
-        for i,j,data in zip(H_sparse.row, H_sparse.col, H_sparse.data):
-            Hamiltonian += data*FermionOperator( ( (int(i),1) , (int(j),0) ) )
-        
-    else: 
+        H_sparse = H.tocoo()
+        for i, j, data in zip(H_sparse.row, H_sparse.col, H_sparse.data):
+            Hamiltonian += data * FermionOperator(((int(i), 1), (int(j), 0)))
+
+    else:
         for i in range(H.shape[0]):
             for j in range(H.shape[1]):
-                Hamiltonian += H[i,j] *FermionOperator( ( (i,1) , (j,0) ) ) 
-    
-    if(transform == 'jordan' or transform == 'JW'): return jordan_wigner(Hamiltonian)
-    else: return Hamiltonian
+                Hamiltonian += H[i, j] * FermionOperator(((i, 1), (j, 0)))
 
-
-
-
-    
-
-    
-    
+    if transform == 'jordan' or transform == 'JW':
+        return jordan_wigner(Hamiltonian)
+    else:
+        return Hamiltonian
