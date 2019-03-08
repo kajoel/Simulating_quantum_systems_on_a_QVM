@@ -9,6 +9,14 @@ Created on Wed Mar  6 16:35:25 2019
 import numpy as np
 import scipy.sparse as sparse
 
+# Imports for VQE
+import pyquil.api as api
+from grove.pyvqe.vqe import VQE
+from scipy.optimize import minimize
+from ucc_ansatz import ucc_ansatz
+from matrix_to_pyquil import matrix_to_pyquil
+
+
 
 ###############################################################################
 # MAIN VQE FUNCTIONS
@@ -23,6 +31,8 @@ def calculate_eigenvalues(H, ansatz, update):
         eigvals[i], eigvect = smallest_eig(H, ansatz)
         H, ansatz = update(H, ansatz, eigvals[i], eigvect)
     return eigvals
+
+
 
 
 """
@@ -49,6 +59,24 @@ def smallest_eig(H, ansatz):
     return eigval, eigvect
 
 
+'''
+Finds the smallest eigenvalue and corresponding -vector of H using VQE.
+
+
+'''
+def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):    
+    initial_value = np.zeros(H.shape[0])
+    for i in range(H.shape[0]):
+        initial_value[i] = np.random.randint(5)
+    
+    qvm = api.QVMConnection()
+    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
+    H = matrix_to_pyquil(H)
+    eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)    
+    eigval = eig['fun']
+    eigvect = eig['x']/np.linalg.norm(eig['x'])
+    
+    return eigval,eigvect
 
 
 ###############################################################################
