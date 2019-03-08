@@ -13,7 +13,7 @@ import scipy.sparse as sparse
 import pyquil.api as api
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
-from ucc_ansatz import ucc_ansatz
+from ansatz import one_particle_ansatz
 from matrix_to_pyquil import matrix_to_pyquil
 
 
@@ -25,6 +25,8 @@ def calculate_eigenvalues(H, ansatz, update):
     """
     Calculates all eigenvalues of H using smallest_eig and update (to update
     Hamiltonian or ansatz to be able to find next eigenvalue).
+
+    @author: kajoel
     """
     eigvals = np.empty(H.shape[0])
     for i in range(H.shape[0]):
@@ -62,19 +64,19 @@ Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 
 
 '''
-def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):    
+def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):
     initial_value = np.zeros(H.shape[0])
     for i in range(H.shape[0]):
         initial_value[i] = 1
-    
+
     qvm = api.QVMConnection()
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
     H = matrix_to_pyquil(H)
-    
-    eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)    
+
+    eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)
     eigval = eig['fun']
     eigvect = eig['x']/np.linalg.norm(eig['x'])
-    
+
     return eigval,eigvect
 
 
@@ -95,6 +97,8 @@ def update_householder(H,ansatz,_,x):
     operators efficiently (currently I don't know anything better than mat2op_2).
 
     Note that if ||n|| is small there might be stabilty-issues.
+
+    @author: kajoel
     """
     if x.shape[0]>1:
         # Find suitable basis-vector to reflect to (with householder)
