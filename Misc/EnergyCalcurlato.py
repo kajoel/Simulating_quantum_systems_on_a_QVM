@@ -1,18 +1,14 @@
 # Imports
 # Openfermion:
-from openfermion.transforms import jordan_wigner, get_fermion_operator
+from openfermion.transforms import jordan_wigner
 from openfermion.ops import FermionOperator
 # Forestopenfermion:
-from forestopenfermion import qubitop_to_pyquilpauli, pyquilpauli_to_qubitop
-from forestopenfermion import exponentiate as Forestexponentiate
+from forestopenfermion import qubitop_to_pyquilpauli
 # PyQuil:
-from pyquil import Program
-from pyquil.gates import *
-from pyquil import get_qc
 from pyquil.paulis import *
 from pyquil.api import QVMConnection
 # Scipy:
-from scipy.sparse import issparse
+import scipy.sparse as sparse
 from scipy.linalg import eigh
 from scipy.optimize import minimize
 # Numpy:
@@ -21,14 +17,10 @@ import numpy as np
 from grove.pyvqe.vqe import VQE
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 # Other:
-import pprint
+from lipkin_quasi_spin import hamiltonian, eigenvalues
 
 
 # OriginalHamiltonian = np.array([[-5 / 2, np.sqrt(10), 0], [np.sqrt(10), -1 / 2, np.sqrt(18)], [0, np.sqrt(18), 3 / 2]])
-OriginalHamiltonian = np.array([[-5 / 2, np.sqrt(10), 0], [np.sqrt(10), -1 / 2, np.sqrt(18)], [0, np.sqrt(18), 3 / 2]])
-h = OriginalHamiltonian
-TrueEigenvalues, TrueEigenvectors = eigh(h)
-print('Original Hamiltonian: \n', h)
 
 
 # Joel, tweakad av Eric
@@ -69,7 +61,7 @@ def matrix_to_pyquil(H):
 def matrix_to_hamiltonian(H, transform='none'):
     Hamiltonian = FermionOperator()
 
-    if issparse(H):
+    if sparse.issparse(H):
         H_sparse = H.tocoo()
         for i, j, data in zip(H_sparse.row, H_sparse.col, H_sparse.data):
             Hamiltonian += data * FermionOperator(((int(i), 1), (int(j), 0)))
@@ -85,16 +77,14 @@ def matrix_to_hamiltonian(H, transform='none'):
         return Hamiltonian
 
 
-vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'L-BFGS-B'})
-qvm = QVMConnection()
-
-
-# Calculate the energy:
-no_of_samples = 1000
-
-
-
-def energy_calculator(hamiltonian, initial_params, iterations=None):
+def negative_energy_calculator(hamiltonian, initial_params, iterations=None):
+    '''
+    Calculates all negative eigenvalues of an hamiltonian matrix using vqe
+    :param hamiltonian: np.array hamiltonian matrix
+    :param initial_params: inital parameters for the ansatz
+    :param iterations: desired amout of eigenvalues to find
+    :return: a list of found energy eigenvalues
+    '''
     if iterations is None:
         iterations = hamiltonian.shape[0]
     Energy = []
@@ -107,19 +97,40 @@ def energy_calculator(hamiltonian, initial_params, iterations=None):
                 print('Warning: Unable to find the specified amount of eigenvalues')
             return Energy[:i]
         else:
-            v = result['x']
-            hamiltonian = hamiltonian + 1.1 * np.abs(Energy[i]) * np.outer(v, v)
+            v = result['x'] # eigenvector
+            hamiltonian = hamiltonian + 1.1 * np.abs(Energy[i]) * np.outer(v, v) # move found eigenvalue to > 0
     return Energy
 
 
-def energy_wrapper(hamiltonian, initial_params):
-    Energy = energy_calculator(hamiltonian, initial_params)
+def total_energy_calculator(hamiltonian, initial_params):
+    '''
+    Calculates all eigenvalues of an hamiltonian matrix using vqe
+    :param hamiltonian: np.array hamiltonian matrix
+    :param initial_params: inital parameters for the ansatz
+    :return: a list of found energy eigenvalues
+    '''
+    Energy = negative_energy_calculator(hamiltonian, initial_params)
     if len(Energy) < hamiltonian.shape[0]:
-        Energy = Energy + [-x for x in energy_calculator(-1*hamiltonian, initial_params)]
+        Energy = Energy + [-x for x in negative_energy_calculator(-1*hamiltonian, initial_params)]
     return Energy
 
 
-Energy = energy_wrapper(h, [1, 0, 0, 0])
+# Calculate the energy:
+# TODO: implement no_of_samples in vqe_run
+no_of_samples = 1000
+
+
+vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'L-BFGS-B'})
+qvm = QVMConnection()
+
+j = 4
+V = 1
+OriginalHamiltonian = hamiltonian(j, V)[1].toarray()
+TrueEigenvalues = eigenvalues(j, V)[1]
+h = OriginalHamiltonian
+
+
+Energy = total_energy_calculator(h, [1, 0, 0, 0])
 print('True eigenvalues: \n', TrueEigenvalues, '\n')
 print('Calculated Energy: \n', Energy)
 
