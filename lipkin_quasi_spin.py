@@ -17,17 +17,21 @@ import scipy.sparse as sparse
 from scipy.sparse.linalg import eigsh
 from functools import lru_cache
 
-
 @lru_cache(maxsize=1)
 def hamiltonian(j, V, e=1):
     """
     Function which returns quasi-spin hamiltonian-matrix for specified value
-    of j.The function returns two matrices H1 and H2 and the full matrix is
-    H = H1 \oplus  H2, where \oplus denotes a direct sum
-    H1 has m \in {-j, -j+2, ...}
-    H2 has m \in {-j+1, -j+3, ...}
+    of j. The function returns two matrices H1 and H2 and the full matrix is
+    :math:`H = H1 \oplus  H2`, where :math:`\oplus` denotes a direct sum.
 
-    The input parameter e is epsilon in the Lipkin-model
+    H1 has :math:`m \in \{-j, -j+2, ...\}`  and
+
+    H2 has :math:`m \in \{-j+1, -j+3, ...\}`
+
+    :param j:
+    :param V: V in the Lipkin-model
+    :param e: epsilon in the Lipkin-model
+    :return: Matrixes H1 and H2
     """
     H1 = _quasi_internal(j, -j, V, e)
     H2 = _quasi_internal(j, -j + 1, V, e)
