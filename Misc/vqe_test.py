@@ -67,11 +67,12 @@ Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):    
     initial_value = np.zeros(H.shape[0])
     for i in range(H.shape[0]):
-        initial_value[i] = np.random.randint(5)
+        initial_value[i] = 1
     
     qvm = api.QVMConnection()
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
     H = matrix_to_pyquil(H)
+    
     eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)    
     eigval = eig['fun']
     eigvect = eig['x']/np.linalg.norm(eig['x'])
