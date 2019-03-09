@@ -138,7 +138,8 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
 # MAIN
 ###############################################################################
 if __name__ == "__main__":
-    pass
+    print(test)
+    #_ test_mat_to_op(matrix_to_operator_1, jmax=10)
     # The following tests has (successfully) been completed:
     # _test_mat_to_op(matrix_to_operator_1)
     # _test_mat_to_op(matrix_to_operator_1, jmax=11)
