@@ -111,8 +111,6 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
     only that the ones that should be there is there.
     @author: kajoel
     """
-    import sys
-    sys.path.insert(0, './')
     from lipkin_quasi_spin import hamiltonian, eigenvalues
     from openfermion.transforms import get_sparse_operator
 
@@ -139,11 +137,34 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
         print("Fail!")
 
 
+def _test_complexity(mat2op, jmin=0.5, jmax=25):
+    from lipkin_quasi_spin import hamiltonian
+
+    n = 1 + round(2*(jmax-jmin))
+    nbr_terms = np.empty(2*n)
+    max_nbr_ops = np.zeros(2*n)
+    matrix_size = np.empty(2*n)
+    for i in range(n):
+        j = jmin + 0.5*i
+        print(j)
+        H = hamiltonian(j, np.random.randn(1)[0])
+        for k in range(len(H)):
+            matrix_size[2*i+1-k] = H[k].shape[0]
+            terms = mat2op(H[k])
+            nbr_terms[2*i+1-k] = len(terms)
+            for term in terms:
+                if len(term) > max_nbr_ops[2*i+1-k]:
+                    max_nbr_ops[2*i+1-k] = len(term)
+
+    return matrix_size, nbr_terms, max_nbr_ops
+
+
 ###############################################################################
 # MAIN
 ###############################################################################
 if __name__ == "__main__":
     pass
+
     #  test_mat_to_op(matrix_to_operator_1, jmax=10)
     # The following tests has (successfully) been completed:
     # _test_mat_to_op(matrix_to_operator_1)
