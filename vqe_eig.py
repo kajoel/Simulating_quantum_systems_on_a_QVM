@@ -14,7 +14,7 @@ import pyquil.api as api
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
 from ansatz import one_particle_ansatz
-from matrix_to_pyquil import matrix_to_pyquil
+from matrix_to_operator import matrix_to_operator_1
 
 
 
@@ -65,13 +65,11 @@ Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 
 '''
 def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):
-    initial_value = np.zeros(H.shape[0])
-    for i in range(H.shape[0]):
-        initial_value[i] = 1
+    initial_value = np.array([1 for i in range(H.shape[0])])
 
     qvm = api.QVMConnection()
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
-    H = matrix_to_pyquil(H)
+    H = matrix_to_operator_1(H)
 
     eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)
     eigval = eig['fun']
