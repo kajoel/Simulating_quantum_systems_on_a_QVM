@@ -7,3 +7,5 @@ Misc/.idea/**/*
 
 
 OpenFermion/\.idea/
+
+package-lock\.json
