@@ -25,13 +25,13 @@ Hilbert space.
 @author: axelnathanson
 """
 def matrix_to_operator_1(H):
-    """[Generates a PauliSum(pyquil) given a Hamiltonian-matrix]
+    """Generates a PauliSum(pyquil) given a Hamiltonian-matrix
     
     Arguments:
-        H {[sparse.matrix]} -- [Hamiltonian matrix]
+        H [sparse.matrix] -- Hamiltonian matrix
     
     Returns:
-        [PauliSum] -- [Matrix representation of pauli-operators in pyquil]
+        [PauliSum] -- Matrix representation of pauli-operators in pyquil
     """
     # Create the Hamiltonian with a and a^dagger
     Hamiltonian = FermionOperator()
