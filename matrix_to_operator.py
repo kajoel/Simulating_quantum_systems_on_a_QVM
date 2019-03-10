@@ -163,7 +163,24 @@ def _test_complexity(mat2op, jmin=0.5, jmax=25):
 # MAIN
 ###############################################################################
 if __name__ == "__main__":
-    pass
+    import matplotlib.pyplot as plt
+    matrix_size_1, nbr_terms_1, max_nbr_ops_1 =\
+        _test_complexity(matrix_to_operator_1)
+    matrix_size_2, nbr_terms_2, max_nbr_ops_2 = \
+        _test_complexity(matrix_to_operator_2)
+
+    if not all(matrix_size_1 == matrix_size_2):
+        raise Exception("Something went wrong with the sizes.")
+
+    plt.figure(0)
+    plt.plot(matrix_size_1, np.array([nbr_terms_1, nbr_terms_2]).T)
+    plt.title("Number of Pauli terms")
+    plt.legend("a^dag a", "qubit op")
+
+    plt.figure(1)
+    plt.plot(matrix_size_1, np.array([max_nbr_ops_1, max_nbr_ops_2]).T)
+    plt.title("Maximum number of ops per term")
+    plt.legend("a^dag a", "qubit op")
 
     #  test_mat_to_op(matrix_to_operator_1, jmax=10)
     # The following tests has (successfully) been completed:
