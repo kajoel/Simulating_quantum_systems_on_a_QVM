@@ -14,13 +14,14 @@ import pyquil.api as api
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
 from ansatz import one_particle_ansatz
-from matrix_to_pyquil import matrix_to_pyquil
-
-
-
+from matrix_to_operator import matrix_to_operator_1
+from forestopenfermion import qubitop_to_pyquilpauli
+from openfermion.transforms import jordan_wigner
 ###############################################################################
 # MAIN VQE FUNCTIONS
 ###############################################################################
+
+
 def calculate_eigenvalues(H, ansatz, update):
     """
     Calculates all eigenvalues of H using smallest_eig and update (to update
@@ -35,7 +36,7 @@ def calculate_eigenvalues(H, ansatz, update):
     return eigvals
 
 
-def smallest_eig(H, ansatz):
+def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
     """
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 
@@ -54,30 +55,87 @@ def smallest_eig(H, ansatz):
         eigvect = eigvect.reshape((eigvect.shape[0],))
         eigvect = eigvect/np.linalg.norm(eigvect)
     else:
-        eigval = H[0,0]
+        eigval = H[0, 0]
         eigvect = np.array([1])
     return eigval, eigvect
 
 
-'''
-Finds the smallest eigenvalue and corresponding -vector of H using VQE.
-
-
-'''
-def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm = 'L-BFGS-B'):
-    initial_value = np.zeros(H.shape[0])
-    for i in range(H.shape[0]):
-        initial_value[i] = 1
+def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+    """
+    Finds the smallest eigenvalue and corresponding -vector of H using VQE.
+    :param H: np.array hamiltonian matrix
+    :param ansatz: ansatz function
+    :param num_samples: number of samples on the qvm
+    :param opt_algorithm:
+    :param initial_params: ansatz parameters
+    :return: list of energies
+    """
+    if initial_params is None:
+        initial_params = np.zeros(H.shape[0])
+        for i in range(H.shape[0]):
+            initial_params[i] = 1
 
     qvm = api.QVMConnection()
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
-    H = matrix_to_pyquil(H)
+    H = qubitop_to_pyquilpauli(matrix_to_operator_1(H, jordan_wigner))
 
-    eig = vqe.vqe_run(ansatz, H, initial_value, samples=num_samples, qvm=qvm)
+    eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qvm=qvm)
     eigval = eig['fun']
     eigvect = eig['x']/np.linalg.norm(eig['x'])
 
-    return eigval,eigvect
+    return eigval, eigvect
+
+
+def calculate_negative_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+    """
+    Calculates all negative or specified amount of eigenvalues for a given hamiltonian matrix.
+    :param H: np.array hamiltonian matrix
+    :param ansatz: ansatz function
+    :param num_eigvals: number of desired eigenvalues to be calculated
+    :param num_samples: number of samples on the qvm
+    :param opt_algorithm:
+    :param initial_params: ansatz parameters
+    :return: list of energies
+    @author: Eric Nilsson
+    """
+    if num_eigvals is None:
+        num_eigvals = H.shape[0]
+    energy = []
+    for i in range(num_eigvals):
+        eigval, eigvect = smallest_eig_vqe(H, ansatz, num_samples, opt_algorithm, initial_params)
+        energy.append(eigval)
+        if energy[i] >= 0:
+            if num_eigvals != H.shape[0]:
+                print('Warning: Unable to find the specified amount of eigenvalues')
+            return energy[:i]
+        else:
+            # Maybe eigvect should be normalized??
+            H = H + 1.1 * np.abs(energy[i]) * np.outer(eigvect, eigvect)  # move found eigenvalue to > 0.
+    return energy
+
+
+def calculate_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=None,
+                              opt_algorithm='L-BFGS-B', initial_params=None):
+    """
+    Calculates all or specified amount of eigenvalues for an Hamiltonian matrix
+    TODO: Make so it handles sparse matrices? Currently finds double zero eigenvalues
+    :param H: np.array hamiltonian matrix
+    :param ansatz: ansatz function
+    :param num_eigvals: number of desired eigenvalues to be calculated
+    :param num_samples: number of samples on the qvm
+    :param opt_algorithm:
+    :param initial_params: ansatz parameters
+    :return: list of energies
+    @author: Eric
+    """
+    energy = calculate_negative_eigenvalues_vqe(H, ansatz, num_eigvals, num_samples, opt_algorithm, initial_params)
+    if num_eigvals is not None and len(energy) < num_eigvals:
+        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, num_eigvals-len(energy),
+                                                                          num_samples, opt_algorithm, initial_params)]
+    if len(energy) < H.shape[0]:
+        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, num_eigvals, num_samples,
+                                                                          opt_algorithm, initial_params)]
+    return energy
 
 
 ###############################################################################

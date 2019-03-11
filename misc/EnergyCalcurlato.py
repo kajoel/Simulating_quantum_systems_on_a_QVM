@@ -129,10 +129,11 @@ OriginalHamiltonian = hamiltonian(j, V)[1].toarray()
 TrueEigenvalues = eigenvalues(j, V)[1]
 h = OriginalHamiltonian
 
-
+print()
 Energy = total_energy_calculator(h, [1, 0, 0, 0])
 print('True eigenvalues: \n', TrueEigenvalues, '\n')
 print('Calculated Energy: \n', Energy)
+
 
 
 
