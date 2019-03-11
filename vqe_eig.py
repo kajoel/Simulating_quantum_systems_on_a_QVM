@@ -16,7 +16,6 @@ from scipy.optimize import minimize
 from ansatz import one_particle_ansatz
 from matrix_to_operator import matrix_to_operator_1
 from forestopenfermion import qubitop_to_pyquilpauli
-from openfermion.transforms import jordan_wigner
 ###############################################################################
 # MAIN VQE FUNCTIONS
 ###############################################################################
@@ -60,7 +59,7 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
     return eigval, eigvect
 
 
-def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+def smallest_eig_vqe(H, ansatz, qvm, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
     """
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
     :param H: np.array hamiltonian matrix
@@ -71,13 +70,11 @@ def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B', init
     :return: list of energies
     """
     if initial_params is None:
-        initial_params = np.zeros(H.shape[0])
-        for i in range(H.shape[0]):
-            initial_params[i] = 1
+        initial_params = np.array([1 for i in range(H.shape[0])])
 
-    qvm = api.QVMConnection()
+    
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
-    H = qubitop_to_pyquilpauli(matrix_to_operator_1(H, jordan_wigner))
+    H = matrix_to_operator_1(H)
 
     eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qvm=qvm)
     eigval = eig['fun']
@@ -86,7 +83,7 @@ def smallest_eig_vqe(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B', init
     return eigval, eigvect
 
 
-def calculate_negative_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+def calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
     """
     Calculates all negative or specified amount of eigenvalues for a given hamiltonian matrix.
     :param H: np.array hamiltonian matrix
@@ -102,19 +99,19 @@ def calculate_negative_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=
         num_eigvals = H.shape[0]
     energy = []
     for i in range(num_eigvals):
-        eigval, eigvect = smallest_eig_vqe(H, ansatz, num_samples, opt_algorithm, initial_params)
-        energy.append(eigval)
-        if energy[i] >= 0:
+        eigval, eigvect = smallest_eig_vqe(H, ansatz, qvm, num_samples, opt_algorithm, initial_params)
+        if eigval >= 0:
             if num_eigvals != H.shape[0]:
                 print('Warning: Unable to find the specified amount of eigenvalues')
-            return energy[:i]
+            return energy
         else:
+            energy.append(eigval)
             # Maybe eigvect should be normalized??
             H = H + 1.1 * np.abs(energy[i]) * np.outer(eigvect, eigvect)  # move found eigenvalue to > 0.
     return energy
 
 
-def calculate_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=None,
+def calculate_eigenvalues_vqe(H, ansatz,qvm, num_eigvals=None, num_samples=None,
                               opt_algorithm='L-BFGS-B', initial_params=None):
     """
     Calculates all or specified amount of eigenvalues for an Hamiltonian matrix
@@ -128,13 +125,17 @@ def calculate_eigenvalues_vqe(H, ansatz, num_eigvals=None, num_samples=None,
     :return: list of energies
     @author: Eric
     """
-    energy = calculate_negative_eigenvalues_vqe(H, ansatz, num_eigvals, num_samples, opt_algorithm, initial_params)
+    energy = calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals, num_samples, opt_algorithm, initial_params)
+    
     if num_eigvals is not None and len(energy) < num_eigvals:
-        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, num_eigvals-len(energy),
+        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, qvm, num_eigvals-len(energy),
                                                                           num_samples, opt_algorithm, initial_params)]
     if len(energy) < H.shape[0]:
-        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, num_eigvals, num_samples,
+        energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, qvm, num_eigvals, num_samples,
                                                                           opt_algorithm, initial_params)]
+        if len(energy)<H.shape[0]: energy.append(0)
+
+
     return energy
 
 
