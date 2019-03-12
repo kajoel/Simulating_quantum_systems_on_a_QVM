@@ -12,6 +12,7 @@ import pprint
 import numpy as np
 import pyquil.api as api
 import time
+from ansatz import carls_initial_params
 
 qvm = api.QVMConnection()
 
@@ -30,7 +31,7 @@ for j in range(1,10):
     t1 = time.time()
     H = hamiltonian(j, V)
     TestHamiltonian = H[1]
-    smallest_eig_vqe(TestHamiltonian, one_particle_ansatz,qvm)[0]
+    smallest_eig_vqe(TestHamiltonian, one_particle_ansatz,qvm,initial_params=carls_initial_params(TestHamiltonian))[0]
     t2 = time.time()
     timer.append(t2-t1)
 

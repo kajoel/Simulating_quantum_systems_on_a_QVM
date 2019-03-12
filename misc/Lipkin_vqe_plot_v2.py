@@ -13,7 +13,6 @@ from scipy.optimize import minimize
 import lipkin_quasi_spin as lqs
 from matrix_to_pyquil import matrix_to_pyquil
 import ansatz as ansatz
-
 #################################################################################
 vqe = VQE(minimizer=minimize,minimizer_kwargs={'method': 'L-BFGS-B'})
 #vqe = VQE(minimizer=minimize,minimizer_kwargs={'method': 'Nelder-Mead'})

@@ -38,6 +38,9 @@ def multi_particle_ansatz(theta: np.ndarray) -> Program:
     return create_arbitrary_state(theta)
 
 
+def carls_initial_params(h):
+    return 1 / np.sqrt(h.shape[0]) * np.ones([h.shape[0]])
+
 ################################################################################
 # TESTS
 ################################################################################

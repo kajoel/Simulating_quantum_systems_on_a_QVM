@@ -72,6 +72,7 @@ def smallest_eig_vqe(H, ansatz, qvm, num_samples=None, opt_algorithm='L-BFGS-B',
     if initial_params is None:
         initial_params = np.array([1 for i in range(H.shape[0])])
 
+
     
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
     H = matrix_to_operator_1(H)
