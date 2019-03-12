@@ -15,7 +15,6 @@ from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
 from ansatz import one_particle_ansatz
 from matrix_to_operator import matrix_to_operator_1
-from forestopenfermion import qubitop_to_pyquilpauli
 ###############################################################################
 # MAIN VQE FUNCTIONS
 ###############################################################################
@@ -70,10 +69,8 @@ def smallest_eig_vqe(H, ansatz, qvm, num_samples=None, opt_algorithm='L-BFGS-B',
     :return: list of energies
     """
     if initial_params is None:
-        initial_params = np.array([1 for i in range(H.shape[0])])
+        initial_params = 1/np.sqrt(H.shape[0])*np.array([1 for i in range(H.shape[0])])
 
-
-    
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
     H = matrix_to_operator_1(H)
 
