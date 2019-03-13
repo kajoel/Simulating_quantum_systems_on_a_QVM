@@ -13,7 +13,7 @@ import scipy.sparse as sparse
 import pyquil.api as api
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
-from ansatz import one_particle_ansatz
+from ansatz import one_particle_ansatz,one_particle_inital
 from matrix_to_operator import matrix_to_operator_1
 ###############################################################################
 # MAIN VQE FUNCTIONS
@@ -58,8 +58,14 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
     return eigval, eigvect
 
 
-def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None, new_version=True):
+def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
+                     opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
+                     disp_during_run=False, display_during_run=False, 
+                    xatol=1e-2, fatol=1e-3, return_all_data=False):
+                     
     """
+    TODO: Fix this documentation. Below is not up to date.
+
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
     :param H: np.array hamiltonian matrix
     :param ansatz: ansatz function
@@ -68,23 +74,41 @@ def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, opt_algorithm='L-BFGS-
     :param initial_params: ansatz parameters
     :return: list of energies
     """
-    if initial_params is None:
-        initial_params = 1/np.sqrt(H.shape[0])*np.array([1 for i in range(H.shape[0])])
 
-    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
+
+    if initial is None:
+        initial = one_particle_inital(H.shape[0])
+    
+    # All options to Nelder-Mead
+    disp_options = {'disp': display_during_run, 'xatol': xatol, 'fatol': fatol, 
+                    'maxiter': maxiter}
+    
+    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm, 
+                                                    'options': disp_options})
     H = matrix_to_operator_1(H)
 
+    # If display_option is True we will print every step of the Nelder-Mead
+    if disp_run_info: print_option = print
+    else: print_option = lambda x:None
+
     if new_version:
-        eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qc=qc_qvm)
+        eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qc=qc_qvm,
+                          disp=print_option, return_all=True)
     else:
-        eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qvm=qc_qvm)
-    eigval = eig['fun']
-    eigvect = eig['x']/np.linalg.norm(eig['x'])
+        eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qvm=qc_qvm, 
+                          disp=print_option,return_all=True)
 
-    return eigval, eigvect
+    #If option return_all_data is True we return a dict with data from all runs
+    if return_all_data: 
+        return eig
+    else: 
+        eigval = eig['fun']
+        eigvect = eig['x']/np.linalg.norm(eig['x'])
+        return eigval, eigvect
 
 
-def calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+def calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None, num_samples=None, 
+                                       opt_algorithm='L-BFGS-B', initial_params=None):
     """
     Calculates all negative or specified amount of eigenvalues for a given hamiltonian matrix.
     :param H: np.array hamiltonian matrix
@@ -134,7 +158,7 @@ def calculate_eigenvalues_vqe(H, ansatz,qvm, num_eigvals=None, num_samples=None,
     if len(energy) < H.shape[0]:
         energy = energy + [-x for x in calculate_negative_eigenvalues_vqe(-1*H, ansatz, qvm, num_eigvals, num_samples,
                                                                           opt_algorithm, initial_params)]
-        if len(energy)<H.shape[0]: energy.append(0)
+        for i in range(len(energy),H.shape[0]): energy.append(0)
 
 
     return energy

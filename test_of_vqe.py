@@ -45,7 +45,7 @@ def count_opt_iterations(H, qvm, old_version = False,  samples=None,
         :param disp_run_info: bool, if true prints all intermidiate 
                               calculated values. default: False
         :param xatol: float, error in x_opt between Nelder-M iterations
-        :param xatol: float, error in f(x_opt) between Nelder-M iterations
+        :param fatol: float, error in f(x_opt) between Nelder-M iterations
         :param maxiter: int, iterations before termination. default:10000
         :param return_dict: bool, if True return data of all iterations
     Returns:
@@ -53,7 +53,8 @@ def count_opt_iterations(H, qvm, old_version = False,  samples=None,
         
     """                     
 
-    Option = {'xatol': xatol, 'fatol': fatol, 'maxiter': maxiter}
+    Option = {'disp': True, 'xatol': xatol, 'fatol': fatol, 'maxiter': maxiter}
+
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead',
               'options': Option})
 
@@ -86,7 +87,7 @@ def sweep_parameters(H, qvm, old_version=False, num_para=20, start = -10,
                      stop = 10,samples = None, fig_nr = 0, save = False):
     
     '''
-    TODO: Add a statement that saves the data from the run.
+    TODO: Add a statement that saves the data from the run and comments.
     '''
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
     if H.shape[0] > 3:
