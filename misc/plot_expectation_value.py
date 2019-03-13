@@ -17,8 +17,8 @@ V = 1
 h = hamiltonian(j, V)
 h = h[1]
 print(h.shape[0])
-qc = get_qc("9q-qvm")
-eig = smallest_eig_vqe(h, one_particle_ansatz, qc, num_samples=10, opt_algorithm='Nelder-Mead')[0]
+qc = get_qc("3q-qvm")
+eig = smallest_eig_vqe(h, one_particle_ansatz, qc, num_samples=None, opt_algorithm='Nelder-Mead')[0]
 print(eig)
 ##########################################################################################
 ###### Parameter sweep #####

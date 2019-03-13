@@ -58,7 +58,7 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
     return eigval, eigvect
 
 
-def smallest_eig_vqe(H, ansatz, qc, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None):
+def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, opt_algorithm='L-BFGS-B', initial_params=None, new_version=True):
     """
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
     :param H: np.array hamiltonian matrix
@@ -74,7 +74,10 @@ def smallest_eig_vqe(H, ansatz, qc, num_samples=None, opt_algorithm='L-BFGS-B', 
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm})
     H = matrix_to_operator_1(H)
 
-    eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qc=qc)
+    if new_version:
+        eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qc=qc_qvm)
+    else:
+        eig = vqe.vqe_run(ansatz, H, initial_params, samples=num_samples, qvm=qc_qvm)
     eigval = eig['fun']
     eigvect = eig['x']/np.linalg.norm(eig['x'])
 
