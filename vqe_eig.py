@@ -60,7 +60,7 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
 
 def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
                      opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
-                     disp_during_run=False, display_during_run=False, 
+                     disp_run_info=False, display_after_run=False, 
                     xatol=1e-2, fatol=1e-3, return_all_data=False):
                      
     """
@@ -80,14 +80,14 @@ def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
         initial = one_particle_inital(H.shape[0])
     
     # All options to Nelder-Mead
-    disp_options = {'disp': display_during_run, 'xatol': xatol, 'fatol': fatol, 
+    disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol, 
                     'maxiter': maxiter}
     
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm, 
                                                     'options': disp_options})
     H = matrix_to_operator_1(H)
 
-    # If display_option is True we will print every step of the Nelder-Mead
+    # If disp_run_info is True we will print every step of the Nelder-Mead
     if disp_run_info: print_option = print
     else: print_option = lambda x:None
 

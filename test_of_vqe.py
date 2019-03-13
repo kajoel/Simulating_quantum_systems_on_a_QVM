@@ -27,17 +27,20 @@ from matrix_to_operator import matrix_to_operator_1
 from lipkin_quasi_spin import hamiltonian,eigenvalues
 from ansatz import one_particle_ansatz as ansatz 
 from ansatz import one_particle_inital as initial
+from vqe_eig import smallest_eig_vqe as vqe_eig
 
 
 
-
-def count_opt_iterations(H, qvm, old_version = False,  samples=None, 
+# Egentligen helt onödig nu efter jag skrivit om smallest_eig_vqe, är i princip 
+# bara den funktionen med en print
+def count_opt_iterations(H, qc_qvm, new_version = False,  samples=None, 
                          disp_run_info=False, return_dict=False, xatol=1e-2, 
                          fatol=1e-3,maxiter=10000):
+
     """Count the number of iterations the Nelder-Mead takes to converge
     Arguments:
         :param H: Hamiltonian matrix
-        :param qvm: Quantum computer
+        :param qvm_qc: Quantum computer
     
     Keyword Arguments:
         :param old_version: bool if you are using a old version. default:False
@@ -52,27 +55,10 @@ def count_opt_iterations(H, qvm, old_version = False,  samples=None,
         Numer of iterations, or the dict with data of all iterations.
         
     """                     
-
-    Option = {'disp': True, 'xatol': xatol, 'fatol': fatol, 'maxiter': maxiter}
-
-    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead',
-              'options': Option})
-
-    H_program = matrix_to_operator_1(H)
-    
-    if disp_run_info: display_option = print
-    else: display_option = lambda x:None
-    
-    if old_version:
-        result = vqe.vqe_run(ansatz, H_program, initial(H.shape[0]), 
-                             samples=samples, qvm=qvm, disp=display_option, 
-                             return_all=True)
-
-    else: 
-        result = vqe.vqe_run(ansatz, H_program, initial(H.shape[0]), 
-                               samples=samples, qc=qvm, disp=display_option, 
-                               return_all=True)
-
+    result = vqe_eig(H, ansatz, qc_qvm=qc_qvm, num_samples=samples, 
+                     new_version=new_version, display_after_run=True,
+                     disp_run_info=disp_run_info, xatol=xatol, fatol=fatol, 
+                     maxiter=maxiter, return_all_data=True)
     
     print('Real eigenvalues:')
     print(np.linalg.eigvals(H.toarray()))
@@ -83,7 +69,7 @@ def count_opt_iterations(H, qvm, old_version = False,  samples=None,
     else: return len(result['iteration_params'])
 
 
-def sweep_parameters(H, qvm, old_version=False, num_para=20, start = -10, 
+def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start = -10, 
                      stop = 10,samples = None, fig_nr = 0, save = False):
     
     '''
@@ -100,13 +86,13 @@ def sweep_parameters(H, qvm, old_version=False, num_para=20, start = -10,
         H = matrix_to_operator_1(H)
         parameters = np.linspace(start,stop,num_para)
 
-        if old_version:
+        if new_version:
             exp_val = [vqe.expectation(ansatz(np.array([para])), H, 
-                                       samples=samples, qvm=qvm) 
+                                       samples=samples, qc=qvm_qc) 
                                        for para in parameters]
         else:
             exp_val = [vqe.expectation(ansatz(np.array([para])), H, 
-                                       samples=samples, qc=qvm) 
+                                       samples=samples, qvm=qvm_qc) 
                                        for para in parameters]
         
 
@@ -125,19 +111,20 @@ def sweep_parameters(H, qvm, old_version=False, num_para=20, start = -10,
         for i,p_1 in enumerate(parameters):
             mesh_1[i]+=p_1
             mesh_2[i] = parameters
-            if old_version:
+            if new_version:
                 exp_val[i] = [vqe.expectation(ansatz( np.array([p_1,p_2]) ), H, 
-                                              samples = samples, qvm=qvm)
+                                              samples = samples, qc=qvm_qc)
                                               for p_2 in parameters]
             else:
                 exp_val[i] = [vqe.expectation(ansatz( np.array([p_1,p_2]) ), H, 
-                                              samples = samples, qc=qvm)
+                                              samples = samples, qvm=qvm_qc)
                                               for p_2 in parameters]  
                                           
         fig = plt.figure(fig_nr)
         ax = fig.add_subplot(111, projection='3d')
         # Plot the surface
 
+        save_run_to_csv(exp_val)
         ax.plot_surface(mesh_1, mesh_2, exp_val, cmap=cm.coolwarm)
         return
 
@@ -154,35 +141,26 @@ def save_run_to_csv(Variable):
 # TESTS
 ################################################################################
 
-def main1():
+def main1(samples = 1000):
     qvm = api.QVMConnection()
     j,V = 1,1
     H,_ = hamiltonian(j,V)
-    result = count_opt_iterations(H,qvm, old_verion=True, samples=None, 
-                                  fatol=1e-2, xatol=1e-3, return_dict=True)
-    
-    plt.figure(1)
-    print(result['expectation_vals'])
+    result = count_opt_iterations(H,qvm, new_version=False, samples=samples, 
+                                  fatol=1e-2, xatol=1e-3, return_dict=True,
+                                  disp_run_info=True)
+
+
+    plt.figure(1)    
     plt.plot(result['iteration_params'],result['expectation_vals'])
     plt.show()
 
-
 def main2(samples=1000, sweep_params=100):
     qvm = api.QVMConnection()
-    j,V = 1,1
+    j,V = 2,1
     H,_ = hamiltonian(j,V)
-    sweep_parameters(H,qvm,old_version = True, samples=samples, 
-                     num_para=sweep_params, start=-2,stop=2)
+    sweep_parameters(H,qvm, new_version = False, samples=samples, 
+                     num_para=sweep_params, start=-3,stop=3)
     
-    result = count_opt_iterations(H,qvm, old_verion=True, samples=samples,
-                                  fatol=1e-2,xatol=1e-3, return_dict=True)
-    
-    plt.scatter(result['iteration_params'],result['expectation_vals'], 
-                label='Steps in nelder mead')
-
-    plt.legend()
-
-    plt.show()
 
 
 ################################################################################
@@ -190,9 +168,6 @@ def main2(samples=1000, sweep_params=100):
 ################################################################################
 
 if __name__=='__main__':
+    main2(1000,40)
 
-
-    
-
-
-
+    plt.show()
