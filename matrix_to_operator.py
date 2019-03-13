@@ -175,12 +175,12 @@ if __name__ == "__main__":
     plt.figure(0)
     plt.plot(matrix_size_1, np.array([nbr_terms_1, nbr_terms_2]).T)
     plt.title("Number of Pauli terms")
-    plt.legend("a^dag a", "qubit op")
+    plt.legend(["a^dag a", "qubit op"])
 
     plt.figure(1)
     plt.plot(matrix_size_1, np.array([max_nbr_ops_1, max_nbr_ops_2]).T)
     plt.title("Maximum number of ops per term")
-    plt.legend("a^dag a", "qubit op")
+    plt.legend(["a^dag a", "qubit op"])
 
     #  test_mat_to_op(matrix_to_operator_1, jmax=10)
     # The following tests has (successfully) been completed:
