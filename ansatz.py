@@ -21,12 +21,26 @@ def one_particle_ansatz(theta: np.ndarray) -> Program:
     :return: PyQuil program setting up the state.
     """
     # TODO: doc behaves weird, theta: Union[ndarray, ndarray]
-    vector = np.zeros(2 ** (theta.shape[0]))
-    vector[[2 ** i for i in range(theta.shape[0])]] = theta
+
+    vector = np.zeros(2 ** (theta.shape[0]+1))
+    vector[1] = 1
+    vector[[2 ** (i+1) for i in range(theta.shape[0])]] = theta
+    vector *= 1/np.linalg.norm(vector)
     return create_arbitrary_state(vector)
 
 
+def one_particle_inital(size):
+    """
+    Creates the intial state for the one_partical_ansatz
+
+    :param H: int representing size of Hamiltonian matrix
+    :return: np.array representing the intial parameter for optimization
+    """
+    return 1/np.sqrt(size)*np.array([1 for i in range(size-1)])
+
+
 def multi_particle_ansatz(theta: np.ndarray) -> Program:
+    
     """
     Creates a program to set up an arbitrary state.
 
