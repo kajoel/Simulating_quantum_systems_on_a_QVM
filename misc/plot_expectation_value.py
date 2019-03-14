@@ -96,9 +96,9 @@ print(eig_CPU[0])
 #end = time.time()
 #print('Tid VQE: ' + str(end-start))
 
-#vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
-#H = matrix_to_operator_1(h)
-#eig = 0
+vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
+H = matrix_to_operator_1(h)
+eig = 0
 #for i in range(50):
     #eig += vqe.expectation(ansatz(result['x']), H, samples=20000, qc=qc)
 
@@ -108,6 +108,11 @@ print(eig_CPU[0])
 #plt.show()
 ###############################################################################
 result = vqe_eig(h, qc_qvm=qc, initial=carls_initial(h.shape[0]),
-                 num_samples=100, disp_run_info=True, display_after_run=True,
-                 xatol=1e-3, fatol=1e-2, return_all_data=True)
+                 num_samples=500, disp_run_info=True, display_after_run=True,
+                 xatol=1e-3, fatol=5e-1, return_all_data=True)
+for i in range(20):
+    eig += vqe.expectation(ansatz(result['x']), H, samples=500, qc=qc)
+
+eig = eig/20
 print(result['fun'])
+print(eig)
