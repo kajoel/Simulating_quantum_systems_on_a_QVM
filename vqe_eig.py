@@ -58,7 +58,7 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
     return eigval, eigvect
 
 
-def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
+def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
                      opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
                      disp_run_info=False, display_after_run=False, 
                     xatol=1e-2, fatol=1e-3, return_all_data=False):
@@ -74,11 +74,16 @@ def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
     :param initial_params: ansatz parameters
     :return: list of energies
     """
+    #if initial_params is None:
+        #initial_params = 1/np.sqrt(H.shape[0])*np.array([1 for i in range(H.shape[0]-1)])
 
 
     if initial is None:
         initial = one_particle_inital(H.shape[0])
-    
+
+    if ansatz is None:
+        ansatz = one_particle_ansatz
+
     # All options to Nelder-Mead
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol, 
                     'maxiter': maxiter}
@@ -96,7 +101,7 @@ def smallest_eig_vqe(H, ansatz, qc_qvm, num_samples=None, new_version=True,
                           disp=print_option, return_all=True)
     else:
         eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qvm=qc_qvm, 
-                          disp=print_option,return_all=True)
+                          disp=print_option, return_all=True)
 
     #If option return_all_data is True we return a dict with data from all runs
     if return_all_data: 
