@@ -60,8 +60,8 @@ def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
 
 def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
                      opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
-                     disp_run_info=False, display_after_run=False, 
-                    xatol=1e-2, fatol=1e-3, return_all_data=False):
+                     disp_run_info=False, display_after_run=False,
+                     xatol=1e-2, fatol=1e-3, return_all_data=False):
                      
     """
     TODO: Fix this documentation. Below is not up to date.
@@ -97,6 +97,7 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
     else: print_option = lambda x:None
 
     if new_version:
+        print(initial)
         eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qc=qc_qvm,
                           disp=print_option, return_all=True)
     else:

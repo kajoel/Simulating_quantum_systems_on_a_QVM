@@ -1,55 +1,113 @@
 #Carl 12/3
-import numpy as np
-import pyquil.gates as qg
+###############################################################################
+#Imports
 from pyquil import Program, get_qc
+import time
+import numpy as np
 from scipy.optimize import minimize
+from grove.pyvqe.vqe import VQE
 from matplotlib import pyplot as plt
-from vqe_eig import calculate_eigenvalues_vqe, smallest_eig_vqe
-from lipkin_quasi_spin import hamiltonian, eigenvalues
-from ansatz import one_particle_ansatz
-import pprint
-import time
-import time
+from datetime import datetime,date
+from matplotlib import cm
 
-##########################################################################################
-j = 2
+# Imports from our projects
+from matrix_to_operator import matrix_to_operator_1
+from lipkin_quasi_spin import hamiltonian,eigenvalues
+from ansatz import one_particle_ansatz as ansatz
+from ansatz import one_particle_inital, carls_initial
+from vqe_eig import smallest_eig_vqe as vqe_eig
+
+###############################################################################
+def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
+                     stop=10, samples=None, fig_nr=0, save=False):
+    '''
+    TODO: Add a statement that saves the data from the run and comments.
+    '''
+    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
+    if H.shape[0] > 3:
+        print('To many parameters to represent in 2 or 3 dimensions')
+        return
+    elif H.shape[0] is 1:
+        print('Nothing to sweep over')
+        return
+    elif H.shape[0] is 2:
+        H = matrix_to_operator_1(H)
+        parameters = np.linspace(start, stop, num_para)
+
+        if new_version:
+            exp_val = [vqe.expectation(ansatz(np.array([para])), H,
+                                       samples=samples, qc=qvm_qc)
+                       for para in parameters]
+        else:
+            exp_val = [vqe.expectation(ansatz(np.array([para])), H,
+                                       samples=samples, qvm=qvm_qc)
+                       for para in parameters]
+
+        plt.figure(fig_nr)
+        plt.plot(parameters, exp_val, label='Samples: {}'.format(samples))
+        plt.xlabel('Paramter value')
+        plt.ylabel('Expected value of Hamiltonian')
+        return
+    else:
+        H = matrix_to_operator_1(H)
+        exp_val = np.zeros((num_para, num_para))
+        mesh_1 = np.zeros((num_para, num_para))
+        mesh_2 = np.zeros((num_para, num_para))
+        parameters = np.linspace(start, stop, num_para)
+
+        for i, p_1 in enumerate(parameters):
+            mesh_1[i] += p_1
+            mesh_2[i] = parameters
+            if new_version:
+                exp_val[i] = [vqe.expectation(ansatz(np.array([p_1, p_2])), H,
+                                              samples=samples, qc=qvm_qc)
+                              for p_2 in parameters]
+            else:
+                exp_val[i] = [vqe.expectation(ansatz(np.array([p_1, p_2])), H,
+                                              samples=samples, qvm=qvm_qc)
+                              for p_2 in parameters]
+
+        fig = plt.figure(fig_nr)
+        ax = fig.add_subplot(111, projection='3d')
+        # Plot the surface
+
+        save_run_to_csv(exp_val)
+        ax.plot_surface(mesh_1, mesh_2, exp_val, cmap=cm.coolwarm)
+        return
+
+###############################################################################
+def save_run_to_csv(Variable):
+    """ Save given variable to CSV-file with name of exact time
+    Arguments:
+        Variable{np.array}--Variable to save to .txt file in CSV-format
+    """
+    np.savetxt('{}'.format(datetime.now()), Variable)
+###############################################################################
+j = 3
 V = 1
 h = hamiltonian(j, V)
-h = h[1]
-print(h.shape[0])
-qc = get_qc("3q-qvm")
-eig = smallest_eig_vqe(h, one_particle_ansatz, qc, num_samples=None, opt_algorithm='Nelder-Mead')[0]
-print(eig)
-##########################################################################################
-###### Parameter sweep #####
-"""
-program = one_particle_ansatz()  # look ma, no arguments!
-program.wrap_in_numshots_loop(shots=1000)
-executable = qc.compile(program)
+h = h[0]
+qc = get_qc(str(h.shape[0]) + 'q-qvm')
+###############################################################################
+eig_CPU = eigenvalues(j,V)
+print(eig_CPU[0])
+#eig_CPU = eig_CPU[1]
+#start = time.time()
+#end = time.time()
+#print('Tid VQE: ' + str(end-start))
 
-thetas = np.linspace(0, 2*np.pi, 21)
-results = []
-for theta in thetas:
-    bitstrings = qc.run(executable, memory_map={'theta': [theta]})
-    results.append(np.mean(bitstrings[:, 0]))
+#vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
+#H = matrix_to_operator_1(h)
+#eig = 0
+#for i in range(50):
+    #eig += vqe.expectation(ansatz(result['x']), H, samples=20000, qc=qc)
 
-# Plot
-plt.plot(thetas, results, 'o-')
-plt.xlabel(r'$\theta$', fontsize=18)
-_ = plt.ylabel(r'$\langle \Psi(\theta) | \frac{1 - Z}{2} | \Psi(\theta) \rangle$', fontsize=18)
-
-# ##### Optimization #####
-def objective_function(thetas):
-    bitstrings = qc.run(executable, memory_map={'theta': thetas})
-    result = np.mean(bitstrings[:, 0])
-    return -result
-
-
-res = minimize(objective_function, x0=[0.1], method='COBYLA')
-
-# Plot
-plt.plot(thetas, results, label='scan')
-plt.plot([res.x], [-res.fun], '*', ms=20, label='optimization result')
-plt.legend()
-plt.show()
-"""
+#eig = eig/50
+#print(eig)
+#plt.plot(result['x'],eig,'*', ms=10)
+#plt.show()
+###############################################################################
+result = vqe_eig(h, qc_qvm=qc, initial=carls_initial(h.shape[0]),
+                 num_samples=100, disp_run_info=True, display_after_run=True,
+                 xatol=1e-3, fatol=1e-2, return_all_data=True)
+print(result['fun'])

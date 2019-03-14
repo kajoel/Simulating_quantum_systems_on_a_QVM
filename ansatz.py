@@ -28,7 +28,6 @@ def one_particle_ansatz(theta: np.ndarray) -> Program:
     vector *= 1/np.linalg.norm(vector)
     return create_arbitrary_state(vector)
 
-
 def one_particle_inital(size):
     """
     Creates the intial state for the one_partical_ansatz
@@ -38,6 +37,13 @@ def one_particle_inital(size):
     """
     return 1/np.sqrt(size)*np.array([1 for i in range(size-1)])
 
+def carls_initial(size):
+    """
+    Creates the best initial state for the one_particle_ansatz
+    :param H: int representing size of Hamiltonian matrix
+    :return: np.array representing the initial parameter for optimization
+    """
+    return 1 / np.sqrt(size) * np.array([(-1)**(i+1) for i in range(size-1)])
 
 def multi_particle_ansatz(theta: np.ndarray) -> Program:
     
@@ -50,10 +56,6 @@ def multi_particle_ansatz(theta: np.ndarray) -> Program:
     """
     # TODO: doc behaves weird, theta: Union[ndarray, ndarray]
     return create_arbitrary_state(theta)
-
-
-def carls_initial_params(h):
-    return 1 / np.sqrt(h.shape[0]) * np.ones([h.shape[0]])
 
 ################################################################################
 # TESTS

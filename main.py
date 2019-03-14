@@ -13,7 +13,7 @@ import time
 import numpy as np
 import pyquil.api as api
 import time
-from ansatz import carls_initial_params
+from ansatz import carls_initial
 
 qvm = api.QVMConnection()
 
