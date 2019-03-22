@@ -77,7 +77,6 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
     :return: list of energies
     """
 
-
     if initial is None:
         initial = one_particle_inital(H.shape[0])
 
@@ -173,13 +172,19 @@ def calculate_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None,
     if num_eigvals is not None and len(energy) < num_eigvals:
         energy = energy + [-x for x in
                            calculate_negative_eigenvalues_vqe(-1 * H, ansatz,
-                                qvm, num_eigvals - len(energy),
-                                num_samples, opt_algorithm, initial_params)]
+                                                              qvm,
+                                                              num_eigvals - len(
+                                                                  energy),
+                                                              num_samples,
+                                                              opt_algorithm,
+                                                              initial_params)]
     if len(energy) < H.shape[0]:
         energy = energy + [-x for x in
                            calculate_negative_eigenvalues_vqe(-1 * H, ansatz,
-                                qvm, num_eigvals, num_samples,
-                                opt_algorithm, initial_params)]
+                                                              qvm, num_eigvals,
+                                                              num_samples,
+                                                              opt_algorithm,
+                                                              initial_params)]
         for i in range(len(energy), H.shape[0]): energy.append(0)
 
     return energy

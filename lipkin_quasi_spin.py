@@ -17,6 +17,7 @@ import scipy.sparse as sparse
 from scipy.sparse.linalg import eigsh
 from functools import lru_cache
 
+
 @lru_cache(maxsize=1)
 def hamiltonian(j, V, e=1):
     """
@@ -46,7 +47,8 @@ def eigenvalues(j, V, e=1):
     The input parameter e is epsilon in the Lipkin-model
     """
     # Preallocate and store in tuple to keep DRY
-    eigvals = (np.empty(math.ceil((2 * j + 1) / 2)), np.empty(math.floor((2 * j + 1) / 2)))
+    eigvals = (
+    np.empty(math.ceil((2 * j + 1) / 2)), np.empty(math.floor((2 * j + 1) / 2)))
 
     # Get matrices
     args = [j, V]
@@ -90,8 +92,10 @@ def _quasi_internal(j, m_start, V, e):
     m = m_start + 2 * np.array(range(size), dtype="float")
 
     idx = np.array(range(size))
-    data = np.sqrt((j - m[0:-1]) * (j + m[0:-1] + 1) * (j - m[0:-1] - 1) * (j + m[0:-1] + 2))
-    J_p2 = sparse.coo_matrix((data, (1 + idx[0:-1], idx[0:-1])), shape=(size, size))
+    data = np.sqrt((j - m[0:-1]) * (j + m[0:-1] + 1) * (j - m[0:-1] - 1) * (
+                j + m[0:-1] + 2))
+    J_p2 = sparse.coo_matrix((data, (1 + idx[0:-1], idx[0:-1])),
+                             shape=(size, size))
     J_p2 = J_p2.tocsr()
     J_m2 = J_p2.transpose()
 

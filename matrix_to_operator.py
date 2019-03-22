@@ -140,21 +140,21 @@ def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
 def _test_complexity(mat2op, jmin=0.5, jmax=25):
     from lipkin_quasi_spin import hamiltonian
 
-    n = 1 + round(2*(jmax-jmin))
-    nbr_terms = np.empty(2*n)
-    max_nbr_ops = np.zeros(2*n)
-    matrix_size = np.empty(2*n)
+    n = 1 + round(2 * (jmax - jmin))
+    nbr_terms = np.empty(2 * n)
+    max_nbr_ops = np.zeros(2 * n)
+    matrix_size = np.empty(2 * n)
     for i in range(n):
-        j = jmin + 0.5*i
+        j = jmin + 0.5 * i
         print(j)
         H = hamiltonian(j, np.random.randn(1)[0])
         for k in range(len(H)):
-            matrix_size[2*i+1-k] = H[k].shape[0]
+            matrix_size[2 * i + 1 - k] = H[k].shape[0]
             terms = mat2op(H[k])
-            nbr_terms[2*i+1-k] = len(terms)
+            nbr_terms[2 * i + 1 - k] = len(terms)
             for term in terms:
-                if len(term) > max_nbr_ops[2*i+1-k]:
-                    max_nbr_ops[2*i+1-k] = len(term)
+                if len(term) > max_nbr_ops[2 * i + 1 - k]:
+                    max_nbr_ops[2 * i + 1 - k] = len(term)
 
     return matrix_size, nbr_terms, max_nbr_ops
 
@@ -164,7 +164,8 @@ def _test_complexity(mat2op, jmin=0.5, jmax=25):
 ###############################################################################
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    matrix_size_1, nbr_terms_1, max_nbr_ops_1 =\
+
+    matrix_size_1, nbr_terms_1, max_nbr_ops_1 = \
         _test_complexity(matrix_to_operator_1)
     matrix_size_2, nbr_terms_2, max_nbr_ops_2 = \
         _test_complexity(matrix_to_operator_2)

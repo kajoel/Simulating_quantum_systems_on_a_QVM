@@ -31,7 +31,7 @@ Realenergies = eigenvalues(j, V)
 TestHamiltonian = H[0].toarray()
 # energies = calculate_eigenvalues_vqe(TestHamiltonian, one_particle_ansatz)
 start = time.time()
-energies = smallest_eig_vqe(TestHamiltonian, one_particle_ansatz, qvm=qc, num_samples=1)[0]
+energies = smallest_eig_vqe(TestHamiltonian, qc, one_particle_ansatz, num_samples=1)[0]
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies[0].tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])
