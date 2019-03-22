@@ -12,21 +12,28 @@ import pprint
 import time
 import numpy as np
 import pyquil.api as api
+from pyquil import get_qc
 import time
 from ansatz import carls_initial
 
-qvm = api.QVMConnection()
+import grove
+import pyquil
+print(grove.__version__)
+print(pyquil.__version__)
 
-j = 4
+qvm = api.QVMConnection()
+qc = get_qc('6q-qvm')
+
+j = 2
 V = 1
 H = hamiltonian(j, V)
 Realenergies = eigenvalues(j, V)
-TestHamiltonian = H[1].toarray()
+TestHamiltonian = H[0].toarray()
 # energies = calculate_eigenvalues_vqe(TestHamiltonian, one_particle_ansatz)
 start = time.time()
-energies = smallest_eig_vqe(TestHamiltonian, one_particle_ansatz, qvm, num_samples=10)[0]
+energies = smallest_eig_vqe(TestHamiltonian, one_particle_ansatz, qvm=qc, num_samples=1)[0]
 end = time.time()
-pprint.pprint([round(x, 3) for x in Realenergies[1].tolist()])
+pprint.pprint([round(x, 3) for x in Realenergies[0].tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])
 pprint.pprint(energies)
 print('time: \n:', end - start)
