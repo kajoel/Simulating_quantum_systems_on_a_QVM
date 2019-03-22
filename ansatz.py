@@ -6,6 +6,9 @@ Created on Mon Mar  4 10:50:49 2019
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
+from pyquil.paulis import exponential_map
+from openfermion import QubitOperator
+from forestopenfermion import qubitop_to_pyquilpauli
 
 
 def one_particle(theta: np.ndarray) -> Program:
@@ -32,6 +35,84 @@ def multi_particle(theta: np.ndarray) -> Program:
     :return: PyQuil program setting up the state.
     """
     return create_arbitrary_state(theta)
+
+
+def one_particle_ucc(theta):
+    """
+
+    :param theta:
+    :return:
+    """
+
+
+
+def multi_particle_ucc(theta):
+    """
+    @author: Joel
+    UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
+    states). This is basically an implementation of create_arbitrary_state
+    (however, theta will not match the coefficients in the superposition)
+    built on pyquil.paulis.exponentiate_map.
+
+    One idea is to use lowering and raising operators and "check operators"
+    instead of Xs. This results in a more straight-forward mapping of theta
+    to the coefficients since no previously produced state will be mapped
+    to other states in a later stage. To clarify: with the current
+    implementation the state |1 1 0> will both be produced by exp(X2 X1)
+    operating on |0 0 0> and by exp(X2) operating on exp(X1)|0 0 0> (which
+    contains a |0 1 0> term). This could improve potential bad properties
+    with the current implementation.
+
+    If this function is called multiple times, particularly if theta has the
+    same length in all calls, caching exp_map might significantly increase
+    performance.
+
+    :param np.ndarray theta: -1j*theta[i] is the coefficient in front of the
+        term prod_{k} X_k^bit(i,k) where bit(i, k) is the k'th bit of i in
+        binary, in the exponent.
+    :return: PyQuil program setting up the state.
+    :rtype: pyquil.Program
+    """
+
+    # TODO: ucc_ansatz should take a parameter and return a Program. That's not
+    #       the case now. Use a decorator to setup and cache exp_map (possibly
+    #       expensive to create at every call) and return wrap(theta)
+
+    # Create exponential maps:
+    def state_term(state):
+        term = QubitOperator(())
+        for qubit in range(int.bit_length(state)):
+            if state & (1 << qubit):
+                term *= QubitOperator((qubit, 'X'))
+        return qubitop_to_pyquilpauli(term)
+
+    exp_map = []
+    for state in range(theta.shape[0]):
+        exp_map.append(exponential_map(state_term(state)))
+
+    # Concatenate exp_maps with specified coefficients
+    def wrap(theta):
+        prog = Program()
+        for state, coeff in enumerate(theta):
+            prog += exp_map[state](coeff)
+        return prog
+
+    return wrap
+
+
+def _ucc(state_fun):
+    exp_map = []
+    for state in range(theta.shape[0]):
+        exp_map.append(exponential_map(state_fun(state)))
+
+    # Concatenate exp_maps with specified coefficients
+    def wrap(theta):
+        prog = Program()
+        for state, coeff in enumerate(theta):
+            prog += exp_map[state](coeff)
+        return prog
+
+    return wrap
 
 
 ################################################################################
