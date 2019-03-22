@@ -25,8 +25,8 @@ datetime(year, month, day)
 
 # Imports from our projects
 from matrix_to_operator import matrix_to_operator_1
-from lipkin_quasi_spin import hamiltonian, eigenvalues
-from ansatz import one_particle_ansatz as ansatz
+from lipkin_quasi_spin import hamiltonian, eigs
+from ansatz import one_particle as ansatz
 from ansatz import one_particle_inital as initial
 
 
@@ -69,7 +69,7 @@ def count_opt_iterations(H, qvm, samples=None, disp_opt=False,
                              samples=samples,
                              qc=qvm, disp=print, return_all=True)
 
-        print('Real eigenvalues:')
+        print('Real eigs:')
         print(np.linalg.eigvals(H.toarray()))
         print('VQE Calculated eigenvalue:')
         print(result['fun'])

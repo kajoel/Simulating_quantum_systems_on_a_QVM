@@ -7,14 +7,12 @@ Created on Wed Mar  6 16:35:25 2019
 """
 
 import numpy as np
-import scipy.sparse as sparse
-
 # Imports for VQE
-import pyquil.api as api
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
-from ansatz import one_particle_ansatz, one_particle_inital
-from matrix_to_operator import matrix_to_operator_1
+import ansatz
+import init_params
+import matrix_to_op
 
 
 ###############################################################################
@@ -22,55 +20,18 @@ from matrix_to_operator import matrix_to_operator_1
 ###############################################################################
 
 
-def calculate_eigenvalues(H, ansatz, update):
-    """
-    Calculates all eigenvalues of H using smallest_eig and update (to update
-    Hamiltonian or ansatz to be able to find next eigenvalue).
-
-    @author: kajoel
-    """
-    eigvals = np.empty(H.shape[0])
-    for i in range(H.shape[0]):
-        eigvals[i], eigvect = smallest_eig(H, ansatz)
-        H, ansatz = update(H, ansatz, eigvals[i], eigvect)
-    return eigvals
-
-
-def smallest_eig(H, ansatz, num_samples=None, opt_algorithm='L-BFGS-B'):
-    """
-    Finds the smallest eigenvalue and corresponding -vector of H using VQE.
-
-    TODO
-
-    Currently:
-        assumes that H is a ndarray or sparse
-        not using VQE (obviously)
-
-    Should:
-        be able to handle H as ndarray, sparse or operator (openfermion or
-        pyquil) use VQE
-    """
-    if H.shape[0] > 1:
-        eigval, eigvect = sparse.linalg.eigsh(H, 1)
-        eigvect = eigvect.reshape((eigvect.shape[0],))
-        eigvect = eigvect / np.linalg.norm(eigvect)
-    else:
-        eigval = H[0, 0]
-        eigvect = np.array([1])
-    return eigval, eigvect
-
-
-def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
-                     opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
-                     disp_run_info=False, display_after_run=False,
-                     xatol=1e-2, fatol=1e-3, return_all_data=False):
+def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
+             opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
+             disp_run_info=False, display_after_run=False,
+             xatol=1e-2, fatol=1e-3, return_all_data=False):
     """
     TODO: Fix this documentation. Below is not up to date.
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
-    @author: Eric, Axel
-    :param H: np.array hamiltonian matrix
-    :param ansatz: ansatz function
+    @author: Eric, Axel, Carl
+    :param h: np.array hamiltonian matrix
+    :param qc: either qc or qvm object, depending on version
+    :param ansatz_: ansatz function
     :param num_samples: number of samples on the qvm
     :param opt_algorithm:
     :param initial_params: ansatz parameters
@@ -78,10 +39,10 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
     """
 
     if initial is None:
-        initial = one_particle_inital(H.shape[0])
+        initial = init_params.one_particle_ones(h.shape[0])
 
-    if ansatz is None:
-        ansatz = one_particle_ansatz
+    if ansatz_ is None:
+        ansatz_ = ansatz.one_particle
 
     # All options to Nelder-Mead
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
@@ -89,7 +50,7 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
 
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm,
                                                     'options': disp_options})
-    H = matrix_to_operator_1(H)
+    H = matrix_to_op.one_particle(h)
 
     # If disp_run_info is True we will print every step of the Nelder-Mead
     if disp_run_info:
@@ -99,10 +60,10 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
 
     if new_version:
         print(initial)
-        eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qc=qc_qvm,
+        eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qc=qc,
                           disp=print_option, return_all=True)
     else:
-        eig = vqe.vqe_run(ansatz, H, initial, samples=num_samples, qvm=qc_qvm,
+        eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qvm=qc,
                           disp=print_option, return_all=True)
 
     # If option return_all_data is True we return a dict with data from all runs
@@ -114,77 +75,79 @@ def smallest_eig_vqe(H, qc_qvm, ansatz=None, num_samples=None, new_version=True,
         return eigval, eigvect
 
 
-def calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None,
-                                       num_samples=None,
-                                       opt_algorithm='L-BFGS-B',
-                                       initial_params=None):
+def negative(h, ansatz, qvm, num_eigvals=None,
+             num_samples=None,
+             opt_algorithm='L-BFGS-B',
+             initial_params=None):
     """
-    Calculates all negative or specified amount of eigenvalues for a
+    Calculates all negative or specified amount of eigs for a
     given hamiltonian matrix.
-    :param H: np.array hamiltonian matrix
+    :param h: np.array hamiltonian matrix
     :param ansatz: ansatz function
-    :param num_eigvals: number of desired eigenvalues to be calculated
+    :param num_eigvals: number of desired eigs to be calculated
     :param num_samples: number of samples on the qvm
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
     @author: Eric Nilsson
     """
+    # TODO: Needs to be updated to fit new smallest
     if num_eigvals is None:
-        num_eigvals = H.shape[0]
+        num_eigvals = h.shape[0]
     energy = []
     for i in range(num_eigvals):
-        eigval, eigvect = smallest_eig_vqe(H, ansatz, qvm, num_samples,
-                                           opt_algorithm, initial_params)
+        eigval, eigvect = smallest(h, ansatz, qvm, num_samples,
+                                   opt_algorithm, initial_params)
         if eigval >= 0:
-            if num_eigvals != H.shape[0]:
+            if num_eigvals != h.shape[0]:
                 print('Warning: Unable to find '
-                      'the specified amount of eigenvalues')
+                      'the specified amount of eigs')
             return energy
         else:
             energy.append(eigval)
             # Maybe eigvect should be normalized??
-            H = H + 1.1 * np.abs(energy[i]) * np.outer(eigvect, eigvect)
+            h = h + 1.1 * np.abs(energy[i]) * np.outer(eigvect, eigvect)
             # move found eigenvalue to > 0.
     return energy
 
 
-def calculate_eigenvalues_vqe(H, ansatz, qvm, num_eigvals=None,
-                              num_samples=None, opt_algorithm='L-BFGS-B',
-                              initial_params=None):
+def all(H, ansatz, qvm, num_eigvals=None,
+        num_samples=None, opt_algorithm='L-BFGS-B',
+        initial_params=None):
     """
-    Calculates all or specified amount of eigenvalues for an Hamiltonian matrix
+    Calculates all or specified amount of eigs for an Hamiltonian matrix
     TODO: Make so it handles sparse matrices? Currently finds
-     double zero eigenvalues
+     double zero eigs
+    TODO: Needs to be updated to fit new smallest
     :param H: np.array hamiltonian matrix
     :param ansatz: ansatz function
-    :param num_eigvals: number of desired eigenvalues to be calculated
+    :param num_eigvals: number of desired eigs to be calculated
     :param num_samples: number of samples on the qvm
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
     @author: Eric
     """
-    energy = calculate_negative_eigenvalues_vqe(H, ansatz, qvm, num_eigvals,
-                                                num_samples, opt_algorithm,
-                                                initial_params)
+    energy = negative(H, ansatz, qvm, num_eigvals,
+                      num_samples, opt_algorithm,
+                      initial_params)
 
     if num_eigvals is not None and len(energy) < num_eigvals:
         energy = energy + [-x for x in
-                           calculate_negative_eigenvalues_vqe(-1 * H, ansatz,
-                                                              qvm,
-                                                              num_eigvals - len(
-                                                                  energy),
-                                                              num_samples,
-                                                              opt_algorithm,
-                                                              initial_params)]
+                           negative(-1 * H, ansatz,
+                                    qvm,
+                                    num_eigvals - len(
+                                        energy),
+                                    num_samples,
+                                    opt_algorithm,
+                                    initial_params)]
     if len(energy) < H.shape[0]:
         energy = energy + [-x for x in
-                           calculate_negative_eigenvalues_vqe(-1 * H, ansatz,
-                                                              qvm, num_eigvals,
-                                                              num_samples,
-                                                              opt_algorithm,
-                                                              initial_params)]
+                           negative(-1 * H, ansatz,
+                                    qvm, num_eigvals,
+                                    num_samples,
+                                    opt_algorithm,
+                                    initial_params)]
         for i in range(len(energy), H.shape[0]): energy.append(0)
 
     return energy
@@ -198,7 +161,7 @@ def update_householder(H, ansatz, _, x):
     Updates the Hamiltonian by block diagonalization using a Householder
     transform to reduce the dimensionality by one in each step. This function
     were made for numpy-arrays (ndarrays) rather than sparse (which is preferred
-    in matrix_to_operator_2). Npte: x should be normalized
+    in multi_particle). Npte: x should be normalized
 
     If we are going to use Householder transformations to reduce dimensionality
     I believe that ndarrays is the way to go, since householder-matrices are
@@ -241,14 +204,14 @@ NOTE: This test assumes an old and incomplete version of smallest_eig.
 def _test_1():
     import sys
     sys.path.insert(0, './')
-    from lipkin_quasi_spin import hamiltonian, eigenvalues
+    from lipkin_quasi_spin import hamiltonian, eigs
 
     j = 4.5
     V = 1
     tol = 1e-8
     no_error = True
     H = hamiltonian(j, V)
-    E = eigenvalues(j, V)
+    E = eigs(j, V)
     for i in range(len(H)):
         eigs = calculate_eigenvalues(H[i].toarray(), None, update_householder)
         for E_ in E[i]:

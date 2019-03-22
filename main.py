@@ -5,33 +5,39 @@ Created on Fri Mar  8 16:12:38 2019
 
 @author: kajoel
 """
-from vqe_eig import calculate_eigenvalues_vqe, smallest_eig_vqe
-from lipkin_quasi_spin import hamiltonian, eigenvalues
-from ansatz import one_particle_ansatz
+from vqe_eig import all, smallest
+from lipkin_quasi_spin import hamiltonian, eigs
 import pprint
 import time
 import numpy as np
 import pyquil.api as api
 from pyquil import get_qc
 import time
-from ansatz import carls_initial
+import ansatz
+import init_params
 
 import grove
 import pyquil
+
 print(grove.__version__)
 print(pyquil.__version__)
 
-qvm = api.QVMConnection()
+# qvm = api.QVMConnection()
 qc = get_qc('6q-qvm')
 
-j = 2
+j = 1
 V = 1
-H = hamiltonian(j, V)
-Realenergies = eigenvalues(j, V)
-TestHamiltonian = H[0].toarray()
-# energies = calculate_eigenvalues_vqe(TestHamiltonian, one_particle_ansatz)
+h = hamiltonian(j, V)[0]
+print('Hamiltonian: \n:', h)
+Realenergies = eigs(j, V)[0]
+print('True Eigs: \n', Realenergies)
+# TestHamiltonian = H[0].toarray()
+# energies = all(TestHamiltonian, one_particle)
 start = time.time()
-energies = smallest_eig_vqe(TestHamiltonian, qc, one_particle_ansatz, num_samples=1)[0]
+energies = smallest(h, qc, ansatz.one_particle,
+                    initial=init_params.one_particle_ones(h.shape[0]),
+                    num_samples=1000, disp_run_info=
+                    True)[0]
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies[0].tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])
@@ -44,7 +50,7 @@ for j in range(1, 3):
     t1 = time.time()
     H = hamiltonian(j, V)
     TestHamiltonian = H[1]
-    val = smallest_eig_vqe(TestHamiltonian, one_particle_ansatz, qvm, num_samples=10)[0]
+    val = smallest(TestHamiltonian, one_particle, qvm, num_samples=10)[0]
     print(val)
     t2 = time.time()
     timer.append(t2-t1)

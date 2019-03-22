@@ -17,7 +17,7 @@ import numpy as np
 from grove.pyvqe.vqe import VQE
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 # Other:
-from lipkin_quasi_spin import hamiltonian, eigenvalues
+from lipkin_quasi_spin import hamiltonian, eigs
 
 
 # OriginalHamiltonian = np.array([[-5 / 2, np.sqrt(10), 0], [np.sqrt(10), -1 / 2, np.sqrt(18)], [0, np.sqrt(18), 3 / 2]])
@@ -79,11 +79,11 @@ def matrix_to_hamiltonian(H, transform='none'):
 
 def negative_energy_calculator(hamiltonian, initial_params, iterations=None):
     '''
-    Calculates all negative eigenvalues of an hamiltonian matrix using vqe
+    Calculates all negative eigs of an hamiltonian matrix using vqe
     :param hamiltonian: np.array hamiltonian matrix
     :param initial_params: inital parameters for the ansatz
-    :param iterations: desired amout of eigenvalues to find
-    :return: a list of found energy eigenvalues
+    :param iterations: desired amout of eigs to find
+    :return: a list of found energy eigs
     '''
     if iterations is None:
         iterations = hamiltonian.shape[0]
@@ -94,7 +94,7 @@ def negative_energy_calculator(hamiltonian, initial_params, iterations=None):
         Energy.append(result['fun'])
         if Energy[i] > 0:
             if iterations != hamiltonian.shape[0]:
-                print('Warning: Unable to find the specified amount of eigenvalues')
+                print('Warning: Unable to find the specified amount of eigs')
             return Energy[:i]
         else:
             v = result['x'] # eigenvector
@@ -104,10 +104,10 @@ def negative_energy_calculator(hamiltonian, initial_params, iterations=None):
 
 def total_energy_calculator(hamiltonian, initial_params):
     '''
-    Calculates all eigenvalues of an hamiltonian matrix using vqe
+    Calculates all eigs of an hamiltonian matrix using vqe
     :param hamiltonian: np.array hamiltonian matrix
     :param initial_params: inital parameters for the ansatz
-    :return: a list of found energy eigenvalues
+    :return: a list of found energy eigs
     '''
     Energy = negative_energy_calculator(hamiltonian, initial_params)
     if len(Energy) < hamiltonian.shape[0]:
@@ -126,12 +126,12 @@ qvm = QVMConnection()
 j = 4
 V = 1
 OriginalHamiltonian = hamiltonian(j, V)[1].toarray()
-TrueEigenvalues = eigenvalues(j, V)[1]
+TrueEigenvalues = eigs(j, V)[1]
 h = OriginalHamiltonian
 
 print()
 Energy = total_energy_calculator(h, [1, 0, 0, 0])
-print('True eigenvalues: \n', TrueEigenvalues, '\n')
+print('True eigs: \n', TrueEigenvalues, '\n')
 print('Calculated Energy: \n', Energy)
 
 

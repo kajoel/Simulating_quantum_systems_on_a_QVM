@@ -1,10 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Mon Mar  4 10:50:49 2019
-
-
-@author: axelnathanson
 """
 
 # Imports
@@ -13,52 +8,31 @@ from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 
 
-def one_particle_ansatz(theta: np.ndarray) -> Program:
+def one_particle(theta: np.ndarray) -> Program:
     """
+    @author: Joel, Carl
     Creates a program to set up an arbitrary one-particle-state.
-
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
     # TODO: doc behaves weird, theta: Union[ndarray, ndarray]
 
-    vector = np.zeros(2 ** (theta.shape[0]+1))
+    vector = np.zeros(2 ** (theta.shape[0] + 1))
     vector[1] = 1
-    vector[[2 ** (i+1) for i in range(theta.shape[0])]] = theta
-    vector *= 1/np.linalg.norm(vector)
+    vector[[2 ** (i + 1) for i in range(theta.shape[0])]] = theta
+    vector *= 1 / np.linalg.norm(vector)
     return create_arbitrary_state(vector)
 
 
-def one_particle_inital(size):
+def multi_particle(theta: np.ndarray) -> Program:
     """
-    Creates the intial state for the one_partical_ansatz
-
-    :param H: int representing size of Hamiltonian matrix
-    :return: np.array representing the intial parameter for optimization
-    """
-    return 1/np.sqrt(size)*np.array([1 for i in range(size-1)])
-
-
-def carls_initial(size):
-    """
-    Creates the best initial state for the one_particle_ansatz
-    :param H: int representing size of Hamiltonian matrix
-    :return: np.array representing the initial parameter for optimization
-    """
-    return 1 / np.sqrt(size) * np.array([(-1)**(i+1) for i in range(size-1)])
-
-
-def multi_particle_ansatz(theta: np.ndarray) -> Program:
-    
-    """
+    @author: Joel
     Creates a program to set up an arbitrary state.
-
-
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
-    # TODO: doc behaves weird, theta: Union[ndarray, ndarray]
     return create_arbitrary_state(theta)
+
 
 ################################################################################
 # TESTS
@@ -82,8 +56,8 @@ def _test_depth(ansatz, n_min=1, n_max=12, m=5):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    nbr_ops_s = _test_depth(one_particle_ansatz)
-    nbr_ops_m = _test_depth(multi_particle_ansatz, n_max=2 ** 5)
+    nbr_ops_s = _test_depth(one_particle)
+    nbr_ops_m = _test_depth(multi_particle, n_max=2 ** 5)
 
     plt.figure(0)
     plt.plot(nbr_ops_s)

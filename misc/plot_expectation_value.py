@@ -12,10 +12,10 @@ from matplotlib import cm
 
 # Imports from our projects
 from matrix_to_operator import matrix_to_operator_1
-from lipkin_quasi_spin import hamiltonian,eigenvalues
-from ansatz import one_particle_ansatz as ansatz
+from lipkin_quasi_spin import hamiltonian,eigs
+from ansatz import one_particle as ansatz
 from ansatz import one_particle_inital, carls_initial
-from vqe_eig import smallest_eig_vqe as vqe_eig
+from vqe_eig import smallest as vqe_eig
 
 ###############################################################################
 def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
@@ -89,7 +89,7 @@ h = hamiltonian(j, V)
 h = h[0]
 qc = get_qc(str(h.shape[0]) + 'q-qvm')
 ###############################################################################
-eig_CPU = eigenvalues(j,V)
+eig_CPU = eigs(j, V)
 print(eig_CPU[0])
 #eig_CPU = eig_CPU[1]
 #start = time.time()

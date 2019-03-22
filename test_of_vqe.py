@@ -23,13 +23,13 @@ datetime(year, month, day)
 
 # Imports from our projects
 from matrix_to_operator import matrix_to_operator_1
-from lipkin_quasi_spin import hamiltonian, eigenvalues
-from ansatz import one_particle_ansatz as ansatz
+from lipkin_quasi_spin import hamiltonian, eigs
+from ansatz import one_particle as ansatz
 from ansatz import one_particle_inital as initial
-from vqe_eig import smallest_eig_vqe as vqe_eig
+from vqe_eig import smallest as vqe_eig
 
 
-# Egentligen helt onödig nu efter jag skrivit om smallest_eig_vqe, är i princip
+# Egentligen helt onödig nu efter jag skrivit om smallest, är i princip
 # bara den funktionen med en print
 def count_opt_iterations(H, qc_qvm, new_version=False, samples=None,
                          disp_run_info=False, return_dict=False, xatol=1e-2,
@@ -57,7 +57,7 @@ def count_opt_iterations(H, qc_qvm, new_version=False, samples=None,
                      disp_run_info=disp_run_info, xatol=xatol, fatol=fatol,
                      maxiter=maxiter, return_all_data=True)
 
-    print('Real eigenvalues:')
+    print('Real eigs:')
     print(np.linalg.eigvals(H.toarray()))
     print('VQE Calculated eigenvalue:')
     print(result['fun'])
