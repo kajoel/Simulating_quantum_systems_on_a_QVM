@@ -21,12 +21,12 @@ USER_PATH = join(dirname(__file__), 'Data/users.pkl')
 def save(file=None, data=None, metadata=None):
     """
     @author = Joel
-    Save data and metadata to a file. Always use
-    metadata={'description': info} (and possibly more fields such as samples,
-    runtime, etc.). Datetime of creation and user will be added to metadata
-    automatically.
+    Save data and metadata to a file. Always set the first field of metadata
+    as metadata={'description': info} (followed by other fields). Datetime of
+    creation, the module that called save and the name of the user will be
+    added to metadata automatically.
 
-    Make sure to include which Hamiltonian, minimizer,
+    Make sure to include samples, runtime, which Hamiltonian, minimizer,
     mattrix_to_op, ansatz, etc. was used when producing results. This should
     be done programmatically! E.g metadata = {'ansatz': ansatz_.__name__, ...}
     where ansatz_ is the ansatz being used.
