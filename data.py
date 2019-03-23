@@ -53,6 +53,8 @@ def save(file=None, data=None, metadata=None):
                      metadata})
 
     # Make sure that data is dictionary
+    if data is None:
+        data = {}
     if not isinstance(data, dict):
         data = {'data': data}
 
