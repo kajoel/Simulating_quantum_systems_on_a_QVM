@@ -7,7 +7,8 @@ import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from pyquil.paulis import exponential_map, PauliSum
-from openfermion import QubitOperator
+from openfermion import QubitOperator, FermionOperator
+from openfermion.transforms import jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
 
 
@@ -15,6 +16,7 @@ def one_particle(theta: np.ndarray) -> Program:
     """
     @author: Joel, Carl
     Creates a program to set up an arbitrary one-particle-state.
+
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
@@ -31,10 +33,49 @@ def multi_particle(theta: np.ndarray) -> Program:
     """
     @author: Joel
     Creates a program to set up an arbitrary state.
+
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
     return create_arbitrary_state(theta)
+
+
+def one_particle_ucc(dim, reference):
+    """
+    @author: Joel
+    UCC-style ansatz preserving particle number.
+
+    :param int dim: dimension of the space = num_qubits
+    :param int reference: the binary number corresponding to the reference
+        state (which must be a Fock-state).
+    :return: function(theta) which returns the ansatz Program
+    """
+    # TODO: should this function also return the expected length of theta?
+    terms = [[], []]
+    for occupied in range(dim):
+        if reference & (1 << occupied):
+            for unoccupied in range(dim):
+                if not reference & (1 << unoccupied):
+                    term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
+                           - FermionOperator(((occupied, 1), (unoccupied, 0)))
+                    term = qubitop_to_pyquilpauli(jordan_wigner(term))
+                    assert len(term) == 2, "Term has not length two!"
+                    terms[0].append(term[0])
+                    terms[1].append(term[1])
+    map_0 = exponential_map_commuting_pauli_terms(terms[0])
+    map_1 = exponential_map_commuting_pauli_terms(terms[1])
+
+    def wrap(theta):
+        """
+        Returns the ansatz Program.
+
+        :param np.ndarray theta: parameters
+        :return: the Program
+        :rtype: pyquil.Program
+        """
+        return map_0(theta) + map_1(theta)
+
+    return wrap
 
 
 def multi_particle_ucc(dim):
@@ -65,13 +106,16 @@ def multi_particle_ucc(dim):
         the coefficient in front of the term prod_k X_k^bit(i,k) where
         bit(i, k) is the k'th bit of i in binary, in the exponent.
     """
+    # TODO: should this function also return the expected length of theta?
     terms = []
     for state in range(dim):
         term = QubitOperator(())
         for qubit in range(int.bit_length(state)):
             if state & (1 << qubit):
                 term *= QubitOperator((qubit, 'X'))
-        terms.append(qubitop_to_pyquilpauli(term)[0])
+        term = qubitop_to_pyquilpauli(term)
+        assert len(term) == 1, "Term has not length one!"
+        terms.append(term[0])
     return exponential_map_commuting_pauli_terms(terms)
 
 
