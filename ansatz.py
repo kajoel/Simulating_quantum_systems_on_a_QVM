@@ -6,7 +6,7 @@ Created on Mon Mar  4 10:50:49 2019
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
-from pyquil.paulis import exponential_map
+from pyquil.paulis import exponential_map, PauliSum
 from openfermion import QubitOperator
 from forestopenfermion import qubitop_to_pyquilpauli
 
@@ -37,16 +37,7 @@ def multi_particle(theta: np.ndarray) -> Program:
     return create_arbitrary_state(theta)
 
 
-def one_particle_ucc(theta):
-    """
-
-    :param theta:
-    :return:
-    """
-
-
-
-def multi_particle_ucc(theta):
+def multi_particle_ucc(dim):
     """
     @author: Joel
     UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
@@ -61,55 +52,58 @@ def multi_particle_ucc(theta):
     implementation the state |1 1 0> will both be produced by exp(X2 X1)
     operating on |0 0 0> and by exp(X2) operating on exp(X1)|0 0 0> (which
     contains a |0 1 0> term). This could improve potential bad properties
-    with the current implementation.
+    with the current implementation. However, it might be difficult to
+    create commuting hermitian terms, which is required in
+    exponential_map_commuting_pauli_terms.
 
     If this function is called multiple times, particularly if theta has the
-    same length in all calls, caching exp_map might significantly increase
+    same length in all calls, caching terms might significantly increase
     performance.
 
-    :param np.ndarray theta: -1j*theta[i] is the coefficient in front of the
-        term prod_{k} X_k^bit(i,k) where bit(i, k) is the k'th bit of i in
-        binary, in the exponent.
-    :return: PyQuil program setting up the state.
-    :rtype: pyquil.Program
+    :param int dim: dimension of the space = num_qubits**2
+    :return: function(theta) which returns the ansatz Program. -1j*theta[i] is
+        the coefficient in front of the term prod_k X_k^bit(i,k) where
+        bit(i, k) is the k'th bit of i in binary, in the exponent.
     """
-
-    # TODO: ucc_ansatz should take a parameter and return a Program. That's not
-    #       the case now. Use a decorator to setup and cache exp_map (possibly
-    #       expensive to create at every call) and return wrap(theta)
-
-    # Create exponential maps:
-    def state_term(state):
+    terms = []
+    for state in range(dim):
         term = QubitOperator(())
         for qubit in range(int.bit_length(state)):
             if state & (1 << qubit):
                 term *= QubitOperator((qubit, 'X'))
-        return qubitop_to_pyquilpauli(term)
+        terms.append(qubitop_to_pyquilpauli(term)[0])
+    return exponential_map_commuting_pauli_terms(terms)
 
+
+def exponential_map_commuting_pauli_terms(terms):
+    """
+    @author = Joel
+    Returns a function f(theta) which, given theta, returns the Program
+    corresponding to exp(-1j sum_i theta[i]*term[i]) =
+    prod_i exp(-1j*theta[i]*term[i]). Note that the equality only holds if
+    the terms are commuting. This was inspired by pyquil.exponential_map
+    and pyquil.exponentiate_commuting_pauli_sum.
+
+    :param list of pyquil.paulis.PauliTerm terms: a list of pauli terms
+    :return: a function that takes a vector parameter and returns a Program.
+    """
+    if isinstance(terms, PauliSum):
+        terms = terms.terms
     exp_map = []
-    for state in range(theta.shape[0]):
-        exp_map.append(exponential_map(state_term(state)))
+    for term in terms:
+        exp_map.append(exponential_map(term))
 
-    # Concatenate exp_maps with specified coefficients
     def wrap(theta):
+        """
+        Returns the ansatz Program.
+
+        :param np.ndarray theta: parameters
+        :return: the Program
+        :rtype: pyquil.Program
+        """
         prog = Program()
-        for state, coeff in enumerate(theta):
-            prog += exp_map[state](coeff)
-        return prog
-
-    return wrap
-
-
-def _ucc(state_fun):
-    exp_map = []
-    for state in range(theta.shape[0]):
-        exp_map.append(exponential_map(state_fun(state)))
-
-    # Concatenate exp_maps with specified coefficients
-    def wrap(theta):
-        prog = Program()
-        for state, coeff in enumerate(theta):
-            prog += exp_map[state](coeff)
+        for idx, angle in enumerate(theta):
+            prog += exp_map[idx](angle)
         return prog
 
     return wrap
