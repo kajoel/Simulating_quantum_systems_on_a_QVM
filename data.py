@@ -26,6 +26,11 @@ def save(file=None, data=None, metadata=None):
     runtime, etc.). Datetime of creation and user will be added to metadata
     automatically.
 
+    Make sure to include which Hamiltonian, minimizer,
+    mattrix_to_op, ansatz, etc. was used when producing results. This should
+    be done programmatically! E.g metadata = {'ansatz': ansatz_.__name__, ...}
+    where ansatz_ is the ansatz being used.
+
     :param string file: file to save to
     :param data: data to save
     :param dictionary  metadata: metadata describing the data
@@ -46,6 +51,10 @@ def save(file=None, data=None, metadata=None):
     metadata.update({key: default() for key, default in
                      _metadata_defaults().items() if key not in
                      metadata})
+
+    # Make sure that data is dictionary
+    if not isinstance(data, dict):
+        data = {'data': data}
 
     # Save
     with open(file, 'wb') as file_:
@@ -177,3 +186,6 @@ if __name__ == '__main__':
         for key, value in metadata.items():
             print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
             print(value + '\n')
+        print('\033[4m' + 'Variables in data' + ':\033[0m')
+        for key in data:
+            print(key + '\n')
