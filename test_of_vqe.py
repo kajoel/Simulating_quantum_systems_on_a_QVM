@@ -22,16 +22,16 @@ day = 13
 datetime(year, month, day)
 
 # Imports from our projects
-from matrix_to_operator import matrix_to_operator_1
+from matrix_to_op import one_particle
 from lipkin_quasi_spin import hamiltonian, eigs
 from ansatz import one_particle as ansatz
-from ansatz import one_particle_inital as initial
+from init_params import one_particle_ones as initial
 from vqe_eig import smallest as vqe_eig
 
 
 # Egentligen helt onödig nu efter jag skrivit om smallest, är i princip
 # bara den funktionen med en print
-def count_opt_iterations(H, qc_qvm, new_version=False, samples=None,
+def count_opt_iterations(H, qc_qvm, new_version=True, samples=None,
                          disp_run_info=False, return_dict=False, xatol=1e-2,
                          fatol=1e-3, maxiter=10000):
     """Count the number of iterations the Nelder-Mead takes to converge
@@ -68,7 +68,7 @@ def count_opt_iterations(H, qc_qvm, new_version=False, samples=None,
         return len(result['iteration_params'])
 
 
-def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
+def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
                      stop=10, samples=None, fig_nr=0, save=False):
     '''
     TODO: Add a statement that saves the data from the run and comments.
@@ -81,7 +81,7 @@ def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
         print('Nothing to sweep over')
         return
     elif H.shape[0] is 2:
-        H = matrix_to_operator_1(H)
+        H = one_particle(H)
         parameters = np.linspace(start, stop, num_para)
 
         if new_version:
@@ -95,11 +95,11 @@ def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
 
         plt.figure(fig_nr)
         plt.plot(parameters, exp_val, label='Samples: {}'.format(samples))
-        plt.xlabel('Paramter value')
+        plt.xlabel('Parameter value')
         plt.ylabel('Expected value of Hamiltonian')
         return
     else:
-        H = matrix_to_operator_1(H)
+        H = one_particle(H)
         exp_val = np.zeros((num_para, num_para))
         mesh_1 = np.zeros((num_para, num_para))
         mesh_2 = np.zeros((num_para, num_para))
@@ -155,7 +155,7 @@ def main2(samples=1000, sweep_params=100):
     qvm = api.QVMConnection()
     j, V = 2, 1
     H, _ = hamiltonian(j, V)
-    sweep_parameters(H, qvm, new_version=False, samples=samples,
+    sweep_parameters(H, qc, new_version=True, samples=samples,
                      num_para=sweep_params, start=-3, stop=3)
 
 
