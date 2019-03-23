@@ -23,7 +23,8 @@ def save(file=None, data=None, metadata=None):
     @author = Joel
     Save data and metadata to a file. Always use
     metadata={'description': info} (and possibly more fields such as samples,
-    runtime, etc.)
+    runtime, etc.). Datetime of creation and user will be added to metadata
+    automatically.
 
     :param string file: file to save to
     :param data: data to save
@@ -51,13 +52,12 @@ def save(file=None, data=None, metadata=None):
         pickle.dump({'data': data, 'metadata': metadata}, file_)
 
 
-def load(file=None, loadkwargs=None):
+def load(file=None):
     """
     @author = Joel
     Load data and metadata from a file.
 
     :param string file: file to load from
-    :param dictionary loadkwargs: extra kwargs to askopenfilename
     :return: (data, metadata)
     :rtype: (Any, dictionary )
     """
@@ -65,10 +65,8 @@ def load(file=None, loadkwargs=None):
     if file is None:
         tk = Tk()
         tk.withdraw()
-        if loadkwargs is None:
-            loadkwargs = {}
         file = askopenfilename(parent=tk, filetypes=[('Pickled', '.pkl')],
-                               initialdir='./Data', **loadkwargs)
+                               initialdir='./Data')
     if file is None:
         raise FileNotFoundError("Can't load without a file.")
 
@@ -78,25 +76,51 @@ def load(file=None, loadkwargs=None):
     return raw['data'], raw['metadata']
 
 
-def _metadata_defaults():
+def init_users(name):
     """
     @author = Joel
-    Lazy initialization of metadata dictionary with default fields. Note the
-    lambdas.
+    Creates the user file.
 
-    :return: metadata
-    :rtype: dictionary
+    :param string name: your name
+    :return:
     """
+    users = {getpwuid(getuid())[0]: name}
+    metadata = {'description': 'File containing known users as {username: '
+                               'name}.',
+                'created_by': name,
+                }
+    save(USER_PATH, users, metadata)
 
-    # TODO:
-    # 'created_from': lambda: basename(getmodule(stack()[1][0]).__file__),
-    return {'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
-                                                                "%H:%M:%S"),
-            'created_by': lambda: _get_user(),
-            }
+
+def add_user(name):
+    """
+    @author = Joel
+    Adds a user to the user file (or changes the name if already existing).
+
+    :param name: your name
+    :return:
+    """
+    users = load(USER_PATH)
+    _add_user(name, getpwuid(getuid())[0], users)
 
 
-def _get_user():
+def _add_user(name, user, users):
+    """
+    @author = Joel
+    Internal function (to keep DRY) for adding user/changing name in users.
+
+    :param name: name of the added user
+    :param user: user to be added
+    :param users: current users as returned by load(USER_PATH)
+    :return:
+    """
+    if user in users[0] and name != users[0][user]:
+        print('\033[93mWarning: changing the name of existing user.\033[0m')
+    users[0][user] = name
+    save(USER_PATH, data=users[0], metadata=users[1])
+
+
+def _get_name():
     """
     @author = Joel
     Finds who is trying to use save (for metadata purposes)
@@ -117,25 +141,24 @@ def _get_user():
         tk.withdraw()
         name = simpledialog.askstring("I don't recognize you.",
                                       "What is your name?", parent=tk)
-        users[0][user] = name
-        save(USER_PATH, data=users[0], metadata=users[1])
+        _add_user(name, user, users)
     return name
 
 
-def init_users(username):
+def _metadata_defaults():
     """
     @author = Joel
-    Creates the user file.
+    Lazy initialization of metadata dictionary with default fields. Note the
+    lambdas.
 
-    :param string username: your username
-    :return:
+    :return: metadata
+    :rtype: dictionary
     """
-    users = {getpwuid(getuid())[0]: username}
-    metadata = {'description': 'File containing known users as {username: '
-                               'alias}.',
-                'created_by': username,
-                }
-    save(USER_PATH, users, metadata)
+    return {'created_by': lambda: _get_name(),
+            'created_from': lambda: basename(getmodule(stack()[3][0]).__file__),
+            'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
+                                                                "%H:%M:%S"),
+            }
 
 
 '''
