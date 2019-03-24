@@ -9,6 +9,7 @@ Created on Wed Mar  6 16:35:25 2019
 import numpy as np
 # Imports for VQE
 from grove.pyvqe.vqe import VQE
+from vqeOverride import VQE_override
 from scipy.optimize import minimize
 import ansatz
 import init_params
@@ -48,23 +49,19 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
                     'maxiter': maxiter}
 
-    vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm,
+    vqe = VQE_override(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm,
                                                     'options': disp_options})
     H = matrix_to_op.one_particle(h)
 
     # If disp_run_info is True we will print every step of the Nelder-Mead
-    if disp_run_info:
-        print_option = print
-    else:
-        print_option = lambda x: None
 
     if new_version:
         print(initial)
         eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qc=qc,
-                          disp=print_option, return_all=True)
+                          disp=disp_run_info, return_all=True)
     else:
         eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qvm=qc,
-                          disp=print_option, return_all=True)
+                          disp=disp_run_info, return_all=True)
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
