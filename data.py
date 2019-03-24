@@ -176,9 +176,9 @@ def _metadata_defaults():
 @author = Joel
 '''
 if __name__ == '__main__':
-    root = Tk()
-    root.withdraw()
-    files = askopenfilenames(parent=root, filetypes=[('Pickled', '.pkl')],
+    tk = Tk()
+    tk.withdraw()
+    files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
                              initialdir='./Data')
     for file in files:
         data, metadata = load(file)
