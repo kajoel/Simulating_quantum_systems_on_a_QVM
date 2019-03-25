@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-import lib_joel as lib
+import misc.compare.lib_joel as lib
 
 # NOTE: The dataplotter tries to interpret the values. This can lead to weird behaviour in
 #          edge-cases. If uncertain:
