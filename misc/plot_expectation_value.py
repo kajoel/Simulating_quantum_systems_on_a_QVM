@@ -108,7 +108,7 @@ eig = 0
 #plt.show()
 ###############################################################################
 result = vqe_eig(h, qc_qvm=qc, initial=carls_initial(h.shape[0]),
-                 num_samples=500, disp_run_info=True, display_after_run=True,
+                 num_samples=None, disp_run_info=True, display_after_run=True,
                  xatol=1e-3, fatol=5e-1, return_all_data=True)
 for i in range(20):
     eig += vqe.expectation(ansatz(result['x']), H, samples=500, qc=qc)
