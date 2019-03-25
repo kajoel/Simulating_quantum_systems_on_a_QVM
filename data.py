@@ -87,6 +87,34 @@ def load(file=None):
     return raw['data'], raw['metadata']
 
 
+def display(files=None):
+    """
+    @author = Joel
+    Used to display file(s).
+
+    :param files: files to display
+    :return:
+    """
+    if files is None:
+        tk = Tk()
+        tk.withdraw()
+        files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
+                                 initialdir='./Data')
+    elif isinstance(files, str):
+        files = [files]
+    for file in files:
+        data, metadata = load(file)
+        print(
+            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
+            + '\033[0m\n')
+        for key, value in metadata.items():
+            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
+            print(value + '\n')
+        print('\033[4m' + 'Variables in data' + ':\033[0m')
+        for key in data:
+            print(key + '\n')
+
+
 def init_users(name):
     """
     @author = Joel
@@ -176,18 +204,4 @@ def _metadata_defaults():
 @author = Joel
 '''
 if __name__ == '__main__':
-    tk = Tk()
-    tk.withdraw()
-    files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
-                             initialdir='./Data')
-    for file in files:
-        data, metadata = load(file)
-        print(
-            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
-            + '\033[0m\n')
-        for key, value in metadata.items():
-            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-            print(value + '\n')
-        print('\033[4m' + 'Variables in data' + ':\033[0m')
-        for key in data:
-            print(key + '\n')
+    display()
