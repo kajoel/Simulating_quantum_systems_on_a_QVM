@@ -41,8 +41,8 @@ plotter = dplot.dataplotter(nbrlinesperplot=1,nbrfigures=1)
 
 def testprint(x, y):
     plotter.addValues(x[0], y)
-    print(x[0])
-    print(y)
+    print("Parameter: {}".format(x[0]))
+    print("Expectation: {}".format(y))
 
 
 energies = smallest(h, qc, ansatz.one_particle,
