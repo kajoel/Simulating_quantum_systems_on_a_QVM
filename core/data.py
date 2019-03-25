@@ -10,12 +10,13 @@ from tkinter import Tk, simpledialog
 from tkinter.filedialog import askopenfilename, askopenfilenames, \
     asksaveasfilename
 from datetime import datetime
-from os.path import basename, join, dirname
+from os.path import basename, join
 from inspect import stack, getmodule
 from os import getuid
 from pwd import getpwuid
+from constants import ROOT_DIR
 
-USER_PATH = join(dirname(__file__), 'Data/users.pkl')
+USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
 
 
 def save(file=None, data=None, metadata=None):
@@ -36,12 +37,13 @@ def save(file=None, data=None, metadata=None):
     :param dictionary  metadata: metadata describing the data
     :return: None
     """
+    # TODO: Failsafe save ASAP (handle errors)
     # UI get file if is None.
     if file is None:
         tk = Tk()
         tk.withdraw()
         file = asksaveasfilename(parent=tk, filetypes=[('Pickled', '.pkl')],
-                                 initialdir='./Data')
+                                 initialdir=join(ROOT_DIR, 'data'))
     if file is None:
         raise FileNotFoundError("Can't save without a file.")
 
@@ -77,7 +79,7 @@ def load(file=None):
         tk = Tk()
         tk.withdraw()
         file = askopenfilename(parent=tk, filetypes=[('Pickled', '.pkl')],
-                               initialdir='./Data')
+                               initialdir=join(ROOT_DIR, 'data'))
     if file is None:
         raise FileNotFoundError("Can't load without a file.")
 
@@ -99,7 +101,7 @@ def display(files=None):
         tk = Tk()
         tk.withdraw()
         files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
-                                 initialdir='./Data')
+                                 initialdir=join(ROOT_DIR, 'data'))
     elif isinstance(files, str):
         files = [files]
     for file in files:
