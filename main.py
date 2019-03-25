@@ -36,10 +36,10 @@ print('True Eigs: \n', Realenergies)
 start = time.time()
 energies = smallest(h, qc, ansatz.one_particle,
                     initial=init_params.one_particle_ones(h.shape[0]),
-                    num_samples=1000, disp_run_info=
-                    True)[0]
+                    num_samples=None, disp_run_info=
+                    True, display_after_run=True)[0]
 end = time.time()
-pprint.pprint([round(x, 3) for x in Realenergies[0].tolist()])
+pprint.pprint([round(x, 3) for x in Realenergies.tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])
 pprint.pprint(energies)
 print('time: \n:', end - start)
