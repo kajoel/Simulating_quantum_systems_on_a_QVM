@@ -21,10 +21,15 @@ USER_PATH = join(dirname(__file__), 'Data/users.pkl')
 def save(file=None, data=None, metadata=None):
     """
     @author = Joel
-    Save data and metadata to a file. Always use
-    metadata={'description': info} (and possibly more fields such as samples,
-    runtime, etc.). Datetime of creation and user will be added to metadata
-    automatically.
+    Save data and metadata to a file. Always set the first field of metadata
+    as metadata={'description': info} (followed by other fields). Datetime of
+    creation, the module that called save and the name of the user will be
+    added to metadata automatically.
+
+    Make sure to include samples, runtime, which Hamiltonian, minimizer,
+    mattrix_to_op, ansatz, etc. was used when producing results. This should
+    be done programmatically! E.g metadata = {'ansatz': ansatz_.__name__, ...}
+    where ansatz_ is the ansatz being used.
 
     :param string file: file to save to
     :param data: data to save
@@ -46,6 +51,12 @@ def save(file=None, data=None, metadata=None):
     metadata.update({key: default() for key, default in
                      _metadata_defaults().items() if key not in
                      metadata})
+
+    # Make sure that data is dictionary
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        data = {'data': data}
 
     # Save
     with open(file, 'wb') as file_:
@@ -74,6 +85,34 @@ def load(file=None):
     with open(file, 'rb') as file_:
         raw = pickle.load(file_)
     return raw['data'], raw['metadata']
+
+
+def display(files=None):
+    """
+    @author = Joel
+    Used to display file(s).
+
+    :param files: files to display
+    :return:
+    """
+    if files is None:
+        tk = Tk()
+        tk.withdraw()
+        files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
+                                 initialdir='./Data')
+    elif isinstance(files, str):
+        files = [files]
+    for file in files:
+        data, metadata = load(file)
+        print(
+            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
+            + '\033[0m\n')
+        for key, value in metadata.items():
+            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
+            print(value + '\n')
+        print('\033[4m' + 'Variables in data' + ':\033[0m')
+        for key in data:
+            print(key + '\n')
 
 
 def init_users(name):
@@ -165,15 +204,4 @@ def _metadata_defaults():
 @author = Joel
 '''
 if __name__ == '__main__':
-    root = Tk()
-    root.withdraw()
-    files = askopenfilenames(parent=root, filetypes=[('Pickled', '.pkl')],
-                             initialdir='./Data')
-    for file in files:
-        data, metadata = load(file)
-        print(
-            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
-            + '\033[0m\n')
-        for key, value in metadata.items():
-            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-            print(value + '\n')
+    display()
