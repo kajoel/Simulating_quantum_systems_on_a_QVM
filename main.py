@@ -19,6 +19,8 @@ import init_params
 import grove
 import pyquil
 
+import misc.compare.dataplotter as dplot
+
 print(grove.__version__)
 print(pyquil.__version__)
 
@@ -34,10 +36,19 @@ print('True Eigs: \n', Realenergies)
 # TestHamiltonian = H[0].toarray()
 # energies = all(TestHamiltonian, one_particle)
 start = time.time()
+
+plotter = dplot.dataplotter(nbrlinesperplot=1,nbrfigures=1)
+
+def testprint(x, y):
+    plotter.addValues(x[0], y)
+    print(x[0])
+    print(y)
+
+
 energies = smallest(h, qc, ansatz.one_particle,
                     initial=init_params.one_particle_ones(h.shape[0]),
-                    num_samples=1000, disp_run_info=
-                    True)[0]
+                    num_samples=10000, disp_run_info=
+                    testprint)[0]
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies[0].tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])

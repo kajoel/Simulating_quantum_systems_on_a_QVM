@@ -23,7 +23,7 @@ import matrix_to_op
 
 def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
              opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
-             disp_run_info=False, display_after_run=False,
+             disp_run_info=None, display_after_run=False,
              xatol=1e-2, fatol=1e-3, return_all_data=False):
     """
     TODO: Fix this documentation. Below is not up to date.

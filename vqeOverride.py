@@ -40,13 +40,16 @@ class VQE_override(VQE):
         :param jacobian: (optional) method of generating jacobian for parameters
                          (Default=None).
         :param qc: (optional) QuantumComputer object.
-        :param disp: (optional, bool/function) display
-        level. If
-        True then each iteration
-                     expectation and parameters are printed at each
-                     optimization iteration. If a function is given then it
-                     will be given a callback object each iteration to do
-                     with what it pleases.
+        :param disp: (optional, bool/callable) display level. If True then
+                each iteration
+                expectation and parameters are printed at each optimization
+                iteration. If callable, called after each iteration. The signature:
+
+                    ``disp(xk, state)``
+
+                where ``xk`` is the current parameter vector. and ``state``
+                is the current expectation value.
+
         :param samples: (int) Number of samples for calculating the expectation
                         value of the operators.  If `None` then faster method
                         ,dotting the wave function with the operator, is used.
@@ -125,7 +128,8 @@ class VQE_override(VQE):
             self.minimizer_kwargs['callback'] = print_current_iter
 
         if (disp is not None and disp is not True) and 'callback' in arguments:
-            self.minimizer_kwargs['callback'] = disp
+            self.minimizer_kwargs['callback'] = lambda x: disp(x,
+                                                               self._current_expectation)
 
         args = [objective_function, initial_params]
         args.extend(self.minimizer_args)
