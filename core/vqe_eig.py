@@ -48,7 +48,7 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     if new_version:
-        print(initial)
+        print('Initial parameter: ', initial, '\n')
         eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qc=qc,
                           disp=disp_run_info, return_all=True)
     else:
