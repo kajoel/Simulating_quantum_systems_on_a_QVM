@@ -11,13 +11,13 @@ from scipy.optimize import minimize
 from grove.pyvqe.vqe import VQE
 
 
-def sweep(H, qc, ansatz, matrix_operator, num_para=20, start=-10, stop=10,
-          samples=None):
+def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10, 
+                 samples=None):
     """@author: Axel
     Sweeps over parameters for a given Hamiltonian and ansatz. Works for both a 
     2x2 and 3x3 matrix.
 
-    :param H:               Hamiltonian matrix.
+    :param h:               Hamiltonian matrix.
     :param qc:              Quantum computer.
     :param ansatz:          Ansatz.
     :param matrix_operator:   Method to convert hamiltonian to pyQuil-program.
@@ -32,21 +32,21 @@ def sweep(H, qc, ansatz, matrix_operator, num_para=20, start=-10, stop=10,
 
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
 
-    if H.shape[0] > 3:
+    if h.shape[0] > 3:
         print('To many parameters to represent in 2 or 3 dimensions')
         return
-    elif H.shape[0] is 1:
+    elif h.shape[0] is 1:
         print('Nothing to sweep over')
         return
-    elif H.shape[0] is 2:
+    elif h.shape[0] is 2:
         parameters = np.linspace(start, stop, num_para)
-        H = matrix_operator(H)
-        exp_val = [vqe.expectation(ansatz(np.array([para])), H, samples=samples,
+        H = matrix_operator(h)
+        exp_val = [vqe.expectation(ansatz_(np.array([para])), H, samples=samples, 
                                    qc=qc) for para in parameters]
 
         return (exp_val, parameters)
     else:
-        H = matrix_operator(H)
+        H = matrix_operator(h)
         exp_val = np.zeros((num_para, num_para))
         mesh_1 = np.zeros((num_para, num_para))
         mesh_2 = np.zeros((num_para, num_para))
@@ -56,10 +56,10 @@ def sweep(H, qc, ansatz, matrix_operator, num_para=20, start=-10, stop=10,
             mesh_1[i] += p_1
             mesh_2[i] = parameters
 
-            exp_val[i] = [vqe.expectation(ansatz(np.array([p_1, p_2])), H,
+            exp_val[i] = [vqe.expectation(ansatz_(np.array([p_1, p_2])), H,
                                           samples=samples, qc=qc)
                           for p_2 in parameters]
-        return (mesh_1, exp_val)
+        return (exp_val,mesh_1,mesh_2)
 
 
 ################################################################################

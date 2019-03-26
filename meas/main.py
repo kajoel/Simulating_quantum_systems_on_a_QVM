@@ -30,7 +30,7 @@ print('True Eigs: \n', Realenergies)
 # energies = all(TestHamiltonian, one_particle)
 start = time.time()
 energies = vqe_eig.smallest(h, qc, ansatz.one_particle,
-                            initial_params=init_params.one_particle_ones(h.shape[0]),
+                            initial=init_params.one_particle_ones(h.shape[0]),
                             num_samples=None, disp_run_info=
                             True, display_after_run=True)[0]
 end = time.time()

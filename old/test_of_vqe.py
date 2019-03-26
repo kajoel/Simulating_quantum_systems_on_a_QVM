@@ -27,7 +27,7 @@ datetime(year, month, day)
 from core.matrix_to_op import one_particle
 from core.lipkin_quasi_spin import hamiltonian,eigs
 from core.ansatz import one_particle as ansatz
-from core.init_params import ones as initial
+from core.init_params import one_particle_ones as initial
 from core.vqe_eig import smallest as vqe_eig, smallest
 
 
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
 
     energies = smallest(H, qc, ansatz,
-                        initial_params=init_params.ones(H.shape[0]),
+                        initial=init_params.one_particle_ones(H.shape[0]),
                         num_samples=2000, disp_run_info=
                         testprint)[0]
 
