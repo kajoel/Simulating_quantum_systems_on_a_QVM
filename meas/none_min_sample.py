@@ -44,3 +44,5 @@ h = lipkin_quasi_spin.hamiltonian(j, V)[i]
 no_of_qubits = int.bit_length(h.shape[0])
 qc = get_qc('{}q-qvm'.format(no_of_qubits))
 
+
+
