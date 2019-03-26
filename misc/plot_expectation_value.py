@@ -1,10 +1,17 @@
-#Carl 12/3
+# Carl 12/3
 ###############################################################################
+<<<<<<< HEAD
 #Imports
 from pyquil import Program, get_qc
 import time
+=======
+# Imports
+from core.lipkin_quasi_spin import hamiltonian, eigs
+from grove.pyvqe.vqe import VQE
+>>>>>>> develop
 import numpy as np
 from scipy.optimize import minimize
+<<<<<<< HEAD
 from grove.pyvqe.vqe import VQE
 from matplotlib import pyplot as plt
 from datetime import datetime,date
@@ -74,6 +81,13 @@ def sweep_parameters(H, qvm_qc, new_version=False, num_para=20, start=-10,
         save_run_to_csv(exp_val)
         ax.plot_surface(mesh_1, mesh_2, exp_val, cmap=cm.coolwarm)
         return
+=======
+from core import ansatz
+from core import matrix_to_op
+from core import vqe_eig
+from core import init_params
+import matplotlib.pyplot as plt
+>>>>>>> develop
 
 ###############################################################################
 def save_run_to_csv(Variable):
@@ -89,6 +103,7 @@ h = hamiltonian(j, V)
 h = h[0]
 qc = get_qc(str(h.shape[0]) + 'q-qvm')
 ###############################################################################
+<<<<<<< HEAD
 eig_CPU = eigs(j, V)
 print(eig_CPU[0])
 #eig_CPU = eig_CPU[1]
@@ -106,6 +121,12 @@ eig = 0
 #print(eig)
 #plt.plot(result['x'],eig,'*', ms=10)
 #plt.show()
+=======
+H = matrix_to_op.multi_particle(h)
+initial_params = init_params.alternate(h.shape[0])
+vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
+                 samples=samples, fatol=1e-2, disp_run_info = True)
+>>>>>>> develop
 ###############################################################################
 result = vqe_eig(h, qc_qvm=qc, initial=carls_initial(h.shape[0]),
                  num_samples=None, disp_run_info=True, display_after_run=True,
