@@ -11,7 +11,7 @@ from scipy.optimize import minimize
 from grove.pyvqe.vqe import VQE
 
 
-def sweep(h, qc,ansatz,matrix_operator, num_para=20, start=-10, stop=10, 
+def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10, 
                  samples=None):
     """@author: Axel
     Sweeps over parameters for a given Hamiltonian and ansatz. Works for both a 
@@ -30,7 +30,6 @@ def sweep(h, qc,ansatz,matrix_operator, num_para=20, start=-10, stop=10,
     :return: Tuple with expected values and the parameters sweeped over.
     """
 
-
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
 
     if h.shape[0] > 3:
@@ -42,9 +41,9 @@ def sweep(h, qc,ansatz,matrix_operator, num_para=20, start=-10, stop=10,
     elif h.shape[0] is 2:
         parameters = np.linspace(start, stop, num_para)
         H = matrix_operator(h)
-        exp_val = [vqe.expectation(ansatz(np.array([para])), H, samples=samples, 
+        exp_val = [vqe.expectation(ansatz_(np.array([para])), H, samples=samples, 
                                    qc=qc) for para in parameters]
-        
+
         return (exp_val, parameters)
     else:
         H = matrix_operator(h)
@@ -56,17 +55,16 @@ def sweep(h, qc,ansatz,matrix_operator, num_para=20, start=-10, stop=10,
         for i, p_1 in enumerate(parameters):
             mesh_1[i] += p_1
             mesh_2[i] = parameters
-            
-            exp_val[i] = [vqe.expectation(ansatz(np.array([p_1, p_2])), H,
+
+            exp_val[i] = [vqe.expectation(ansatz_(np.array([p_1, p_2])), H,
                                           samples=samples, qc=qc)
-                                          for p_2 in parameters]
-        return (mesh_1,exp_val)
+                          for p_2 in parameters]
+        return (exp_val,mesh_1,mesh_2)
+
 
 ################################################################################
 # TESTS
 ################################################################################
-
-
 
 
 ################################################################################
