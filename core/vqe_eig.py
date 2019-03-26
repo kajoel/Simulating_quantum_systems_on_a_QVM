@@ -10,20 +10,12 @@ from core import init_params
 from core import matrix_to_op
 
 
-<<<<<<< HEAD
 def smallest(H, qc, initial_params, ansatz_=None, num_samples=None,
              new_version=True,
              opt_algorithm='Nelder-Mead', maxiter=10000,
              disp_run_info=False, display_after_run=False,
              xatol=1e-2, fatol=1e-3, return_all_data=False,
              convert_op=matrix_to_op.multi_particle, print_option=None):
-=======
-def smallest(H, qc, initial_params, ansatz_=None, samples=None,
-             opt_algorithm='Nelder-Mead', maxiter=10000, disp_run_info=False,
-             display_after_run=False, xatol=1e-2, fatol=1e-3,
-             return_all_data=False, convert_op=matrix_to_op.multi_particle,
-             print_option=None):
->>>>>>> develop
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -51,7 +43,6 @@ def smallest(H, qc, initial_params, ansatz_=None, samples=None,
                                                      'options': disp_options})
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
-<<<<<<< HEAD
     if new_version:
         print(initial_params)
         eig = vqe.vqe_run(ansatz_, H, initial_params, samples=num_samples,
@@ -61,12 +52,6 @@ def smallest(H, qc, initial_params, ansatz_=None, samples=None,
         eig = vqe.vqe_run(ansatz_, H, initial_params, samples=num_samples,
                           qvm=qc,
                           disp=disp_run_info, return_all=True)
-=======
-
-    print('Initial parameter:', initial_params, '\n')
-    eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                      disp=disp_run_info, return_all=True)
->>>>>>> develop
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
