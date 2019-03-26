@@ -19,7 +19,6 @@ def one_particle(theta: np.ndarray) -> Program:
     vector = np.zeros(2 ** (theta.shape[0] + 1))
     vector[1] = 1 / np.sqrt(theta.size + 1)
     vector[[2 ** (i + 1) for i in range(theta.shape[0])]] = theta
-    vector *= 1 / np.linalg.norm(vector)
     return create_arbitrary_state(vector)
 
 
