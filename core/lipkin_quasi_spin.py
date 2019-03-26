@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Functions for calculating Hamiltonian and corresponding eigs using
 the quasi-spin formalism.
