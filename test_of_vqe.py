@@ -196,16 +196,8 @@ if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
 
-    oldx = None
-    oldy = None
-
     def testprint(x, y):
-        global oldx
-        global oldy
-        if oldx is not None and oldy is not None: plt.plot([oldx, x], [oldy, y],
-                                                           color='blue')
-        oldx = x
-        oldy = y
+        plt.scatter(x, y, color='blue')
         plt.pause(0.05)
         print("Parameter: {}".format(x[0]))
         print("Expectation: {}".format(y))
@@ -216,4 +208,4 @@ if __name__ == '__main__':
                         initial=init_params.one_particle_ones(H.shape[0]),
                         num_samples=800, disp_run_info=
                         testprint)[0]
-    plt.show()
+
