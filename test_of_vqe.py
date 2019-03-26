@@ -163,7 +163,6 @@ def main1(samples=1000):
 
 
 def main2(qc, j, H, samples=1000, sweep_params=100, callback=None, plot=False):
-
     sweep_parameters(H, qc, new_version=True, samples=samples,
                      num_para=sweep_params, start=-3, stop=3, callback=
                      callback, plot=plot)
@@ -174,39 +173,47 @@ def main2(qc, j, H, samples=1000, sweep_params=100, callback=None, plot=False):
 ################################################################################
 
 if __name__ == '__main__':
-    samples = 400
-    sweep_params = 10
+    samples = 600
+    sweep_params = 30
 
     qc = get_qc('3q-qvm')
     j, V = 1, 1
     H = hamiltonian(j, V)[0]
 
-    plotter = dataplotter.dataplotter(nbrlinesperplot=1,
-                                      nbrfigures=1,
-                                      labels=['Parameter value',
-                                              'Expected value of '
-                                              'Hamiltonian'],
-                                      figurelabels='Samples: {'
-                                                   '}'.format(
-                                          samples))
-    main2(qc, j, H, samples, sweep_params,
-          callback=lambda para, tmp: plotter.addValues(para, tmp))
+    oldx = None
+    oldy = None
+    def testprint2(x, y):
+        global oldx
+        global oldy
+        if oldx is not None and oldy is not None: plt.plot([oldx, x], [oldy, y],
+                                                  color = 'red')
+        oldx = x
+        oldy = y
+        plt.pause(0.05)
 
-    # plotter2 = dataplotter.dataplotter(nbrlinesperplot=1,
-    #                                   nbrfigures=1,
-    #                                   labels=['Parameter value',
-    #                                           'Expected value of '
-    #                                           'Hamiltonian'],
-    #                                   figurelabels='Samples: {'
-    #                                                '}'.format(
-    #                                       samples), figures=plotter.figures)
+    main2(qc, j, H, samples, sweep_params,
+          callback=testprint2)
+
+    import matplotlib.pyplot as plt
+
+    oldx = None
+    oldy = None
+
     def testprint(x, y):
-        plotter.addValues(x[0], y)
+        global oldx
+        global oldy
+        if oldx is not None and oldy is not None: plt.plot([oldx, x], [oldy, y],
+                                                           color='blue')
+        oldx = x
+        oldy = y
+        plt.pause(0.05)
         print("Parameter: {}".format(x[0]))
         print("Expectation: {}".format(y))
+
 
 
     energies = smallest(H, qc, ansatz,
                         initial=init_params.one_particle_ones(H.shape[0]),
                         num_samples=800, disp_run_info=
                         testprint)[0]
+    plt.show()
