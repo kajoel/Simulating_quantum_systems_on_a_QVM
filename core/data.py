@@ -6,7 +6,7 @@ Created on 2019-03-22
 """
 
 import pickle
-from tkinter import Tk, simpledialog
+from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askopenfilenames, \
     asksaveasfilename
 from datetime import datetime

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Tue Mar  5 08:14:54 2019
 
@@ -12,11 +10,6 @@ from openfermion.ops import FermionOperator
 from openfermion.ops import QubitOperator
 from forestopenfermion import qubitop_to_pyquilpauli
 from openfermion.transforms import jordan_wigner
-
-
-###############################################################################
-# VQE_RELATED FUNCTIONS
-###############################################################################
 
 
 def one_particle(H: sparse.coo_matrix) -> pyquil.paulis.PauliSum:

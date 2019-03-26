@@ -11,11 +11,6 @@ from core import init_params
 from core import matrix_to_op
 
 
-###############################################################################
-# MAIN VQE FUNCTIONS
-###############################################################################
-
-
 def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
              opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
              disp_run_info=False, display_after_run=False,
@@ -148,9 +143,6 @@ def all(H, ansatz, qvm, num_eigvals=None,
     return energy
 
 
-###############################################################################
-# UPDATE (HAMILTONIAN AND/OR ANSATZ) FUNCTIONS
-###############################################################################
 def update_householder(H, ansatz, _, x):
     """
     Updates the Hamiltonian by block diagonalization using a Householder
@@ -184,43 +176,3 @@ def update_householder(H, ansatz, _, x):
         H = np.delete(H, idx, axis=0)
         H = np.delete(H, idx, axis=1)
     return H, ansatz
-
-
-###############################################################################
-# TEST FUNCTIONS
-###############################################################################
-"""
-Tests that calculate_eigenvalues(H, None, update_householder) works.
-
-NOTE: This test assumes an old and incomplete version of smallest_eig.
-"""
-
-
-def _test_1():
-    import sys
-    sys.path.insert(0, './')
-    from lipkin_quasi_spin import hamiltonian, eigs
-
-    j = 4.5
-    V = 1
-    tol = 1e-8
-    no_error = True
-    H = hamiltonian(j, V)
-    E = eigs(j, V)
-    for i in range(len(H)):
-        eigs = calculate_eigenvalues(H[i].toarray(), None, update_householder)
-        for E_ in E[i]:
-            if all(abs(eigs - E_) > tol):
-                no_error = False
-                print("Max diff: " + str(max(abs(eigs - E_))))
-    if no_error:
-        print("Success!")
-    else:
-        print("Fail!")
-
-
-###############################################################################
-# MAIN
-###############################################################################
-if __name__ == "__main__":
-    _test_1()

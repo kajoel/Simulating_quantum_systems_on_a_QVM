@@ -15,7 +15,6 @@ def one_particle(theta: np.ndarray) -> Program:
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
-    # TODO: doc behaves weird, theta: Union[ndarray, ndarray]
 
     vector = np.zeros(2 ** (theta.shape[0] + 1))
     vector[1] = 1
@@ -33,4 +32,3 @@ def multi_particle(theta: np.ndarray) -> Program:
     """
     theta = np.concatenate((np.array([1]), theta), axis=0)
     return create_arbitrary_state(theta)
-
