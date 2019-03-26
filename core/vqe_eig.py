@@ -10,17 +10,18 @@ from core import init_params
 from core import matrix_to_op
 
 
-def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
-             opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
+def smallest(H, qc, initial_params, ansatz_=None, num_samples=None,
+             new_version=True,
+             opt_algorithm='Nelder-Mead', maxiter=10000,
              disp_run_info=False, display_after_run=False,
              xatol=1e-2, fatol=1e-3, return_all_data=False,
-             convert_op=matrix_to_op.multi_particle,print_option = None):
+             convert_op=matrix_to_op.multi_particle, print_option=None):
     """
     TODO: Fix this documentation. Below is not up to date.
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
     @author: Eric, Axel, Carl
-    :param h: np.array hamiltonian matrix
+    :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
     :param ansatz_: ansatz function
     :param num_samples: number of samples on the qvm
@@ -29,9 +30,6 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
     :return: list of energies
     """
 
-    if initial is None:
-        initial = init_params.ones(h.shape[0])
-
     if ansatz_ is None:
         ansatz_ = ansatz.multi_particle
 
@@ -39,12 +37,10 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
                     'maxiter': maxiter}
 
-    vqe = vqeOverride.VQE_override(minimizer=minimize, minimizer_kwargs={'method':
-                                                                 opt_algorithm,
-                                                    'options': disp_options})
-
-    H = convert_op(h)
-
+    vqe = vqeOverride.VQE_override(minimizer=minimize,
+                                   minimizer_kwargs={'method':
+                                                         opt_algorithm,
+                                                     'options': disp_options})
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     if new_version:
@@ -52,7 +48,8 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
         eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qc=qc,
                           disp=disp_run_info, return_all=True)
     else:
-        eig = vqe.vqe_run(ansatz_, H, initial, samples=num_samples, qvm=qc,
+        eig = vqe.vqe_run(ansatz_, H, initial_params, samples=num_samples,
+                          qvm=qc,
                           disp=disp_run_info, return_all=True)
 
     # If option return_all_data is True we return a dict with data from all runs
