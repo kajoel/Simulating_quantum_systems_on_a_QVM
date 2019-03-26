@@ -6,9 +6,9 @@ import numpy as np
 # Imports for VQE
 from grove.pyvqe.vqe import VQE
 from scipy.optimize import minimize
-import ansatz
-import init_params
-import matrix_to_op
+from core import ansatz
+from core import init_params
+from core import matrix_to_op
 
 
 ###############################################################################
@@ -19,7 +19,8 @@ import matrix_to_op
 def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
              opt_algorithm='Nelder-Mead', initial=None, maxiter=10000,
              disp_run_info=False, display_after_run=False,
-             xatol=1e-2, fatol=1e-3, return_all_data=False):
+             xatol=1e-2, fatol=1e-3, return_all_data=False,
+             convert_op=matrix_to_op.multi_particle):
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -46,7 +47,8 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
 
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': opt_algorithm,
                                                     'options': disp_options})
-    H = matrix_to_op.one_particle(h)
+
+    H = convert_op(h)
 
     # If disp_run_info is True we will print every step of the Nelder-Mead
     if disp_run_info:
@@ -67,8 +69,8 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
         return eig
     else:
         eigval = eig['fun']
-        eigvect = eig['x'] / np.linalg.norm(eig['x'])
-        return eigval, eigvect
+        optparam = eig['x']
+        return eigval, optparam
 
 
 def negative(h, ansatz, qvm, num_eigvals=None,
