@@ -188,13 +188,19 @@ def _metadata_defaults():
     """
     @author = Joel
     Lazy initialization of metadata dictionary with default fields. Note the
-    lambdas.
+    lambda.
 
     :return: metadata
     :rtype: dictionary
     """
-    return {'created_by': lambda: _get_name(),
-            'created_from': lambda: basename(getmodule(stack()[3][0]).__file__),
+    def get_caller():
+        try:
+            caller = basename(getmodule(stack()[3][0]).__file__)
+        except:
+            caller = 'unknown'
+        return caller
+    return {'created_by': _get_name,
+            'created_from': get_caller,
             'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
                                                                 "%H:%M:%S"),
             }
