@@ -10,9 +10,8 @@ from core import init_params
 from core import matrix_to_op
 
 
-def smallest(H, qc, initial_params, ansatz_=None, num_samples=None,
-             new_version=True,
-             opt_algorithm='Nelder-Mead', maxiter=10000,
+def smallest(H, qc, initial_params, ansatz_=None, samples=None,
+             new_version=True, opt_algorithm='Nelder-Mead', maxiter=10000,
              disp_run_info=False, display_after_run=False,
              xatol=1e-2, fatol=1e-3, return_all_data=False,
              convert_op=matrix_to_op.multi_particle, print_option=None):
@@ -24,7 +23,7 @@ def smallest(H, qc, initial_params, ansatz_=None, num_samples=None,
     :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
     :param ansatz_: ansatz function
-    :param num_samples: number of samples on the qvm
+    :param samples: number of samples on the qvm
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
@@ -44,12 +43,11 @@ def smallest(H, qc, initial_params, ansatz_=None, num_samples=None,
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     if new_version:
-        print(initial_params)
-        eig = vqe.vqe_run(ansatz_, H, initial_params, samples=num_samples,
-                          qc=qc,
+        print('Initial parameter: ', initial, '\n')
+        eig = vqe.vqe_run(ansatz_, H, initial, samples=samples, qc=qc,
                           disp=disp_run_info, return_all=True)
     else:
-        eig = vqe.vqe_run(ansatz_, H, initial_params, samples=num_samples,
+        eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples,
                           qvm=qc,
                           disp=disp_run_info, return_all=True)
 
