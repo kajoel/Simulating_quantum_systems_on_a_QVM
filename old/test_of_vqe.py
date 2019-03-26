@@ -18,16 +18,16 @@ from pyquil import get_qc
 
 # Change the days date if you want to save to CSV-file
 from core import init_params
+
 year = 19
 month = 3
 day = 13
 datetime(year, month, day)
 
 # Imports from our projects
-from core.matrix_to_op import one_particle
-from core.lipkin_quasi_spin import hamiltonian,eigs
-from core.ansatz import one_particle as ansatz
-from core.init_params import one_particle_ones as initial
+from core.matrix_to_op import multi_particle
+from core.lipkin_quasi_spin import hamiltonian
+from core.ansatz import multi_particle as ansatz
 from core.vqe_eig import smallest as vqe_eig, smallest
 
 
@@ -84,7 +84,7 @@ def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
         print('Nothing to sweep over')
         return
     elif H.shape[0] is 2:
-        H = one_particle(H)
+        H = multi_particle(H)
         parameters = np.linspace(start, stop, num_para)
 
         if new_version:
@@ -171,28 +171,32 @@ def main2(qc, j, H, samples=1000, sweep_params=100, callback=None, plot=False):
 ################################################################################
 
 if __name__ == '__main__':
-    samples = 600
+    samples = 5000
     sweep_params = 30
 
     qc = get_qc('3q-qvm')
     j, V = 1, 1
-    H = hamiltonian(j, V)[0]
+    h = hamiltonian(j, V)[0]
 
     oldx = None
     oldy = None
+
+
     def testprint2(x, y):
         global oldx
         global oldy
         if oldx is not None and oldy is not None: plt.plot([oldx, x], [oldy, y],
-                                                  color = 'red')
+                                                           color='red')
         oldx = x
         oldy = y
         plt.pause(0.05)
 
-    main2(qc, j, H, samples, sweep_params,
+
+    main2(qc, j, h, samples, sweep_params,
           callback=testprint2)
 
     import matplotlib.pyplot as plt
+
 
     def testprint(x, y):
         plt.scatter(x, y, color='blue')
@@ -201,9 +205,6 @@ if __name__ == '__main__':
         print("Expectation: {}".format(y))
 
 
-
-    energies = smallest(H, qc, ansatz,
-                        initial=init_params.one_particle_ones(H.shape[0]),
-                        num_samples=2000, disp_run_info=
-                        testprint)[0]
-
+    energies = smallest(multi_particle(h), qc, init_params.ones(h.shape[0]),
+                        ansatz_=ansatz, samples=samples,
+                        disp_run_info=testprint, fatol=16/np.sqrt(samples))[0]
