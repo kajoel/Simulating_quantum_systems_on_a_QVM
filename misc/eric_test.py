@@ -53,11 +53,11 @@ for i, p_1 in enumerate(parameters):
 '''
 
 min_eig, optparam = vqe_eig.smallest(h, qc=qc, ansatz_=ansatz.multi_particle,
-                                    num_samples=samples,
-                                    fatol=1e-2,
-                                    initial=init_params.multi_particle_ones(
+                                     samples=samples,
+                                     fatol=1e-2,
+                                     initial=init_params.multi_particle_ones(
                                         h.shape[0]),
-                                    disp_run_info=True)
+                                     disp_run_info=True)
 print('Min eig vqe: ', min_eig)
 min_eig_exp = vqe.expectation(ansatz.multi_particle(optparam), H, samples=10000,
                               qc=qc)

@@ -204,6 +204,6 @@ if __name__ == '__main__':
 
     energies = smallest(H, qc, ansatz,
                         initial=init_params.one_particle_ones(H.shape[0]),
-                        num_samples=2000, disp_run_info=
+                        samples=2000, disp_run_info=
                         testprint)[0]
 

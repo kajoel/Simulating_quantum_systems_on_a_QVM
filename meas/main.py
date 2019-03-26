@@ -31,7 +31,7 @@ print('True Eigs: \n', Realenergies)
 start = time.time()
 energies = vqe_eig.smallest(h, qc, ansatz.one_particle,
                             initial=init_params.one_particle_ones(h.shape[0]),
-                            num_samples=None, disp_run_info=
+                            samples=None, disp_run_info=
                             True, display_after_run=True)[0]
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies.tolist()])
