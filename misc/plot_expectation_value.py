@@ -13,7 +13,7 @@ from core import init_params
 import matplotlib.pyplot as plt
 
 ###############################################################################
-samples = 1000
+samples = 10000
 matrix = 0
 j = 2
 V = 1
