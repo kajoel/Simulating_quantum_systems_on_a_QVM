@@ -30,5 +30,5 @@ def multi_particle(theta: np.ndarray) -> Program:
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
-    theta = np.concatenate((np.array([1]), theta), axis=0)
+    theta = np.concatenate((np.array([1])/(theta.size + 1), theta), axis=0)
     return create_arbitrary_state(theta)

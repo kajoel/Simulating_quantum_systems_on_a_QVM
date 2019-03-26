@@ -4,9 +4,8 @@ Created on Wed Mar  6 16:35:25 2019
 
 import numpy as np
 # Imports for VQE
-import vqeOverride
 from scipy.optimize import minimize
-from core import ansatz
+from core import ansatz, vqeOverride
 from core import init_params
 from core import matrix_to_op
 
