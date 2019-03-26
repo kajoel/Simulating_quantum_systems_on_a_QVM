@@ -16,6 +16,7 @@ from core import lipkin_quasi_spin
 from grove.pyvqe.vqe import VQE
 import numpy as np
 from pyquil import get_qc
+from meas import sweep
 from scipy.optimize import minimize
 from core import ansatz
 from core import matrix_to_op
@@ -42,3 +43,4 @@ print('Values set to:', '\nj: ', j, '\ni: ', i, '\nV: ', V, '\nsamples: ',
 h = lipkin_quasi_spin.hamiltonian(j, V)[i]
 no_of_qubits = int.bit_length(h.shape[0])
 qc = get_qc('{}q-qvm'.format(no_of_qubits))
+
