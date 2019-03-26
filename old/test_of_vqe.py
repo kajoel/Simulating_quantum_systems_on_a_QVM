@@ -17,20 +17,18 @@ from matplotlib import cm
 from pyquil import get_qc
 
 # Change the days date if you want to save to CSV-file
-import init_params
-
+from core import init_params
 year = 19
 month = 3
 day = 13
 datetime(year, month, day)
 
 # Imports from our projects
-from matrix_to_op import one_particle
-from lipkin_quasi_spin import hamiltonian, eigs
-from ansatz import one_particle as ansatz
-from init_params import one_particle_ones as initial
-from vqe_eig import smallest as vqe_eig, smallest
-import misc.compare.dataplotter as dataplotter
+from core.matrix_to_op import one_particle
+from core.lipkin_quasi_spin import hamiltonian,eigs
+from core.ansatz import one_particle as ansatz
+from core.init_params import one_particle_ones as initial
+from core.vqe_eig import smallest as vqe_eig, smallest
 
 
 # Egentligen helt onödig nu efter jag skrivit om smallest, är i princip
@@ -206,6 +204,6 @@ if __name__ == '__main__':
 
     energies = smallest(H, qc, ansatz,
                         initial=init_params.one_particle_ones(H.shape[0]),
-                        num_samples=800, disp_run_info=
+                        num_samples=2000, disp_run_info=
                         testprint)[0]
 
