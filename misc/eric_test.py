@@ -7,11 +7,12 @@ from ansatz import one_particle
 import matrix_to_op
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import vqe_eig
 import init_params
 from pyquil.api import WavefunctionSimulator
 from mpl_toolkits.mplot3d import Axes3D
 
-samples = None
+samples = 1000
 j = 3
 V = 1
 h = hamiltonian(j, V)[1]
@@ -24,9 +25,9 @@ vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
 sweep_steps = 20
 parameters = np.linspace(-5, 5, sweep_steps)
 
-#exp_val = [vqe.expectation(one_particle(np.array([para])), H, samples=None,
-                          # qc=qc) for para in parameters]
-
+# exp_val = [vqe.expectation(one_particle(np.array([para])), H, samples=None,
+# qc=qc) for para in parameters]
+'''
 exp_val = np.zeros((sweep_steps, sweep_steps))
 mesh_1 = np.zeros((sweep_steps, sweep_steps))
 mesh_2 = np.zeros((sweep_steps, sweep_steps))
@@ -35,21 +36,31 @@ for i, p_1 in enumerate(parameters):
     mesh_1[i] += p_1
     mesh_2[i] = parameters
     exp_val[i] = [vqe.expectation(one_particle(np.array([p_1, p_2])), H,
-                                  samples=samples, qc=qc)
+                                  samples=None, qc=qc)
                   for p_2 in parameters]
     fig = plt.figure(0)
     ax = fig.add_subplot(111, projection='3d')
     # Plot the surface
 
-    #save_run_to_csv(exp_val)
+    # save_run_to_csv(exp_val)
     ax.plot_surface(mesh_1, mesh_2, exp_val, cmap=cm.coolwarm)
 
 '''
-min_eig = vqe.vqe_run(one_particle, H,
-                      initial_params=init_params.one_particle_alt(h.shape[0]),
-                      samples=samples, qc=qc, disp=print)
+# min_eig = vqe.vqe_run(one_particle, H,
+#  initial_params=init_params.one_particle_alt(h.shape[0]),
+#  samples=samples, qc=qc, disp=print)
 
-print('Min eig vqe: ', min_eig['fun'])
+
+min_eig, eigvect = vqe_eig.smallest(h, qc=qc, ansatz_=one_particle,
+                                    num_samples=samples,
+                                    fatol=1,
+                                    initial=init_params.one_particle_alt(
+                                        h.shape[0]),
+                                    disp_run_info=True)
+print('Min eig vqe: ', min_eig)
+min_eig_exp = vqe.expectation(one_particle(eigvect), H, samples=20000, qc=qc)
+print('Min eig vqe_exp: ', min_eig_exp)
+# plt.show()
 '''
 # exp_val2 = [vqe.expectation(one_particle(np.array([para])), H, samples=samples,
 # qc=qc) for para in parameters]
@@ -60,3 +71,4 @@ print('Min eig vqe: ', min_eig['fun'])
 #plt.xlabel('Parameter value')
 #plt.ylabel('Expected value of Hamiltonian')
 plt.show()
+'''
