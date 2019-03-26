@@ -12,8 +12,7 @@ def alternate(size):
     :return: array representing the initial parameter for optimization
     :rtype: np.ndarray
     """
-    return 1 / np.sqrt(size) * np.array(
-        [(-1) ** (i + 1) for i in range(size - 1)])
+    return np.array([(-1) ** (i + 1) for i in range(size - 1)]) / np.sqrt(size)
 
 
 def ones(size):
