@@ -30,10 +30,10 @@ def smallest(h, qc, ansatz_=None, num_samples=None, new_version=True,
     """
 
     if initial is None:
-        initial = init_params.one_particle_ones(h.shape[0])
+        initial = init_params.ones(h.shape[0])
 
     if ansatz_ is None:
-        ansatz_ = ansatz.one_particle
+        ansatz_ = ansatz.multi_particle
 
     # All options to Nelder-Mead
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
