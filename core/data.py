@@ -178,10 +178,7 @@ def _get_name():
     if user in users[0]:
         name = users[0][user]
     else:
-        tk = Tk()
-        tk.withdraw()
-        name = simpledialog.askstring("I don't recognize you.",
-                                      "What is your name?", parent=tk)
+        name = input("I don't recognize you. What's your name?")
         _add_user(name, user, users)
     return name
 
