@@ -1,7 +1,9 @@
+"""
+Comparison of different methods from matrix_to_operator
+"""
+import numpy as np
+from core import matrix_to_op
 
-###############################################################################
-# TEST FUNCTIONS
-###############################################################################
 
 def _test_mat_to_op(hamiltonian_operator, jmin=0.5, jmax=100, tol=1e-8):
     """
@@ -58,16 +60,13 @@ def _test_complexity(mat2op, jmin=0.5, jmax=25):
     return matrix_size, nbr_terms, max_nbr_ops
 
 
-###############################################################################
-# MAIN
-###############################################################################
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     matrix_size_1, nbr_terms_1, max_nbr_ops_1 = \
-        _test_complexity(one_particle)
+        _test_complexity(matrix_to_op.one_particle)
     matrix_size_2, nbr_terms_2, max_nbr_ops_2 = \
-        _test_complexity(multi_particle)
+        _test_complexity(matrix_to_op.multi_particle)
 
     if not all(matrix_size_1 == matrix_size_2):
         raise Exception("Something went wrong with the sizes.")
