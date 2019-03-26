@@ -8,8 +8,7 @@ Created on Wed Mar  6 16:35:25 2019
 
 import numpy as np
 # Imports for VQE
-from grove.pyvqe.vqe import VQE
-from vqeOverride import VQE_override
+from core.vqeOverride import VQE_override
 from scipy.optimize import minimize
 import ansatz
 import init_params
