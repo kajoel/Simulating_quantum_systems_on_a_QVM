@@ -14,8 +14,11 @@ from matplotlib import pyplot as plt
 from datetime import datetime, date
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+from pyquil import get_qc
 
 # Change the days date if you want to save to CSV-file
+import init_params
+
 year = 19
 month = 3
 day = 13
@@ -26,7 +29,8 @@ from matrix_to_op import one_particle
 from lipkin_quasi_spin import hamiltonian, eigs
 from ansatz import one_particle as ansatz
 from init_params import one_particle_ones as initial
-from vqe_eig import smallest as vqe_eig
+from vqe_eig import smallest as vqe_eig, smallest
+import misc.compare.dataplotter as dataplotter
 
 
 # Egentligen helt onödig nu efter jag skrivit om smallest, är i princip
@@ -52,7 +56,7 @@ def count_opt_iterations(H, qc_qvm, new_version=True, samples=None,
         Numer of iterations, or the dict with data of all iterations.
         
     """
-    result = vqe_eig(H, ansatz, qc_qvm=qc_qvm, num_samples=samples,
+    result = vqe_eig(H, qc_qvm, ansatz, num_samples=samples,
                      new_version=new_version, display_after_run=True,
                      disp_run_info=disp_run_info, xatol=xatol, fatol=fatol,
                      maxiter=maxiter, return_all_data=True)
@@ -69,7 +73,8 @@ def count_opt_iterations(H, qc_qvm, new_version=True, samples=None,
 
 
 def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
-                     stop=10, samples=None, fig_nr=0, save=False):
+                     stop=10, samples=None, fig_nr=0, save=False, plot=True,
+                     callback=None):
     '''
     TODO: Add a statement that saves the data from the run and comments.
     '''
@@ -85,19 +90,25 @@ def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
         parameters = np.linspace(start, stop, num_para)
 
         if new_version:
-            exp_val = [vqe.expectation(ansatz(np.array([para])), H,
-                                       samples=samples, qc=qvm_qc)
-                       for para in parameters]
+            exp_val = []
+
+            for para in parameters:
+                tmp = vqe.expectation(ansatz(np.array([para])), H,
+                                      samples=samples, qc=qvm_qc)
+                exp_val.append(tmp)
+                if callback is not None: callback(para, tmp)
         else:
             exp_val = [vqe.expectation(ansatz(np.array([para])), H,
                                        samples=samples, qvm=qvm_qc)
                        for para in parameters]
 
-        plt.figure(fig_nr)
-        plt.plot(parameters, exp_val, label='Samples: {}'.format(samples))
-        plt.xlabel('Parameter value')
-        plt.ylabel('Expected value of Hamiltonian')
-        return
+        if (plot):
+            plt.figure(fig_nr)
+            plt.plot(parameters, exp_val, label='Samples: {}'.format(samples))
+            plt.xlabel('Parameter value')
+            plt.ylabel('Expected value of Hamiltonian')
+            plt.show()
+        return [parameters, exp_val]
     else:
         H = one_particle(H)
         exp_val = np.zeros((num_para, num_para))
@@ -139,10 +150,10 @@ def save_run_to_csv(Variable):
 ################################################################################
 
 def main1(samples=1000):
-    qvm = api.QVMConnection()
+    qc = get_qc('3q-qvm')
     j, V = 1, 1
     H, _ = hamiltonian(j, V)
-    result = count_opt_iterations(H, qvm, new_version=False, samples=samples,
+    result = count_opt_iterations(H, qc, new_version=True, samples=samples,
                                   fatol=1e-2, xatol=1e-3, return_dict=True,
                                   disp_run_info=True)
 
@@ -151,12 +162,11 @@ def main1(samples=1000):
     plt.show()
 
 
-def main2(samples=1000, sweep_params=100):
-    qvm = api.QVMConnection()
-    j, V = 2, 1
-    H, _ = hamiltonian(j, V)
+def main2(qc, j, H, samples=1000, sweep_params=100, callback=None, plot=False):
+
     sweep_parameters(H, qc, new_version=True, samples=samples,
-                     num_para=sweep_params, start=-3, stop=3)
+                     num_para=sweep_params, start=-3, stop=3, callback=
+                     callback, plot=plot)
 
 
 ################################################################################
@@ -164,6 +174,39 @@ def main2(samples=1000, sweep_params=100):
 ################################################################################
 
 if __name__ == '__main__':
-    main2(1000, 40)
+    samples = 400
+    sweep_params = 10
 
-    plt.show()
+    qc = get_qc('3q-qvm')
+    j, V = 1, 1
+    H = hamiltonian(j, V)[0]
+
+    plotter = dataplotter.dataplotter(nbrlinesperplot=1,
+                                      nbrfigures=1,
+                                      labels=['Parameter value',
+                                              'Expected value of '
+                                              'Hamiltonian'],
+                                      figurelabels='Samples: {'
+                                                   '}'.format(
+                                          samples))
+    main2(qc, j, H, samples, sweep_params,
+          callback=lambda para, tmp: plotter.addValues(para, tmp))
+
+    # plotter2 = dataplotter.dataplotter(nbrlinesperplot=1,
+    #                                   nbrfigures=1,
+    #                                   labels=['Parameter value',
+    #                                           'Expected value of '
+    #                                           'Hamiltonian'],
+    #                                   figurelabels='Samples: {'
+    #                                                '}'.format(
+    #                                       samples), figures=plotter.figures)
+    def testprint(x, y):
+        plotter.addValues(x[0], y)
+        print("Parameter: {}".format(x[0]))
+        print("Expectation: {}".format(y))
+
+
+    energies = smallest(H, qc, ansatz,
+                        initial=init_params.one_particle_ones(H.shape[0]),
+                        num_samples=800, disp_run_info=
+                        testprint)[0]

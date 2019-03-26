@@ -3,6 +3,7 @@ import numpy as np
 import math
 import misc.compare.lib_joel as lib
 
+
 # NOTE: The dataplotter tries to interpret the values. This can lead to weird behaviour in
 #          edge-cases. If uncertain:
 #           - initialize without x and y
@@ -14,12 +15,16 @@ class dataplotter:
     countdataplotters = 0
 
     def __init__(self, x=None, y=None, labels=None, nbrlinesperplot=None,
-                 tpause=0.01, tightlayout=True, plotlayout=None, name=None,      # Misc
-                 colormap='hsv', nbrcolors=None, maxnbrcolors=8, markers=None,  # Colors and markers
-                 legendplot=None, legendsize=(1, 1), showlegend=None,           # Legend
-                 plottype='linear', plotlabels=None, showplotlabels=None,       # (Sub)plots
-                 nbrfigures=None, figurelabels=None, showfigurelabels=None,     # Figures
-                 **kwargs):
+                 tpause=0.01, tightlayout=True, plotlayout=None, name=None,
+                 # Misc
+                 colormap='hsv', nbrcolors=None, maxnbrcolors=8, markers=None,
+                 # Colors and markers
+                 legendplot=None, legendsize=(1, 1), showlegend=None,  # Legend
+                 plottype='linear', plotlabels=None, showplotlabels=None,
+                 # (Sub)plots
+                 nbrfigures=None, figurelabels=None, showfigurelabels=None,
+                 # Figures
+                 figures=None, **kwargs):
 
         dataplotter.countdataplotters += 1
 
@@ -39,7 +44,7 @@ class dataplotter:
         if nbrlinesperplot is not None:
             self.nbrlinesperplot = nbrlinesperplot
         elif labels is not None:
-            pass    # see 15 lines further down
+            pass  # see 15 lines further down
         elif y is not None:
             temp = lib.subscriptdepth(y)
             if temp == 0:
@@ -49,9 +54,10 @@ class dataplotter:
             else:
                 self.nbrlinesperplot = len(y[0])
         else:
-            raise ValueError("Number of lines per plot was not specified explicitly nor " +
-                             "implicitly. Specify either nbrlinesperplot, labels or " +
-                             "initial y values")
+            raise ValueError(
+                "Number of lines per plot was not specified explicitly nor " +
+                "implicitly. Specify either nbrlinesperplot, labels or " +
+                "initial y values")
 
         if type(labels) is not str and not lib.subscriptdepth(labels):
             if labels is None:
@@ -86,7 +92,8 @@ class dataplotter:
             elif temp == 'linear':
                 self.plottype.append(lambda x, y: (x, y))
             elif temp == 'loglog':
-                self.plottype.append(lambda x, y: (np.log10(x).tolist(), np.log10(y).tolist()))
+                self.plottype.append(
+                    lambda x, y: (np.log10(x).tolist(), np.log10(y).tolist()))
             elif temp == 'logx':
                 self.plottype.append(lambda x, y: (np.log10(x).tolist(), y))
             elif temp == 'logy':
@@ -119,9 +126,11 @@ class dataplotter:
             try:
                 self.nbrfigures = int(nbrfigures)
                 if self.nbrfigures != nbrfigures:
-                    print("Warning! nbrfigures was not an integer and have been typecasted")
+                    print(
+                        "Warning! nbrfigures was not an integer and have been typecasted")
             except:
-                raise ValueError("nbrfigures could not be interpreted as an integer")
+                raise ValueError(
+                    "nbrfigures could not be interpreted as an integer")
         # self.nbrfigures, -.nbrplotsperfigure, -.nbrlinesperplot
         # should all be defined by now
 
@@ -197,7 +206,8 @@ class dataplotter:
         try:
             nbrcolors = min(nbrcolors, maxnbrcolors, float('inf'))
         except TypeError:
-            raise ValueError("nbrcolors and maxnbrcolors should be integers or default")
+            raise ValueError(
+                "nbrcolors and maxnbrcolors should be integers or default")
 
         try:
             self._colors = plt.cm.get_cmap(colormap, nbrcolors + 1)
@@ -211,8 +221,9 @@ class dataplotter:
             elif callable(colormap):
                 self.colormap = lambda x: colormap(x % nbrcolors)
             else:
-                raise ValueError('Colormap could not be interpreted by pyplot.cm.get_cmap, ' +
-                                 'is not an ndarray or iterable nor a callable')
+                raise ValueError(
+                    'Colormap could not be interpreted by pyplot.cm.get_cmap, ' +
+                    'is not an ndarray or iterable nor a callable')
 
         if markers is None:
             markers = ['o', 's', 'v', '^', '<', '>', 'p', 'd']
@@ -232,46 +243,57 @@ class dataplotter:
         # FIGURE INIT
         ############################################################################################
 
-        self.figures = []
+        self.figures = figures
+
         self.lines = []
         templeg = []
-        for i in range(self.nbrfigures):
-            num = self.name + ": " + figurelabels[i]
-            temp = plt.subplots(self.plotlayout[0], self.plotlayout[1], num=num)
-            if type(temp[1]) is not np.ndarray:
-                temp = (temp[0],) + ((temp[1], ),)
-            else:
-                temp = (temp[0], temp[1].ravel())
-            for j in range(self.plotlayout[0] * self.plotlayout[1], self.nbrplotsperfigure, -1):
-                temp[1][j - 1].remove()
-            self.figures.append(temp)
-            if showfigurelabels:
-                self.figures[i][0].suptitle(figurelabels[i])
-            line_j = []
-            for j in range(self.nbrplotsperfigure):
-                if showplotlabels:
-                    self.figures[i][1][j].set_title(self.plotlabels[j])
-                line_k = []
-                for k in range(self.nbrlinesperplot):
-                    line, = self.figures[i][1][j].plot([None], [None],
-                                                       c=self.colormap(k), marker=self.markers(k),
-                                                       **self.kwargs)
-                    if i == 0 and j == 0:
-                        templeg.append(line)
-                    line_k.append(line)
-                line_j.append(line_k)
-            self.lines.append(line_j)
-            if tightlayout:
-                self.figures[i][0].tight_layout(rect=rect)
-            self.figures[-1][0].show()
+        if figures is None:
+            self.figures = []
+            for i in range(self.nbrfigures):
+                num = self.name + ": " + figurelabels[i]
+                temp = plt.subplots(self.plotlayout[0], self.plotlayout[1],
+                                    num=num)
+                if type(temp[1]) is not np.ndarray:
+                    temp = (temp[0],) + ((temp[1],),)
+                else:
+                    temp = (temp[0], temp[1].ravel())
+                for j in range(self.plotlayout[0] * self.plotlayout[1],
+                               self.nbrplotsperfigure, -1):
+                    temp[1][j - 1].remove()
+                self.figures.append(temp)
+                if showfigurelabels:
+                    self.figures[i][0].suptitle(figurelabels[i])
+                line_j = []
+                for j in range(self.nbrplotsperfigure):
+                    if showplotlabels:
+                        self.figures[i][1][j].set_title(self.plotlabels[j])
+                    line_k = []
+                    for k in range(self.nbrlinesperplot):
+                        line, = self.figures[i][1][j].plot([None], [None],
+                                                           c=self.colormap(k),
+                                                           marker=self.markers(
+                                                               k),
+                                                           **self.kwargs)
+                        if i == 0 and j == 0:
+                            templeg.append(line)
+                        line_k.append(line)
+                    line_j.append(line_k)
+                self.lines.append(line_j)
+                if tightlayout:
+                    self.figures[i][0].tight_layout(rect=rect)
+                self.figures[-1][0].show()
+        else: self.figures[-1][0].show()
+
         if showlegend:
             try:
                 self.figures[legendplot[0]][1][
-                    legendplot[1]].legend(templeg, self.labels, loc='upper left')
+                    legendplot[1]].legend(templeg, self.labels,
+                                          loc='upper left')
                 self.figures[legendplot[0]][0].show()
             except:
-                self.figlegend = plt.figure("Dataplotter " + str(dataplotter.countdataplotters)
-                                            + ": Legend", figsize=legendsize)
+                self.figlegend = plt.figure(
+                    "Dataplotter " + str(dataplotter.countdataplotters)
+                    + ": Legend", figsize=legendsize)
                 self.figlegend.legend(templeg, self.labels, loc='center')
                 self.figlegend.show()
         plt.pause(self.tpause)
@@ -354,8 +376,9 @@ class dataplotter:
                 elif len(x) == self.nbrfigures:
                     x = [[[z] * nbrvalues] * self.nbrlinesperplot for z in x]
                 else:
-                    raise ValueError("x has 'depth' 1 but len(x) don't seem to match the " +
-                                     "dataplotter")
+                    raise ValueError(
+                        "x has 'depth' 1 but len(x) don't seem to match the " +
+                        "dataplotter")
             elif depth == 2:
                 if len(x) == self.nbrfigures:
                     if len(x[0]) == nbrvalues:
@@ -363,15 +386,18 @@ class dataplotter:
                     elif len(x[0]) == self.nbrlinesperplot:
                         x = [[[w] * nbrvalues for w in z] for z in x]
                     else:
-                        raise ValueError("x has 'depth' 2 and len(x) == numberoffigures " +
-                                         "but len(x[0] don't seem to match the dataplotter")
+                        raise ValueError(
+                            "x has 'depth' 2 and len(x) == numberoffigures " +
+                            "but len(x[0] don't seem to match the dataplotter")
                 elif len(x) == self.nbrlinesperplot and len(x[0]) == nbrvalues:
                     x = [x] * self.nbrplots
                 else:
-                    raise ValueError("x has 'depth' 2 but len(x) don't seem to match the " +
-                                     "dataplotter")
+                    raise ValueError(
+                        "x has 'depth' 2 but len(x) don't seem to match the " +
+                        "dataplotter")
             else:
-                raise ValueError("x and y don't seem to be compatible... but I'm not sure")
+                raise ValueError(
+                    "x and y don't seem to be compatible... but I'm not sure")
         else:
             x = self._format_shape(x)
         return (x, y)
@@ -403,9 +429,11 @@ class dataplotter:
         elif depth == 2:
             if len(x) == self.nbrlinesperplot:
                 return [x]
-            elif len(x) == self.nbrfigures and len(x[0]) == self.nbrlinesperplot:
+            elif len(x) == self.nbrfigures and len(
+                    x[0]) == self.nbrlinesperplot:
                 return x
-            elif len(x) == self.nbrfigures and len(x[0]) != self.nbrlinesperplot:
+            elif len(x) == self.nbrfigures and len(
+                    x[0]) != self.nbrlinesperplot:
                 return [[z] for z in x]
         else:
             return x
