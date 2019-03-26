@@ -11,7 +11,7 @@ from scipy.optimize import minimize
 from grove.pyvqe.vqe import VQE
 
 
-def sweep(H, qc,ansatz,matrix_to_opt, num_para=20, start=-10, stop=10, 
+def sweep(H, qc,ansatz,matrix_operator, num_para=20, start=-10, stop=10, 
                  samples=None):
     """@author: Axel
     Sweeps over parameters for a given Hamiltonian and ansatz. Works for both a 
@@ -20,7 +20,7 @@ def sweep(H, qc,ansatz,matrix_to_opt, num_para=20, start=-10, stop=10,
     :param H:               Hamiltonian matrix.
     :param qc:              Quantum computer.
     :param ansatz:          Ansatz.
-    :param matrix_to_opt:   Method to convert hamiltonian to pyQuil-program.
+    :param matrix_operator:   Method to convert hamiltonian to pyQuil-program.
     :param num_para:        Number of parameters to sweep over.
     :param start:           Value to start the sweep on.
     :param stop:            Value to stop the sweep on.
@@ -41,13 +41,13 @@ def sweep(H, qc,ansatz,matrix_to_opt, num_para=20, start=-10, stop=10,
         return
     elif H.shape[0] is 2:
         parameters = np.linspace(start, stop, num_para)
-        H = matrix_to_opt(H)
+        H = matrix_operator(H)
         exp_val = [vqe.expectation(ansatz(np.array([para])), H, samples=samples, 
                                    qc=qc) for para in parameters]
         
         return (exp_val, parameters)
     else:
-        H = matrix_to_opt(H)
+        H = matrix_operator(H)
         exp_val = np.zeros((num_para, num_para))
         mesh_1 = np.zeros((num_para, num_para))
         mesh_2 = np.zeros((num_para, num_para))
