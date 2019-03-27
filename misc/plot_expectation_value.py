@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 ###############################################################################
 samples = 10000
 matrix = 0
-j = 2
+j = 1
 V = 1
 h = hamiltonian(j, V)[matrix]
 print(h.toarray())
@@ -27,6 +27,26 @@ qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
 ###############################################################################
 H = matrix_to_op.multi_particle(h)
 initial_params = init_params.alternate(h.shape[0])
-vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
-                 samples=samples, fatol=1e-2, disp_run_info = True)
+
+'''
+parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
+                 samples=None, fatol=1e-1, disp_run_info = True)[1]
+
+print('\n', 'Paramater (samples = None):', parameter_None, '\n')
+'''
+result = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
+                 samples=samples, fatol=1e-3, disp_run_info = True)
+
+parameter = result[1]
+ansatz_ = ansatz.multi_particle(parameter)
+vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
+
+n=20
+eig = 0
+for i in range(n):
+    eig += vqe.expectation(ansatz_, H, samples=samples, qc=qc)
+
+eig = eig/n
+
+print('\n', 'Eigenvalue after mean:',eig)
 ###############################################################################
