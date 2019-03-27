@@ -126,7 +126,7 @@ def save_sweep():
 
 if __name__ == '__main__':
     ansatz_=ansatz.one_particle
-    sweep_2Dim(ansatz_,samples_=None)
+    sweep_one()
     plt.show()
     
 
