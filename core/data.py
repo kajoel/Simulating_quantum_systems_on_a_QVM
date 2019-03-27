@@ -6,37 +6,44 @@ Created on 2019-03-22
 """
 
 import pickle
-from tkinter import Tk, simpledialog
+from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askopenfilenames, \
     asksaveasfilename
 from datetime import datetime
-from os.path import basename, join, dirname
+from os.path import basename, join
 from inspect import stack, getmodule
 from os import getuid
 from pwd import getpwuid
+from constants import ROOT_DIR
 
-USER_PATH = join(dirname(__file__), 'Data/users.pkl')
+USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
 
 
 def save(file=None, data=None, metadata=None):
     """
     @author = Joel
-    Save data and metadata to a file. Always use
-    metadata={'description': info} (and possibly more fields such as samples,
-    runtime, etc.). Datetime of creation and user will be added to metadata
-    automatically.
+    Save data and metadata to a file. Always set the first field of metadata
+    as metadata={'description': info} (followed by other fields). Datetime of
+    creation, the module that called save and the name of the user will be
+    added to metadata automatically.
+
+    Make sure to include samples, runtime, which Hamiltonian, minimizer,
+    mattrix_to_op, ansatz, etc. was used when producing results. This should
+    be done programmatically! E.g metadata = {'ansatz': ansatz_.__name__, ...}
+    where ansatz_ is the ansatz being used.
 
     :param string file: file to save to
     :param data: data to save
     :param dictionary  metadata: metadata describing the data
     :return: None
     """
+    # TODO: Failsafe save ASAP (handle errors)
     # UI get file if is None.
     if file is None:
         tk = Tk()
         tk.withdraw()
         file = asksaveasfilename(parent=tk, filetypes=[('Pickled', '.pkl')],
-                                 initialdir='./Data')
+                                 initialdir=join(ROOT_DIR, 'data'))
     if file is None:
         raise FileNotFoundError("Can't save without a file.")
 
@@ -46,6 +53,12 @@ def save(file=None, data=None, metadata=None):
     metadata.update({key: default() for key, default in
                      _metadata_defaults().items() if key not in
                      metadata})
+
+    # Make sure that data is dictionary
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        data = {'data': data}
 
     # Save
     with open(file, 'wb') as file_:
@@ -66,7 +79,7 @@ def load(file=None):
         tk = Tk()
         tk.withdraw()
         file = askopenfilename(parent=tk, filetypes=[('Pickled', '.pkl')],
-                               initialdir='./Data')
+                               initialdir=join(ROOT_DIR, 'data'))
     if file is None:
         raise FileNotFoundError("Can't load without a file.")
 
@@ -74,6 +87,34 @@ def load(file=None):
     with open(file, 'rb') as file_:
         raw = pickle.load(file_)
     return raw['data'], raw['metadata']
+
+
+def display(files=None):
+    """
+    @author = Joel
+    Used to display file(s).
+
+    :param files: files to display
+    :return:
+    """
+    if files is None:
+        tk = Tk()
+        tk.withdraw()
+        files = askopenfilenames(parent=tk, filetypes=[('Pickled', '.pkl')],
+                                 initialdir=join(ROOT_DIR, 'data'))
+    elif isinstance(files, str):
+        files = [files]
+    for file in files:
+        data, metadata = load(file)
+        print(
+            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
+            + '\033[0m\n')
+        for key, value in metadata.items():
+            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
+            print(value + '\n')
+        print('\033[4m' + 'Variables in data' + ':\033[0m')
+        for key in data:
+            print(key + '\n')
 
 
 def init_users(name):
@@ -137,10 +178,7 @@ def _get_name():
     if user in users[0]:
         name = users[0][user]
     else:
-        tk = Tk()
-        tk.withdraw()
-        name = simpledialog.askstring("I don't recognize you.",
-                                      "What is your name?", parent=tk)
+        name = input("I don't recognize you. What's your name?")
         _add_user(name, user, users)
     return name
 
@@ -149,13 +187,19 @@ def _metadata_defaults():
     """
     @author = Joel
     Lazy initialization of metadata dictionary with default fields. Note the
-    lambdas.
+    lambda.
 
     :return: metadata
     :rtype: dictionary
     """
-    return {'created_by': lambda: _get_name(),
-            'created_from': lambda: basename(getmodule(stack()[3][0]).__file__),
+    def get_caller():
+        try:
+            caller = basename(getmodule(stack()[3][0]).__file__)
+        except:
+            caller = 'unknown'
+        return caller
+    return {'created_by': _get_name,
+            'created_from': get_caller,
             'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
                                                                 "%H:%M:%S"),
             }
@@ -165,15 +209,4 @@ def _metadata_defaults():
 @author = Joel
 '''
 if __name__ == '__main__':
-    root = Tk()
-    root.withdraw()
-    files = askopenfilenames(parent=root, filetypes=[('Pickled', '.pkl')],
-                             initialdir='./Data')
-    for file in files:
-        data, metadata = load(file)
-        print(
-            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
-            + '\033[0m\n')
-        for key, value in metadata.items():
-            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-            print(value + '\n')
+    display()
