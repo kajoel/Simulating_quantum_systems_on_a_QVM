@@ -59,6 +59,7 @@ def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10,
             exp_val[i] = [vqe.expectation(ansatz_(np.array([p_1, p_2])), H,
                                           samples=samples, qc=qc)
                           for p_2 in parameters]
+            print('Done with sweep number {}/{}'.format(i+1,len(parameters)))
         return (exp_val,mesh_1,mesh_2)
 
 

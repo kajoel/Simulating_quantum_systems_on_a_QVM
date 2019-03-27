@@ -23,7 +23,6 @@ def runtime_NM(H,qc,ansatz_, initial_param,start_samp=100,stop_samp=10000, steps
                          disp_run_info=True)
         t2 = time.time()
         runtime[index]=t2-t1
-        print('Doen with loop number {} of {}'.format(index+1,len(samples)))
 
     return runtime, samples
 
