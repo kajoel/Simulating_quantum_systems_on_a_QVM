@@ -6,6 +6,9 @@ Created on Mon Mar  4 10:50:49 2019
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
+from openfermion import FermionOperator, QubitOperator, jordan_wigner
+from forestopenfermion import qubitop_to_pyquilpauli
+from pyquil.paulis import PauliSum, PauliTerm, exponential_map
 
 
 def one_particle(theta: np.ndarray) -> Program:
