@@ -1,6 +1,13 @@
 """
 @author: Sebastian (fast självklart 99% rigetti, jag bara modifierade den)
 """
+"""
+Updated vqe_expectation och expectation from sampling,
+@author Eric utöver Rigetti
+
+Probably need some work!!! Not complete
+"""
+
 
 from grove.pyvqe.vqe import VQE, OptResults
 from collections import Counter
@@ -155,14 +162,6 @@ class VQE_override(VQE):
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
         return results
-
-
-"""
-Updated vqe_expectation och expectation from sampling,
-@author Eric utöver Rigetti
-
-Probably need some work!!! Not complete
-"""
 
     @staticmethod
     def expectation(pyquil_prog: Program,
