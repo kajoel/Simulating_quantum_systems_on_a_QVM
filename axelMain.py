@@ -80,7 +80,7 @@ def sweep_2Dim(ansatz_,h=None, j=2,V=1,samples_=1000, save = False):
 
         data.save('2DimSweepSampNone',data_to_save,metadata)
 
-
+# Only works in the branch benchNM
 def test_bench_NM():
     j,V = 1,1
     h = lipkin_quasi_spin.hamiltonian(j,V)[0]
