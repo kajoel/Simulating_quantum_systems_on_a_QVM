@@ -53,7 +53,6 @@ def sweep_2Dim(ansatz_,h=None, j=2,V=1,samples_=1000, save = False):
     if ansatz_ is ansatz.one_particle:
         matrix_operator = matrix_to_op.one_particle
         qubits = h.shape[0]
-    
     elif ansatz_ is ansatz.multi_particle:
         matrix_operator = matrix_to_op.multi_particle
         qubits = int.bit_length(h.shape[0])
@@ -71,6 +70,7 @@ def sweep_2Dim(ansatz_,h=None, j=2,V=1,samples_=1000, save = False):
     # Plot the surface
        
     ax.plot_surface(para1, para2, exp)
+    
     if save:
         metadata = {'ansatz': ansatz_, 'Hamiltonian': h, 'samples': None,'minimizer': 'Nelder-Mead',
                     'matrix_to_op': matrix_operator, 
@@ -79,7 +79,6 @@ def sweep_2Dim(ansatz_,h=None, j=2,V=1,samples_=1000, save = False):
         data_to_save = (exp,para1,para2)
 
         data.save('2DimSweepSampNone',data_to_save,metadata)
-
 
 
 def test_bench_NM():
@@ -107,7 +106,7 @@ def save_sweep():
     j,V = 1,1
 
     h = lipkin_quasi_spin.hamiltonian(j,V)[0]
-    qubits = H.shape[0]
+    qubits = h.shape[0]
     qc = get_qc('{}q-qvm'.format(qubits))
     ansatz_ = ansatz.one_particle
     ma_to_op = matrix_to_op.one_particle
@@ -127,7 +126,7 @@ def save_sweep():
 
 if __name__ == '__main__':
     ansatz_=ansatz.one_particle
-    sweep_2Dim(ansatz_,samples_=None,save=True)
+    sweep_2Dim(ansatz_,samples_=None)
     plt.show()
     
 
