@@ -61,6 +61,47 @@ def smallest(H, qc, initial_params,
         return eigval, optparam
 
 
+def smallest_dynamic(H, qc, initial_params,
+                     ansatz_=None,
+                     samples=1000,
+                     opt_algorithm='Nelder-Mead',
+                     maxiter=10000,
+                     disp_run_info=True,
+                     display_after_run=False,
+                     xatol=1e-2, fatol=1e-3,
+                     return_all_data=False,
+                     convert_op=matrix_to_op.multi_particle,
+                     print_option=None):
+    if samples is None:
+        raise TypeError(
+            'Samples must be a number in this method. Use smallest() instead')
+    tol = 16 / np.sqrt(samples)
+    # 16 because tol = 2 sigma, sigma = x/sqrt(samp), x \approx 8
+    params = initial_params
+    samp = 1000
+    if tol < fatol:
+        raise ValueError('fatol too large')
+    while tol > fatol:
+        result = smallest(H, qc, params, samples=samp, fatol=tol,
+                          ansatz_=ansatz_,
+                          xatol=xatol, return_all_data=return_all_data,
+                          maxiter=maxiter,
+                          disp_run_info=disp_run_info,
+                          opt_algorithm=opt_algorithm,
+                          display_after_run=display_after_run)
+        print('Increasing samples')
+        params = result[1]
+        samples *= 4
+        tol *= 0.5
+
+    return smallest(H, qc, params, samples=samp, fatol=tol, ansatz_=ansatz_,
+                    xatol=xatol, return_all_data=return_all_data,
+                    maxiter=maxiter,
+                    disp_run_info=disp_run_info,
+                    opt_algorithm=opt_algorithm,
+                    display_after_run=display_after_run)
+
+
 def negative(h, ansatz, qvm, num_eigvals=None,
              num_samples=None,
              opt_algorithm='L-BFGS-B',

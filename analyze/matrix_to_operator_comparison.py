@@ -80,6 +80,7 @@ if __name__ == "__main__":
     plt.plot(matrix_size_1, np.array([max_nbr_ops_1, max_nbr_ops_2]).T)
     plt.title("Maximum number of ops per term")
     plt.legend(["a^dag a", "qubit op"])
+    plt.show()
 
     #  test_mat_to_op(one_particle, jmax=10)
     # The following tests has (successfully) been completed:
