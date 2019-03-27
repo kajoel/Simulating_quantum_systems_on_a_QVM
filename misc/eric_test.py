@@ -13,7 +13,7 @@ from pyquil.api import WavefunctionSimulator
 from mpl_toolkits.mplot3d import Axes3D
 
 samples = 10000
-j = 2
+j = 3
 V = 1
 h = hamiltonian(j, V)[1]
 print(h.toarray())
@@ -25,9 +25,11 @@ vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
 sweep_steps = 20
 parameters = np.linspace(-5, 5, sweep_steps)
 min_eig, optparam = vqe_eig.smallest(H, qc=qc,
-                                     initial_params=init_params.alternate(
-                                         h.shape[0]), disp_run_info=True,
-                                     fatol=1e-2, num_samples=samples)
+                                     initial_params=
+                                     init_params.alternate(
+                                         h.shape[0]),
+                                     disp_run_info=True,
+                                     fatol=1e-1, samples=samples)
 
 print('Min eig vqe: ', min_eig)
 min_eig_exp = vqe.expectation(ansatz.multi_particle(optparam), H, samples=10000,
