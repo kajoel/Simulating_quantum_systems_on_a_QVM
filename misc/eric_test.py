@@ -24,6 +24,15 @@ H = matrix_to_op.multi_particle(h)
 vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
 sweep_steps = 20
 parameters = np.linspace(-5, 5, sweep_steps)
+min_eig, optparam = vqe_eig.smallest(H, qc=qc,
+                                     initial_params=init_params.alternate(
+                                         h.shape[0]), disp_run_info=True,
+                                     fatol=1e-2, num_samples=samples)
+
+print('Min eig vqe: ', min_eig)
+min_eig_exp = vqe.expectation(ansatz.multi_particle(optparam), H, samples=10000,
+                              qc=qc)
+print('Min eig vqe_exp: ', min_eig_exp)
 
 exp_val = [
     vqe.expectation(ansatz.multi_particle(np.array([para])), H, samples=samples,
@@ -52,24 +61,12 @@ for i, p_1 in enumerate(parameters):
 #  samples=samples, qc=qc, disp=print)
 '''
 
-min_eig, optparam = vqe_eig.smallest(h, qc=qc, ansatz_=ansatz.multi_particle,
-                                    num_samples=samples,
-                                    fatol=1e-2,
-                                    initial=init_params.multi_particle_ones(
-                                        h.shape[0]),
-                                    disp_run_info=True)
-print('Min eig vqe: ', min_eig)
-min_eig_exp = vqe.expectation(ansatz.multi_particle(optparam), H, samples=10000,
-                              qc=qc)
-print('Min eig vqe_exp: ', min_eig_exp)
-# plt.show()
-
 # exp_val2 = [vqe.expectation(one_particle(np.array([para])), H, samples=samples,
 # qc=qc) for para in parameters]
 
 plt.figure(0)
 plt.plot(parameters, exp_val, 'black', label='Samples: None')
 # plt.plot(parameters, exp_val2, 'red', label='Samples: {}'.format(samples))
-#plt.xlabel('Parameter value')
-#plt.ylabel('Expected value of Hamiltonian')
+# plt.xlabel('Parameter value')
+# plt.ylabel('Expected value of Hamiltonian')
 plt.show()
