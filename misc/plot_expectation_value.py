@@ -10,10 +10,11 @@ from core import ansatz
 from core import matrix_to_op
 from core import vqe_eig
 from core import init_params
+from meas import sweep
 import matplotlib.pyplot as plt
 
 ###############################################################################
-samples = 10000
+samples = 1000
 matrix = 0
 j = 1
 V = 1
@@ -25,8 +26,8 @@ print(eigvals)
 print('\n')
 qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
 ###############################################################################
-H = matrix_to_op.multi_particle(h)
-initial_params = init_params.alternate(h.shape[0])
+H = matrix_to_op.one_particle(h)
+initial_params = init_params.ones(h.shape[0])
 
 '''
 parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
@@ -34,8 +35,18 @@ parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_pa
 
 print('\n', 'Paramater (samples = None):', parameter_None, '\n')
 '''
-result = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz.multi_particle,
-                 samples=samples, fatol=1e-3, disp_run_info = True)
+
+ansatz_ = ansatz.one_particle_ucc(h.shape[0])
+
+eigs, parameters = sweep.sweep(h, qc, ansatz_, matrix_to_op.one_particle)
+
+plt.plot(parameters, eigs)
+plt.show()
+#result = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_, samples=None, fatol=1e-3, disp_run_info = True)
+
+
+result = vqe_eig.smallest(H, qc, initial_params, ansatz_, samples=None,
+                         disp_run_info=True, xatol=1e-2, fatol=1e-3)
 
 parameter = result[1]
 ansatz_ = ansatz.multi_particle(parameter)

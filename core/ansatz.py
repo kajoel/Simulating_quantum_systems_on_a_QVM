@@ -8,7 +8,7 @@ from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
-from pyquil.paulis import PauliSum, PauliTerm, exponential_map
+from pyquil.paulis import PauliSum, PauliTerm, exponential_map, trotterize, exponentiate
 
 
 def one_particle(theta: np.ndarray) -> Program:
@@ -38,7 +38,7 @@ def multi_particle(theta: np.ndarray) -> Program:
     return create_arbitrary_state(theta)
 
 
-def one_particle_ucc(dim, reference):
+def one_particle_ucc(dim, reference=1):
     """
     @author: Joel
     UCC-style ansatz preserving particle number.
@@ -49,6 +49,8 @@ def one_particle_ucc(dim, reference):
     :return: function(theta) which returns the ansatz Program
     """
     # TODO: should this function also return the expected length of theta?
+
+
     terms = [[], []]
     for occupied in range(dim):
         if reference & (1 << occupied):
@@ -56,7 +58,7 @@ def one_particle_ucc(dim, reference):
                 if not reference & (1 << unoccupied):
                     term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
-                    term = qubitop_to_pyquilpauli(jordan_wigner(term))
+                    term = qubitop_to_pyquilpauli(-1j*jordan_wigner(term))
                     assert len(term) == 2, "Term has not length two!"
                     terms[0].append(term[0])
                     terms[1].append(term[1])
@@ -75,6 +77,24 @@ def one_particle_ucc(dim, reference):
 
     return wrap
 
+
+def one_particle_ucc_2(theta):
+    num_qb = len(theta) + 1
+    for i
+    term = FermionOperator(((unoccupied, 1), (1, 0))) \
+           - FermionOperator(((1, 1), (unoccupied, 0)))
+    term = qubitop_to_pyquilpauli(-1j * jordan_wigner(term))
+    assert len(term) == 2, "Term has not length two!"
+    terms[0].append(term[0])
+    terms[1].append(term[1])
+
+    param_exp_prog_one = exponential_map(first_pauli_term)
+    exp_prog = param_exp_prog_one(1)
+    prog += exp_prog
+    param_exp_prog_two = exponential_map(second_pauli_term)
+    exp_prog = param_exp_prog_two(1)
+    prog += exp_prog
+    return prog
 
 def multi_particle_ucc(dim):
     """
