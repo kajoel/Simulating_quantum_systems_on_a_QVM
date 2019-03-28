@@ -15,10 +15,11 @@ def smallest(H, qc, initial_params,
              samples=None,
              opt_algorithm='Nelder-Mead',
              maxiter=10000,
-             disp_run_info=False,
+             disp_run_info=True,
              display_after_run=False,
              xatol=1e-2, fatol=1e-3,
              return_all_data=False,
+             # Varför har vi detta som in-argument? Används inte
              convert_op=matrix_to_op.multi_particle,
              print_option=None):
     """
