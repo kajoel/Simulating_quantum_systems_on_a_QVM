@@ -11,10 +11,7 @@ import numpy as np
 from pyquil import get_qc
 import matplotlib.pyplot as plt
 
-''' 
-Ska göra om sedan så den tar in en H istället och bara tar fram facit med
-hjälp av samples=None, är en extra körning men lättare att arbetam med.
-'''
+
 def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
                     start=1000, stop=2000, steps=3,save_run=False):
 
