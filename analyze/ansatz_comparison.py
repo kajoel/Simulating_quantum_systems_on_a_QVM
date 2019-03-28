@@ -18,7 +18,7 @@ def _test_depth(ansatz, n_min=1, n_max=12, m=5):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    nbr_ops_s = _test_depth(ansatz.one_particle)
+    nbr_ops_s = _test_depth(ansatz.one_particle, n_max=10)
     nbr_ops_m = _test_depth(ansatz.multi_particle, n_max=2 ** 5)
 
     plt.figure(0)
@@ -28,3 +28,4 @@ if __name__ == "__main__":
     plt.figure(1)
     plt.plot(nbr_ops_m)
     plt.title("Number of gates in multi-particle-ansatz")
+    plt.show()

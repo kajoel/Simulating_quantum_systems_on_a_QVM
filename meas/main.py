@@ -24,13 +24,13 @@ j = 1
 V = 1
 h = lipkin_quasi_spin.hamiltonian(j, V)[0]
 print('Hamiltonian: \n:', h)
-Realenergies = lipkin_quasi_spin.eigenvalues(j, V)[0]
+Realenergies = lipkin_quasi_spin.eigs(j, V)[0]
 print('True Eigs: \n', Realenergies)
 # TestHamiltonian = H[0].toarray()
 # energies = all(TestHamiltonian, one_particle)
 start = time.time()
-energies = vqe_eig.smallest(h, qc, ansatz.one_particle,
-                            initial=init_params.one_particle_ones(h.shape[0]),
+energies = vqe_eig.smallest(h, qc,  init_params.ones(h.shape[0]),
+                            ansatz_=ansatz.one_particle,
                             num_samples=None, disp_run_info=
                             True, display_after_run=True)[0]
 end = time.time()

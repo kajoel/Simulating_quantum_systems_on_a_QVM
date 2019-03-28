@@ -1,6 +1,13 @@
 """
 @author: Sebastian (fast självklart 99% rigetti, jag bara modifierade den)
 """
+"""
+Updated vqe_expectation och expectation from sampling,
+@author Eric utöver Rigetti
+
+Probably need some work!!! Not complete
+"""
+
 
 from grove.pyvqe.vqe import VQE, OptResults
 from collections import Counter
@@ -155,3 +162,160 @@ class VQE_override(VQE):
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
         return results
+
+    @staticmethod
+    def expectation(pyquil_prog: Program,
+                    pauli_sum: Union[PauliSum, PauliTerm, np.ndarray],
+                    samples: int,
+                    qc: QuantumComputer) -> float:
+        """
+        Compute the expectation value of pauli_sum over the distribution generated from pyquil_prog.
+
+        :param pyquil_prog: The state preparation Program to calculate the expectation value of.
+        :param pauli_sum: PauliSum representing the operator of which to calculate the expectation
+            value or a numpy matrix representing the Hamiltonian tensored up to the appropriate
+            size.
+        :param samples: The number of samples used to calculate the expectation value. If samples
+            is None then the expectation value is calculated by calculating <psi|O|psi>. Error
+            models will not work if samples is None.
+        :param qc: The QuantumComputer object.
+
+        :return: A float representing the expectation value of pauli_sum given the distribution
+            generated from quil_prog.
+        """
+        if isinstance(pauli_sum, np.ndarray):
+            # debug mode by passing an array
+            wf = WavefunctionSimulator().wavefunction(pyquil_prog)
+            wf = np.reshape(wf.amplitudes, (-1, 1))
+            average_exp = np.conj(wf).T.dot(pauli_sum.dot(wf)).real
+            return average_exp
+        else:
+            if not isinstance(pauli_sum, (PauliTerm, PauliSum)):
+                raise TypeError(
+                    "pauli_sum variable must be a PauliTerm or PauliSum object")
+
+            if isinstance(pauli_sum, PauliTerm):
+                pauli_sum = PauliSum([pauli_sum])
+
+            if samples is None:
+                '''
+                operator_progs = []
+                operator_coeffs = []
+                for p_term in pauli_sum.terms:
+                    op_prog = Program()
+                    for qindex, op in p_term:
+                        op_prog.inst(STANDARD_GATES[op](qindex))
+                    operator_progs.append(op_prog)
+                    operator_coeffs.append(p_term.coefficient)
+
+                result_overlaps = WavefunctionSimulator().expectation(pyquil_prog, pauli_sum.terms)
+                result_overlaps = list(result_overlaps)
+                assert len(result_overlaps) == len(operator_progs),\
+                    """Somehow we didn't get the correct number of results back from the QVM"""
+                expectation = sum(list(map(lambda x: x[0] * x[1],
+                                           zip(result_overlaps, operator_coeffs))))
+                '''
+                result_overlaps = WavefunctionSimulator().expectation(
+                    pyquil_prog, pauli_sum.terms)
+                expectation = np.sum(result_overlaps)
+                return expectation.real
+            else:
+                if not isinstance(samples, int):
+                    raise TypeError("samples variable must be an integer")
+                if samples <= 0:
+                    raise ValueError(
+                        "samples variable must be a positive integer")
+
+                # normal execution via fake sampling
+                # stores the sum of contributions to the energy from each operator term
+                expectation = 0.0
+                for j, term in enumerate(pauli_sum.terms):
+                    meas_basis_change = Program()
+                    qubits_to_measure = []
+                    if len(term.operations_as_set()) == 0:
+                        meas_outcome = 1.0
+                    else:
+                        for index, gate in term:
+                            qubits_to_measure.append(index)
+                            if gate == 'X':
+                                meas_basis_change.inst(RY(-np.pi / 2, index))
+                            elif gate == 'Y':
+                                meas_basis_change.inst(RX(np.pi / 2, index))
+
+                        meas_outcome, meas_vars = \
+                                expectation_from_sampling(
+                                    pyquil_prog + meas_basis_change,
+                                    qubits_to_measure,
+                                    qc,
+                                    samples)
+                        print('meas_outcome:', meas_outcome)
+
+                    expectation += term.coefficient * meas_outcome
+
+                return expectation.real
+
+
+def parity_even_p(state, marked_qubits):
+    """
+    Calculates the parity of elements at indexes in marked_qubits
+
+    Parity is relative to the binary representation of the integer state.
+
+    :param state: The wavefunction index that corresponds to this state.
+    :param marked_qubits: The indexes to be considered in the parity sum.
+    :returns: A boolean corresponding to the parity.
+    """
+    assert isinstance(state, int), \
+        f"{state} is not an integer. Must call parity_even_p with an integer state."
+    mask = 0
+    for q in marked_qubits:
+        mask |= 1 << q
+    return bin(mask & state).count("1") % 2 == 0
+
+
+def expectation_from_sampling(pyquil_program: Program,
+                              marked_qubits: List[int],
+                              qc: QuantumComputer,
+                              samples: int) -> float:
+    """
+    Calculation of Z_{i} at marked_qubits
+
+    Given a wavefunctions, this calculates the expectation value of the Zi
+    operator where i ranges over all the qubits given in marked_qubits.
+
+    :param pyquil_program: pyQuil program generating some state
+    :param marked_qubits: The qubits within the support of the Z pauli
+                          operator whose expectation value is being calculated
+    :param qc: A QuantumComputer object.
+    :param samples: Number of bitstrings collected to calculate expectation
+                    from sampling.
+    :returns: The expectation value as a float.
+    """
+    program = Program()
+    ro = program.declare('ro', 'BIT', max(marked_qubits) + 1)
+    program += pyquil_program
+    program += [MEASURE(qubit, r) for qubit, r in
+                zip(list(range(max(marked_qubits) + 1)), ro)]
+    program.wrap_in_numshots_loop(samples)
+    executable = qc.compile(program)
+    bitstring_samples = qc.run(executable)
+    bitstring_tuples = list(map(tuple, bitstring_samples))
+
+    freq = Counter(bitstring_tuples)
+    # pprint.pprint(freq)
+
+    # perform weighted average
+    # expectation = 0
+    exp_list = []
+    for bitstring, count in freq.items():
+        bitstring_int = int("".join([str(x) for x in bitstring[::-1]]), 2)
+        # print('bitstring_int', bitstring_int, 'With parity',
+              #parity_even_p(bitstring_int, marked_qubits))
+        if parity_even_p(bitstring_int, marked_qubits):
+            exp_list.append(count)
+        else:
+            exp_list.append(-1*count)
+    expectation = np.sum(exp_list) / samples
+    variance = (1 - expectation**2) / samples
+    # print('std:', np.sqrt(variance))
+    return expectation, variance
