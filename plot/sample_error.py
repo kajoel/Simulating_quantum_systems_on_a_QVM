@@ -21,6 +21,10 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     samples = range(start, stop, round((stop-start)/steps))
     exp_val = np.zeros(len(samples))
     para_error = np.zeros(len(samples))
+    # Placeholder variance
+    variance = np.random.random(len(samples))/20
+
+
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
     for i,sample in enumerate(samples):
@@ -35,7 +39,8 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     plt.figure(0)
     plt.hlines(facit[0], start, stop, colors='r', linestyles='dashed',
                    label='True eig: {}'.format(round(facit[0],4)))
-    plt.scatter(samples,exp_val,label='Eig calculated with Nelder-Mead')
+    plt.errorbar(samples,exp_val,variance, fmt='o',
+                 label='Eig calculated with Nelder-Mead')
     plt.legend()
     plt.xlabel('Samples')
     plt.ylabel('Eigenvalue')
@@ -103,6 +108,7 @@ if __name__ == '__main__':
 
     ansatz_ = ansatz.one_particle
     run_sample_error(ansatz_)
+    plt.show()
 
 
 
