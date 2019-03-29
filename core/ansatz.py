@@ -58,7 +58,7 @@ def one_particle_ucc(dim, reference=1):
                 if not reference & (1 << unoccupied):
                     term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
-                    term = qubitop_to_pyquilpauli(-1j*jordan_wigner(term))
+                    term = qubitop_to_pyquilpauli(jordan_wigner(term))
                     assert len(term) == 2, "Term has not length two!"
                     terms[0].append(term[0])
                     terms[1].append(term[1])
@@ -77,16 +77,19 @@ def one_particle_ucc(dim, reference=1):
 
     return wrap
 
-
+'''
 def one_particle_ucc_2(theta):
     num_qb = len(theta) + 1
     for i
     term = FermionOperator(((unoccupied, 1), (1, 0))) \
            - FermionOperator(((1, 1), (unoccupied, 0)))
-    term = qubitop_to_pyquilpauli(-1j * jordan_wigner(term))
+    term = qubitop_to_pyquilpauli(jordan_wigner(term))
     assert len(term) == 2, "Term has not length two!"
     terms[0].append(term[0])
     terms[1].append(term[1])
+
+    #Returns a function f(alpha) that constructs the Program corresponding to
+    # exp(-1j*alpha*term).
 
     param_exp_prog_one = exponential_map(first_pauli_term)
     exp_prog = param_exp_prog_one(1)
@@ -95,6 +98,8 @@ def one_particle_ucc_2(theta):
     exp_prog = param_exp_prog_two(1)
     prog += exp_prog
     return prog
+'''
+
 
 def multi_particle_ucc(dim):
     """
@@ -149,11 +154,12 @@ def exponential_map_commuting_pauli_terms(terms):
     :param list of pyquil.paulis.PauliTerm terms: a list of pauli terms
     :return: a function that takes a vector parameter and returns a Program.
     """
+
     if isinstance(terms, PauliSum):
         terms = terms.terms
     exp_map = []
     for term in terms:
-        exp_map.append(exponential_map(term))
+        exp_map.append(exponential_map(-1j*term))
 
     def wrap(theta):
         """

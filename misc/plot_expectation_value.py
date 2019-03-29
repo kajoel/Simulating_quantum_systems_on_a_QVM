@@ -38,7 +38,7 @@ print('\n', 'Paramater (samples = None):', parameter_None, '\n')
 
 ansatz_ = ansatz.one_particle_ucc(h.shape[0])
 
-eigs, parameters = sweep.sweep(h, qc, ansatz_, matrix_to_op.one_particle)
+eigs, parameters = sweep.sweep(h, qc, ansatz_, matrix_to_op.one_particle, start=-30, stop=30)
 
 plt.plot(parameters, eigs)
 plt.show()
