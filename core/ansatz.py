@@ -8,7 +8,7 @@ from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
-from pyquil.paulis import PauliSum, PauliTerm, exponential_map, exponentiate, suzuki_trotter
+from pyquil.paulis import PauliSum, exponential_map, suzuki_trotter
 from pyquil.gates import X
 
 
@@ -39,7 +39,7 @@ def multi_particle(theta: np.ndarray) -> Program:
     return create_arbitrary_state(theta)
 
 
-def one_particle_ucc(dim, reference=1):
+def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     """
     @author: Joel, Carl
     UCC-style ansatz preserving particle number.
@@ -62,7 +62,7 @@ def one_particle_ucc(dim, reference=1):
                     assert len(term) == 2, "Term has not length two!"
                     terms.append(term)
 
-    exp_maps = trotterize(terms)
+    exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
     def wrap(theta):
         """
@@ -82,9 +82,9 @@ def one_particle_ucc(dim, reference=1):
     return wrap
 
 
-def trotterize(terms):
+def trotterize(terms, trotter_order, trotter_steps):
     exp_maps = []
-    order_slices = suzuki_trotter(1, 2)
+    order_slices = suzuki_trotter(trotter_order, trotter_steps)
     for term in terms:
         tmp = []
         for coeff, operator in order_slices:
