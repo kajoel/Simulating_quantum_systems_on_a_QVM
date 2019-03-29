@@ -8,7 +8,8 @@ from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
-from pyquil.paulis import PauliSum, PauliTerm, exponential_map, trotterize, exponentiate
+from pyquil.paulis import PauliSum, PauliTerm, exponential_map, exponentiate, suzuki_trotter
+from pyquil.gates import X
 
 
 def one_particle(theta: np.ndarray) -> Program:
@@ -40,7 +41,7 @@ def multi_particle(theta: np.ndarray) -> Program:
 
 def one_particle_ucc(dim, reference=1):
     """
-    @author: Joel
+    @author: Joel, Carl
     UCC-style ansatz preserving particle number.
 
     :param int dim: dimension of the space = num_qubits
@@ -50,8 +51,7 @@ def one_particle_ucc(dim, reference=1):
     """
     # TODO: should this function also return the expected length of theta?
 
-
-    terms = [[], []]
+    terms = []
     for occupied in range(dim):
         if reference & (1 << occupied):
             for unoccupied in range(dim):
@@ -60,10 +60,9 @@ def one_particle_ucc(dim, reference=1):
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
                     term = qubitop_to_pyquilpauli(jordan_wigner(term))
                     assert len(term) == 2, "Term has not length two!"
-                    terms[0].append(term[0])
-                    terms[1].append(term[1])
-    map_0 = exponential_map_commuting_pauli_terms(terms[0])
-    map_1 = exponential_map_commuting_pauli_terms(terms[1])
+                    terms.append(term)
+
+    exp_maps = trotterize(terms)
 
     def wrap(theta):
         """
@@ -73,32 +72,28 @@ def one_particle_ucc(dim, reference=1):
         :return: the Program
         :rtype: pyquil.Program
         """
-        return map_0(theta) + map_1(theta)
+        prog = Program()
+        prog += X(0)
+        for idx, exp_map in enumerate(exp_maps):
+            for exp in exp_map:
+                prog += exp(theta[idx])
+        return prog
 
     return wrap
 
-'''
-def one_particle_ucc_2(theta):
-    num_qb = len(theta) + 1
-    for i
-    term = FermionOperator(((unoccupied, 1), (1, 0))) \
-           - FermionOperator(((1, 1), (unoccupied, 0)))
-    term = qubitop_to_pyquilpauli(jordan_wigner(term))
-    assert len(term) == 2, "Term has not length two!"
-    terms[0].append(term[0])
-    terms[1].append(term[1])
 
-    #Returns a function f(alpha) that constructs the Program corresponding to
-    # exp(-1j*alpha*term).
-
-    param_exp_prog_one = exponential_map(first_pauli_term)
-    exp_prog = param_exp_prog_one(1)
-    prog += exp_prog
-    param_exp_prog_two = exponential_map(second_pauli_term)
-    exp_prog = param_exp_prog_two(1)
-    prog += exp_prog
-    return prog
-'''
+def trotterize(terms):
+    exp_maps = []
+    order_slices = suzuki_trotter(1, 2)
+    for term in terms:
+        tmp = []
+        for coeff, operator in order_slices:
+            if operator == 0:
+                tmp.append(exponential_map(-1j * coeff * term[0]))
+            else:
+                tmp.append(exponential_map(-1j * coeff * term[1]))
+        exp_maps.append(tmp)
+    return exp_maps
 
 
 def multi_particle_ucc(dim):
@@ -159,7 +154,7 @@ def exponential_map_commuting_pauli_terms(terms):
         terms = terms.terms
     exp_map = []
     for term in terms:
-        exp_map.append(exponential_map(-1j*term))
+        exp_map.append(exponential_map(-1j * term))
 
     def wrap(theta):
         """
