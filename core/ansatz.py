@@ -10,12 +10,15 @@ from openfermion import FermionOperator, QubitOperator, jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
 from pyquil.paulis import PauliSum, exponential_map, suzuki_trotter
 from pyquil.gates import X
+from typing import Callable, List
 
 
 def one_particle(theta: np.ndarray) -> Program:
     """
-    @author: Joel, Carl
     Creates a program to set up an arbitrary one-particle-state.
+
+    @author: Joel, Carl
+
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
@@ -29,8 +32,10 @@ def one_particle(theta: np.ndarray) -> Program:
 
 def multi_particle(theta: np.ndarray) -> Program:
     """
-    @author: Joel
     Creates a program to set up an arbitrary state.
+
+    @author: Joel
+
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
@@ -41,8 +46,9 @@ def multi_particle(theta: np.ndarray) -> Program:
 
 def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     """
-    @author: Joel, Carl
     UCC-style ansatz preserving particle number.
+
+    @author: Joel, Carl
 
     :param int dim: dimension of the space = num_qubits
     :param int reference: the binary number corresponding to the reference
@@ -59,7 +65,6 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
                     term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
                     term = qubitop_to_pyquilpauli(jordan_wigner(term))
-                    assert len(term) == 2, "Term has not length two!"
                     terms.append(term)
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
@@ -73,7 +78,9 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
         :rtype: pyquil.Program
         """
         prog = Program()
-        prog += X(0)
+        for qubit in range(int.bit_length(reference)):
+            if reference & (1 << qubit):
+                prog += X(qubit)
         for idx, exp_map in enumerate(exp_maps):
             for exp in exp_map:
                 prog += exp(theta[idx])
@@ -82,11 +89,23 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-def trotterize(terms, trotter_order, trotter_steps):
+def trotterize(terms, trotter_order, trotter_steps) -> List[List[Callable[[float], Program]]]:
+    """
+    Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
+    Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
+    but you get the idea).
+
+    @author = Joel, Carl
+
+    :param List[PauliSum] terms: PauliSums of length 2
+    :return: list of lists of functions(theta) that returns Programs
+    """
+    # TODO: better docstring
     exp_maps = []
     order_slices = suzuki_trotter(trotter_order, trotter_steps)
     for term in terms:
         tmp = []
+        assert len(term) == 2, "Term has not length two!"
         for coeff, operator in order_slices:
             if operator == 0:
                 tmp.append(exponential_map(-1j * coeff * term[0]))
@@ -98,7 +117,6 @@ def trotterize(terms, trotter_order, trotter_steps):
 
 def multi_particle_ucc(dim):
     """
-    @author: Joel
     UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
     states). This is basically an implementation of create_arbitrary_state
     (however, theta will not match the coefficients in the superposition)
@@ -118,6 +136,8 @@ def multi_particle_ucc(dim):
     If this function is called multiple times, particularly if theta has the
     same length in all calls, caching terms might significantly increase
     performance.
+
+    @author: Joel
 
     :param int dim: dimension of the space = num_qubits**2
     :return: function(theta) which returns the ansatz Program. -1j*theta[i] is
@@ -139,12 +159,13 @@ def multi_particle_ucc(dim):
 
 def exponential_map_commuting_pauli_terms(terms):
     """
-    @author = Joel
     Returns a function f(theta) which, given theta, returns the Program
     corresponding to exp(-1j sum_i theta[i]*term[i]) =
     prod_i exp(-1j*theta[i]*term[i]). Note that the equality only holds if
     the terms are commuting. This was inspired by pyquil.exponential_map
     and pyquil.exponentiate_commuting_pauli_sum.
+
+    @author = Joel
 
     :param list of pyquil.paulis.PauliTerm terms: a list of pauli terms
     :return: a function that takes a vector parameter and returns a Program.
