@@ -160,7 +160,7 @@ def main1(samples=1000):
     plt.show()
 
 
-def main2(qc, j, H, samples=1000, sweep_params=100, callback=None, plot=False):
+def main2(qc, H, samples=1000, sweep_params=100, callback=None, plot=False):
     sweep_parameters(H, qc, new_version=True, samples=samples,
                      num_para=sweep_params, start=-3, stop=3, callback=
                      callback, plot=plot)
@@ -192,8 +192,9 @@ if __name__ == '__main__':
         plt.pause(0.05)
 
 
-    main2(qc, j, h, samples, sweep_params,
-          callback=testprint2)
+    sweep_parameters(h, qc, new_version=True, samples=samples,
+                     num_para=sweep_params, start=-3, stop=3, callback=
+                     testprint2, plot=False)
 
     import matplotlib.pyplot as plt
 
