@@ -13,7 +13,7 @@ from pyquil.gates import X
 from typing import Callable, List
 
 
-def one_particle(theta: np.ndarray) -> Program:
+def one_particle(dim: int) -> Program:
     """
     Creates a program to set up an arbitrary one-particle-state.
 
@@ -23,14 +23,17 @@ def one_particle(theta: np.ndarray) -> Program:
     :return: PyQuil program setting up the state.
     """
 
-    vector = np.zeros(2 ** (theta.shape[0] + 1))
-    vector[1] = 1 / np.sqrt(theta.size + 1)
-    vector[[2 ** (i + 1) for i in range(theta.shape[0])]] = theta
-    vector *= 1 / np.linalg.norm(vector)
-    return create_arbitrary_state(vector)
+    def wrap(theta: np.ndarray):
+        vector = np.zeros(2 ** (dim))
+        vector[1] = 1 / np.sqrt(dim)
+        vector[[2 ** (i + 1) for i in range(dim - 1)]] = theta
+        vector *= 1 / np.linalg.norm(vector)
+        return create_arbitrary_state(vector)
+
+    return wrap
 
 
-def multi_particle(theta: np.ndarray) -> Program:
+def multi_particle(dim: int) -> Program:
     """
     Creates a program to set up an arbitrary state.
 
@@ -39,9 +42,12 @@ def multi_particle(theta: np.ndarray) -> Program:
     :param theta: Vector representing the state.
     :return: PyQuil program setting up the state.
     """
-    theta = np.concatenate((np.array([1]) / np.sqrt(theta.size + 1), theta),
-                           axis=0)
-    return create_arbitrary_state(theta)
+
+    def wrap(theta: np.ndarray):
+        theta = np.concatenate((np.array([1]) / np.sqrt(dim), theta), axis=0)
+        return create_arbitrary_state(theta)
+
+    return wrap
 
 
 def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
@@ -92,7 +98,7 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
 
 
 def trotterize(terms, trotter_order, trotter_steps) -> List[
-        List[Callable[[float], Program]]]:
+    List[Callable[[float], Program]]]:
     """
     Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
     Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct

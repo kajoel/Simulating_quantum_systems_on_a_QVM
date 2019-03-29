@@ -19,6 +19,7 @@ matrix = 0
 j = 3
 V = 1
 h = hamiltonian(j, V)[matrix]
+dim = h.shape[0]
 print(h.toarray())
 print('\n')
 eigvals = eigs(j, V)[matrix]
@@ -28,11 +29,12 @@ print('\n')
 qc = get_qc(str(h.shape[0]) + 'q-qvm')
 ###############################################################################
 H = matrix_to_op.one_particle(h)
-initial_params = init_params.alternate(h.shape[0])
-ansatz_ = ansatz.one_particle_ucc(h.shape[0])
+initial_params = init_params.alternate(dim)
+ansatz_ = ansatz.one_particle(dim)
+#ansatz_ = ansatz.one_particle_ucc(dim, trotter_order=1, trotter_steps=4)
 ###############################################################################
 parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_,
-                 samples=None, fatol=1e-1, disp_run_info = True,
+                 samples=None, fatol=1e-1, xatol=7e-2, disp_run_info = True,
                                   display_after_run=True)[1]
 
 print('\n', 'Paramater (samples = None):', parameter_None, '\n')
