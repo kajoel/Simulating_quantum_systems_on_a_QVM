@@ -137,7 +137,7 @@ class VQE_override(VQE):
         if disp is True and 'callback' in arguments:
             self.minimizer_kwargs['callback'] = print_current_iter
 
-        if (disp is not None and disp is not True) and 'callback' in arguments:
+        if (callable(disp)) and 'callback' in arguments:
             self.minimizer_kwargs['callback'] = lambda x: disp(x,
                                                                self._current_expectation)
 
