@@ -8,7 +8,6 @@ Updated vqe_expectation och expectation from sampling,
 Probably need some work!!! Not complete
 """
 
-
 from grove.pyvqe.vqe import VQE, OptResults
 from collections import Counter
 from typing import List, Union
@@ -88,6 +87,7 @@ class VQE_override(VQE):
 
         iteration_params = []
         expectation_vals = []
+        self.variance = []
         self._current_expectation = None
         if samples is None:
             print("""WARNING: Fast method for expectation will be used. Noise
@@ -110,7 +110,10 @@ class VQE_override(VQE):
             :return: (float) expectation value
             """
             pyquil_prog = variational_state_evolve(params)
-            mean_value = self.expectation(pyquil_prog, hamiltonian, samples, qc)
+            mean_value, tmp_vars = self.expectation(pyquil_prog,
+                                                    hamiltonian, samples,
+                                                    qc)
+            self.variance.append(tmp_vars)
             self._current_expectation = mean_value  # store for printing
             return mean_value
 
@@ -161,15 +164,18 @@ class VQE_override(VQE):
         if return_all:
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
+            results.variance = self.variance
         return results
 
     @staticmethod
     def expectation(pyquil_prog: Program,
                     pauli_sum: Union[PauliSum, PauliTerm, np.ndarray],
                     samples: int,
-                    qc: QuantumComputer) -> float:
+                    qc: QuantumComputer) -> tuple:
         """
-        Compute the expectation value of pauli_sum over the distribution generated from pyquil_prog.
+        Compute the expectation value of pauli_sum over the distribution
+        generated from pyquil_prog. Updated by Eric
+
 
         :param pyquil_prog: The state preparation Program to calculate the expectation value of.
         :param pauli_sum: PauliSum representing the operator of which to calculate the expectation
@@ -182,13 +188,16 @@ class VQE_override(VQE):
 
         :return: A float representing the expectation value of pauli_sum given the distribution
             generated from quil_prog.
+
+        @author: Eric
         """
         if isinstance(pauli_sum, np.ndarray):
             # debug mode by passing an array
             wf = WavefunctionSimulator().wavefunction(pyquil_prog)
             wf = np.reshape(wf.amplitudes, (-1, 1))
             average_exp = np.conj(wf).T.dot(pauli_sum.dot(wf)).real
-            return average_exp
+            print('Variance 0 for debug properties')
+            return average_exp, 0.0
         else:
             if not isinstance(pauli_sum, (PauliTerm, PauliSum)):
                 raise TypeError(
@@ -218,7 +227,7 @@ class VQE_override(VQE):
                 result_overlaps = WavefunctionSimulator().expectation(
                     pyquil_prog, pauli_sum.terms)
                 expectation = np.sum(result_overlaps)
-                return expectation.real
+                return expectation.real, 0.0
             else:
                 if not isinstance(samples, int):
                     raise TypeError("samples variable must be an integer")
@@ -227,13 +236,16 @@ class VQE_override(VQE):
                         "samples variable must be a positive integer")
 
                 # normal execution via fake sampling
-                # stores the sum of contributions to the energy from each operator term
+                # stores the sum of contributions to the energy from
+                # each operator term
                 expectation = 0.0
+                variance = 0.0
                 for j, term in enumerate(pauli_sum.terms):
                     meas_basis_change = Program()
                     qubits_to_measure = []
                     if len(term.operations_as_set()) == 0:
                         meas_outcome = 1.0
+                        meas_vars = 0.0
                     else:
                         for index, gate in term:
                             qubits_to_measure.append(index)
@@ -243,16 +255,16 @@ class VQE_override(VQE):
                                 meas_basis_change.inst(RX(np.pi / 2, index))
 
                         meas_outcome, meas_vars = \
-                                expectation_from_sampling(
-                                    pyquil_prog + meas_basis_change,
-                                    qubits_to_measure,
-                                    qc,
-                                    samples)
-                        print('meas_outcome:', meas_outcome)
+                            expectation_from_sampling(
+                                pyquil_prog + meas_basis_change,
+                                qubits_to_measure,
+                                qc,
+                                samples)
 
                     expectation += term.coefficient * meas_outcome
+                    variance += (term.coefficient ** 2) * meas_vars
 
-                return expectation.real
+                return expectation.real, variance.real
 
 
 def parity_even_p(state, marked_qubits):
@@ -276,7 +288,7 @@ def parity_even_p(state, marked_qubits):
 def expectation_from_sampling(pyquil_program: Program,
                               marked_qubits: List[int],
                               qc: QuantumComputer,
-                              samples: int) -> float:
+                              samples: int) -> tuple:
     """
     Calculation of Z_{i} at marked_qubits
 
@@ -289,7 +301,7 @@ def expectation_from_sampling(pyquil_program: Program,
     :param qc: A QuantumComputer object.
     :param samples: Number of bitstrings collected to calculate expectation
                     from sampling.
-    :returns: The expectation value as a float.
+    :returns: The expectation value and variance as a float.
     """
     program = Program()
     ro = program.declare('ro', 'BIT', max(marked_qubits) + 1)
@@ -302,20 +314,15 @@ def expectation_from_sampling(pyquil_program: Program,
     bitstring_tuples = list(map(tuple, bitstring_samples))
 
     freq = Counter(bitstring_tuples)
-    # pprint.pprint(freq)
 
     # perform weighted average
-    # expectation = 0
     exp_list = []
     for bitstring, count in freq.items():
         bitstring_int = int("".join([str(x) for x in bitstring[::-1]]), 2)
-        # print('bitstring_int', bitstring_int, 'With parity',
-              #parity_even_p(bitstring_int, marked_qubits))
         if parity_even_p(bitstring_int, marked_qubits):
             exp_list.append(count)
         else:
-            exp_list.append(-1*count)
+            exp_list.append(-1 * count)
     expectation = np.sum(exp_list) / samples
-    variance = (1 - expectation**2) / samples
-    # print('std:', np.sqrt(variance))
+    variance = (1 - expectation ** 2) / samples
     return expectation, variance
