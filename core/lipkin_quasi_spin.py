@@ -7,6 +7,7 @@ Note: - Currently the code doesn't work for j=0 (corresponding to N=0).
       for the latter as well (with minimal modification)
 
 Created on Fri Feb 15 14:16:40 2019
+
 @author: Joel
 """
 # Imports
@@ -20,7 +21,6 @@ from functools import lru_cache
 @lru_cache(maxsize=1)
 def hamiltonian(j, V, e=1):
     """
-    @author: Joel
     Function which returns quasi-spin hamiltonian-matrix for specified value
     of j. The function returns two matrices H1 and H2 and the full matrix is
     :math:`H = H1 \oplus  H2`, where :math:`\oplus` denotes a direct sum.
@@ -28,6 +28,8 @@ def hamiltonian(j, V, e=1):
     H1 has :math:`m \in \{-j, -j+2, ...\}`  and
 
     H2 has :math:`m \in \{-j+1, -j+3, ...\}`
+
+    @author: Joel
 
     :param j: j in the Lipkin model
     :param V: V in the Lipkin-model
@@ -41,11 +43,12 @@ def hamiltonian(j, V, e=1):
 
 def eigs(j, V, e=1):
     """
-    @author: Joel
     Function which returns eigs for specified value of j. The output is
     two 1D ndarrays with sorted eigs corresponding to H1 and H2.
 
-    The input parameter e is epsilon in the Lipkin-model
+    The input parameter e is epsilon in the Lipkin-model.
+
+    @author: Joel
     """
     # Preallocate and store in tuple to keep DRY
     eigvals = (
@@ -72,12 +75,13 @@ def eigs(j, V, e=1):
 
 def eigs_positive(j, V, e=1):
     """
-    @author: Joel
     Function which returns eigs for specified value of j. The output is
     a 1D ndarray. The eigs are sorted by size and only the positive
     eigs are returned.
 
-    The input parameter e is epsilon in the Lipkin-model
+    The input parameter e is epsilon in the Lipkin-model.
+
+    @author: Joel
     """
     # We use that we now that there are floor((2j+1)/2) strictly positive
     # eigs. This avoids numerical problems with eigs
