@@ -53,6 +53,8 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     :param int dim: dimension of the space = num_qubits
     :param int reference: the binary number corresponding to the reference
         state (which must be a Fock-state).
+    :param int trotter_order: trotter order in suzuki_trotter
+    :param int trotter_steps: trotter steps in suzuki_trotter
     :return: function(theta) which returns the ansatz Program
     """
     # TODO: should this function also return the expected length of theta?
@@ -89,7 +91,8 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-def trotterize(terms, trotter_order, trotter_steps) -> List[List[Callable[[float], Program]]]:
+def trotterize(terms, trotter_order, trotter_steps) -> List[
+        List[Callable[[float], Program]]]:
     """
     Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
     Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
@@ -98,6 +101,8 @@ def trotterize(terms, trotter_order, trotter_steps) -> List[List[Callable[[float
     @author = Joel, Carl
 
     :param List[PauliSum] terms: PauliSums of length 2
+    :param int trotter_order: trotter order in suzuki_trotter
+    :param int trotter_steps: trotter steps in suzuki_trotter
     :return: list of lists of functions(theta) that returns Programs
     """
     # TODO: better docstring
