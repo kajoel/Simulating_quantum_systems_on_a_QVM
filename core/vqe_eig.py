@@ -25,7 +25,9 @@ def smallest(H, qc, initial_params,
     TODO: Fix this documentation. Below is not up to date.
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
+
     @author: Eric, Axel, Carl
+
     :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
     :param ansatz_: ansatz function
@@ -109,6 +111,9 @@ def negative(h, ansatz, qvm, num_eigvals=None,
     """
     Calculates all negative or specified amount of eigs for a
     given hamiltonian matrix.
+
+    @author: Eric
+
     :param h: np.array hamiltonian matrix
     :param ansatz: ansatz function
     :param num_eigvals: number of desired eigs to be calculated
@@ -116,7 +121,6 @@ def negative(h, ansatz, qvm, num_eigvals=None,
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
-    @author: Eric Nilsson
     """
     # TODO: Needs to be updated to fit new smallest
     if num_eigvals is None:
@@ -146,6 +150,9 @@ def all(H, ansatz, qvm, num_eigvals=None,
     TODO: Make so it handles sparse matrices? Currently finds
      double zero eigs
     TODO: Needs to be updated to fit new smallest
+
+    @author: Eric
+
     :param H: np.array hamiltonian matrix
     :param ansatz: ansatz function
     :param num_eigvals: number of desired eigs to be calculated
@@ -153,7 +160,6 @@ def all(H, ansatz, qvm, num_eigvals=None,
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
-    @author: Eric
     """
     energy = negative(H, ansatz, qvm, num_eigvals,
                       num_samples, opt_algorithm,
@@ -195,7 +201,7 @@ def update_householder(H, ansatz, _, x):
 
     Note that if ||n|| is small there might be stabilty-issues.
 
-    @author: kajoel
+    @author: Joel
     """
     if x.shape[0] > 1:
         # Find suitable basis-vector to reflect to (with householder)
