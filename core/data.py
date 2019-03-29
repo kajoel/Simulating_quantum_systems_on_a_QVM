@@ -176,9 +176,9 @@ def _display_internal(file, data, metadata):
         '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
         + '\033[0m\n')
     for key, value in metadata.items():
-        print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-        print(value + '\n')
-    print('\033[4m' + 'Variables in data' + ':\033[0m')
+        print('\033[4m' + key.replace('_', ' ') + ':\033[0m')
+        print(str(value) + '\n')
+    print('\033[4m' + 'variables in data' + ':\033[0m')
     for key in data:
         print(key)
 

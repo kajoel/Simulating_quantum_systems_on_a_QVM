@@ -6,6 +6,7 @@ Quasi-spin quantum number j (2)
 Index of upper/lower block in j-matrix (0)
 Value of potential V (1)
 Number of samples on the Quantum Computer (1000)
+File to save to (optional dialog box if not specified)
 Inputs should be spaced, e.g.;
 pyhton -m meas.none_min_sample 2 0 1 1000
 Don't forget to run conda env first
@@ -22,9 +23,16 @@ from core import ansatz
 from core import matrix_to_op
 from core import vqe_eig
 from core import init_params
+from core import data
 import matplotlib.pyplot as plt
 
-if len(sys.argv) is not 5:
+
+# Parameters completely specifying the simulation
+if len(sys.argv) < 6:
+    file = None
+else:
+    file = sys.argv[5]
+if len(sys.argv) < 5:
     j = 2
     i = 0
     V = 1
@@ -35,8 +43,23 @@ else:
     V = float(sys.argv[3])
     samples = int(sys.argv[4])
 
-print('Values set to:', '\nj: ', j, '\ni: ', i, '\nV: ', V, '\nsamples: ',
-      samples)
+# TODO: when calling sweep, pass ansatz_(dim) instead of just ansatz_ (see
+#  updated ansatz.py)
+ansatz_ = ansatz.multi_particle
+matrix_to_op_ = matrix_to_op.multi_particle
+
+# Create the file to save
+# TODO: write description
+desc = 'WRITE DESCRIPTION'
+metadata = {'description': desc,
+            'V': V,
+            'j': j,
+            'i': i,
+            'samples': samples,
+            'ansatz': ansatz_.__name__,
+            'matrix_to_operator': matrix_to_op_.__name__}
+data.save(file, metadata=metadata)
+
 
 h = lipkin_quasi_spin.hamiltonian(j, V)[i]
 no_of_qubits = int.bit_length(h.shape[0])
