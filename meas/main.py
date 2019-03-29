@@ -29,9 +29,9 @@ print('True Eigs: \n', Realenergies)
 # TestHamiltonian = H[0].toarray()
 # energies = all(TestHamiltonian, one_particle)
 start = time.time()
-energies = vqe_eig.smallest(h, qc,  init_params.ones(h.shape[0]),
+energies = vqe_eig.smallest(h, qc,  init_params.one_particle_ones(h.shape[0]),
                             ansatz_=ansatz.one_particle,
-                            num_samples=None, disp_run_info=
+                            samples=None, disp_run_info=
                             True, display_after_run=True)[0]
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies.tolist()])
