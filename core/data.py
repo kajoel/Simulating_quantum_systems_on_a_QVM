@@ -61,6 +61,9 @@ def save(file=None, data=None, metadata=None):
     if not isinstance(data, dict):
         data = {'data': data}
 
+    # Display
+    _display_internal(file, data, metadata)
+
     # Save
     with open(file, 'wb') as file_:
         pickle.dump({'data': data, 'metadata': metadata}, file_)
@@ -109,15 +112,7 @@ def display(files=None):
         files = [files]
     for file in files:
         data, metadata = load(file)
-        print(
-            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
-            + '\033[0m\n')
-        for key, value in metadata.items():
-            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-            print(value + '\n')
-        print('\033[4m' + 'Variables in data' + ':\033[0m')
-        for key in data:
-            print(key + '\n')
+        _display_internal(file, data, metadata)
 
 
 def init_users(name):
@@ -165,6 +160,27 @@ def _add_user(name, user, users):
         print('\033[93mWarning: changing the name of existing user.\033[0m')
     users[0][user] = name
     save(USER_PATH, data=users[0], metadata=users[1])
+
+
+def _display_internal(file, data, metadata):
+    """
+    Internal method for displaying file with metadata.
+
+    @author = Joel
+
+    :param str file: path to the file
+    :param dict data: the data
+    :param dict metadata: metadata describing data
+    """
+    print(
+        '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
+        + '\033[0m\n')
+    for key, value in metadata.items():
+        print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
+        print(value + '\n')
+    print('\033[4m' + 'Variables in data' + ':\033[0m')
+    for key in data:
+        print(key)
 
 
 def _get_name():
