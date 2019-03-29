@@ -8,11 +8,12 @@ from core import matrix_to_op
 from core import vqe_eig
 from core import init_params
 import matplotlib.pyplot as plt
+from core import vqeOverride
 from matplotlib import cm
 from pyquil.api import WavefunctionSimulator
 from mpl_toolkits.mplot3d import Axes3D
 
-samples = 10000
+samples = 1000
 j = 2
 V = 1
 h = hamiltonian(j, V)[1]
@@ -21,22 +22,32 @@ eigvals = eigs(j, V)[1]
 print(eigvals)
 qc = get_qc('3q-qvm')
 H = matrix_to_op.multi_particle(h)
-vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
-sweep_steps = 20
+vqe = vqeOverride.VQE_override(minimizer=minimize,
+                               minimizer_kwargs={'method': 'Nelder-Mead'})
+sweep_steps = 30
 parameters = np.linspace(-5, 5, sweep_steps)
-min_eig, optparam = vqe_eig.smallest(H, qc=qc,
-                                     initial_params=init_params.alternate(
-                                         h.shape[0]), disp_run_info=True,
-                                     fatol=1e-2, num_samples=samples)
+
+min_eig = vqe_eig.smallest(H, qc=qc,
+                           initial_params=
+                           init_params.alternate(
+                               h.shape[0]),
+                           disp_run_info=True,
+                           fatol=5e-1, samples=samples,
+                           return_all_data=True)
 
 print('Min eig vqe: ', min_eig)
-min_eig_exp = vqe.expectation(ansatz.multi_particle(optparam), H, samples=10000,
-                              qc=qc)
-print('Min eig vqe_exp: ', min_eig_exp)
+optparam = min_eig['x']
+min_eig_exp, variance = vqe.expectation(ansatz.multi_particle(optparam), H,
+                                        samples=10000,
+                                        qc=qc)
 
-exp_val = [
-    vqe.expectation(ansatz.multi_particle(np.array([para])), H, samples=samples,
-                    qc=qc) for para in parameters]
+
+sweep_vals = [
+    list(vqe.expectation(ansatz.multi_particle(np.array([para])), H,
+                         samples=samples,
+                         qc=qc)) for para in parameters]
+exp_val = [returns[0] for returns in sweep_vals]
+std_val = [np.sqrt(returns[1]) for returns in sweep_vals]
 '''
 exp_val = np.zeros((sweep_steps, sweep_steps))
 mesh_1 = np.zeros((sweep_steps, sweep_steps))
@@ -61,12 +72,19 @@ for i, p_1 in enumerate(parameters):
 #  samples=samples, qc=qc, disp=print)
 '''
 
-# exp_val2 = [vqe.expectation(one_particle(np.array([para])), H, samples=samples,
-# qc=qc) for para in parameters]
+parameters_none = np.linspace(-5, 5, 500)
+exp_val2 = [
+    vqe.expectation(ansatz.multi_particle(np.array([para])), H, samples=None,
+                    qc=qc)[0] for para in parameters_none]
 
 plt.figure(0)
-plt.plot(parameters, exp_val, 'black', label='Samples: None')
-# plt.plot(parameters, exp_val2, 'red', label='Samples: {}'.format(samples))
-# plt.xlabel('Parameter value')
-# plt.ylabel('Expected value of Hamiltonian')
+errs = [2 * i for i in std_val]
+plt.errorbar(parameters, exp_val, yerr=errs, ecolor='red', fmt='bo', ms=1,
+             label='Samples: {}'.format(samples), barsabove=True)
+plt.plot(parameters_none, exp_val2, 'black', label='Samples: None')
+plt.errorbar(optparam, min_eig_exp, yerr=2 * np.sqrt(variance), fmt='g*', ms=15,
+             barsabove=True, ecolor='red')
+plt.xlabel('Parameter value')
+plt.ylabel('Expected value of Hamiltonian')
+print('Min eig vqe_exp: ', min_eig_exp, '\nVariance: ', variance)
 plt.show()

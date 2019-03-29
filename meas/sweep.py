@@ -20,14 +20,14 @@ def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10,
     :param h:               Hamiltonian matrix.
     :param qc:              Quantum computer.
     :param ansatz:          Ansatz.
-    :param matrix_operator:   Method to convert hamiltonian to pyQuil-program.
+    :param matrix_operator: Method to convert hamiltonian to pyQuil-program.
     :param num_para:        Number of parameters to sweep over.
     :param start:           Value to start the sweep on.
     :param stop:            Value to stop the sweep on.
     :param samples:         Number of samples per parameter.
     
     
-    :return: Tuple with expected values and the parameters sweeped over.
+    :return: Tuple with: expected values and the parameters sweeped over.
     """
 
     vqe = VQE(minimizer=minimize, minimizer_kwargs={'method': 'Nelder-Mead'})
@@ -59,6 +59,7 @@ def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10,
             exp_val[i] = [vqe.expectation(ansatz_(np.array([p_1, p_2])), H,
                                           samples=samples, qc=qc)
                           for p_2 in parameters]
+            print('Done with sweep number {}/{}'.format(i+1,len(parameters)))
         return (exp_val,mesh_1,mesh_2)
 
 
