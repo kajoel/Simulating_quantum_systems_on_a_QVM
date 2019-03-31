@@ -21,7 +21,6 @@ USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
 
 def save(file=None, data=None, metadata=None):
     """
-    @author = Joel
     Save data and metadata to a file. Always set the first field of metadata
     as metadata={'description': info} (followed by other fields). Datetime of
     creation, the module that called save and the name of the user will be
@@ -31,6 +30,8 @@ def save(file=None, data=None, metadata=None):
     mattrix_to_op, ansatz, etc. was used when producing results. This should
     be done programmatically! E.g metadata = {'ansatz': ansatz_.__name__, ...}
     where ansatz_ is the ansatz being used.
+
+    @author = Joel
 
     :param string file: file to save to
     :param data: data to save
@@ -60,6 +61,9 @@ def save(file=None, data=None, metadata=None):
     if not isinstance(data, dict):
         data = {'data': data}
 
+    # Display
+    _display_internal(file, data, metadata)
+
     # Save
     with open(file, 'wb') as file_:
         pickle.dump({'data': data, 'metadata': metadata}, file_)
@@ -67,8 +71,9 @@ def save(file=None, data=None, metadata=None):
 
 def load(file=None):
     """
-    @author = Joel
     Load data and metadata from a file.
+
+    @author = Joel
 
     :param string file: file to load from
     :return: (data, metadata)
@@ -91,8 +96,9 @@ def load(file=None):
 
 def display(files=None):
     """
-    @author = Joel
     Used to display file(s).
+
+    @author = Joel
 
     :param files: files to display
     :return:
@@ -106,21 +112,14 @@ def display(files=None):
         files = [files]
     for file in files:
         data, metadata = load(file)
-        print(
-            '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
-            + '\033[0m\n')
-        for key, value in metadata.items():
-            print('\033[4m' + key.replace('_', ' ').capitalize() + ':\033[0m')
-            print(value + '\n')
-        print('\033[4m' + 'Variables in data' + ':\033[0m')
-        for key in data:
-            print(key + '\n')
+        _display_internal(file, data, metadata)
 
 
 def init_users(name):
     """
-    @author = Joel
     Creates the user file.
+
+    @author = Joel
 
     :param string name: your name
     :return:
@@ -135,8 +134,9 @@ def init_users(name):
 
 def add_user(name):
     """
-    @author = Joel
     Adds a user to the user file (or changes the name if already existing).
+
+    @author = Joel
 
     :param name: your name
     :return:
@@ -147,8 +147,9 @@ def add_user(name):
 
 def _add_user(name, user, users):
     """
-    @author = Joel
     Internal function (to keep DRY) for adding user/changing name in users.
+
+    @author = Joel
 
     :param name: name of the added user
     :param user: user to be added
@@ -161,10 +162,32 @@ def _add_user(name, user, users):
     save(USER_PATH, data=users[0], metadata=users[1])
 
 
+def _display_internal(file, data, metadata):
+    """
+    Internal method for displaying file with metadata.
+
+    @author = Joel
+
+    :param str file: path to the file
+    :param dict data: the data
+    :param dict metadata: metadata describing data
+    """
+    print(
+        '\n\033[1m' + 'Metadata from: ' + '\033[0m\n\033[92m' + file
+        + '\033[0m\n')
+    for key, value in metadata.items():
+        print('\033[4m' + key.replace('_', ' ') + ':\033[0m')
+        print(str(value) + '\n')
+    print('\033[4m' + 'variables in data' + ':\033[0m')
+    for key in data:
+        print(key)
+
+
 def _get_name():
     """
+    Finds who is trying to use save (for metadata purposes).
+
     @author = Joel
-    Finds who is trying to use save (for metadata purposes)
 
     :return: author
     :rtype: string
@@ -185,9 +208,10 @@ def _get_name():
 
 def _metadata_defaults():
     """
-    @author = Joel
     Lazy initialization of metadata dictionary with default fields. Note the
     lambda.
+
+    @author = Joel
 
     :return: metadata
     :rtype: dictionary

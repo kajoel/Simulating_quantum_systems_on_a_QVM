@@ -26,7 +26,9 @@ def smallest(H, qc, initial_params,
     TODO: Fix this documentation. Below is not up to date.
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
+
     @author: Eric, Axel, Carl
+
     :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
     :param ansatz_: ansatz function
@@ -62,6 +64,47 @@ def smallest(H, qc, initial_params,
         return eigval, optparam
 
 
+def smallest_dynamic(H, qc, initial_params,
+                     ansatz_=None,
+                     samples=1000,
+                     opt_algorithm='Nelder-Mead',
+                     maxiter=10000,
+                     disp_run_info=True,
+                     display_after_run=False,
+                     xatol=1e-2, fatol=1e-3,
+                     return_all_data=False,
+                     convert_op=matrix_to_op.multi_particle,
+                     print_option=None):
+    if samples is None:
+        raise TypeError(
+            'Samples must be a number in this method. Use smallest() instead')
+    tol = 16 / np.sqrt(samples)
+    # 16 because tol = 2 sigma, sigma = x/sqrt(samp), x \approx 8
+    params = initial_params
+    samp = 1000
+    if tol < fatol:
+        raise ValueError('fatol too large')
+    while tol > fatol:
+        result = smallest(H, qc, params, samples=samp, fatol=tol,
+                          ansatz_=ansatz_,
+                          xatol=xatol, return_all_data=return_all_data,
+                          maxiter=maxiter,
+                          disp_run_info=disp_run_info,
+                          opt_algorithm=opt_algorithm,
+                          display_after_run=display_after_run)
+        print('Increasing samples')
+        params = result[1]
+        samples *= 4
+        tol *= 0.5
+
+    return smallest(H, qc, params, samples=samp, fatol=tol, ansatz_=ansatz_,
+                    xatol=xatol, return_all_data=return_all_data,
+                    maxiter=maxiter,
+                    disp_run_info=disp_run_info,
+                    opt_algorithm=opt_algorithm,
+                    display_after_run=display_after_run)
+
+
 def negative(h, ansatz, qvm, num_eigvals=None,
              num_samples=None,
              opt_algorithm='L-BFGS-B',
@@ -69,6 +112,9 @@ def negative(h, ansatz, qvm, num_eigvals=None,
     """
     Calculates all negative or specified amount of eigs for a
     given hamiltonian matrix.
+
+    @author: Eric
+
     :param h: np.array hamiltonian matrix
     :param ansatz: ansatz function
     :param num_eigvals: number of desired eigs to be calculated
@@ -76,7 +122,6 @@ def negative(h, ansatz, qvm, num_eigvals=None,
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
-    @author: Eric Nilsson
     """
     # TODO: Needs to be updated to fit new smallest
     if num_eigvals is None:
@@ -106,6 +151,9 @@ def all(H, ansatz, qvm, num_eigvals=None,
     TODO: Make so it handles sparse matrices? Currently finds
      double zero eigs
     TODO: Needs to be updated to fit new smallest
+
+    @author: Eric
+
     :param H: np.array hamiltonian matrix
     :param ansatz: ansatz function
     :param num_eigvals: number of desired eigs to be calculated
@@ -113,7 +161,6 @@ def all(H, ansatz, qvm, num_eigvals=None,
     :param opt_algorithm:
     :param initial_params: ansatz parameters
     :return: list of energies
-    @author: Eric
     """
     energy = negative(H, ansatz, qvm, num_eigvals,
                       num_samples, opt_algorithm,
@@ -155,7 +202,7 @@ def update_householder(H, ansatz, _, x):
 
     Note that if ||n|| is small there might be stabilty-issues.
 
-    @author: kajoel
+    @author: Joel
     """
     if x.shape[0] > 1:
         # Find suitable basis-vector to reflect to (with householder)
