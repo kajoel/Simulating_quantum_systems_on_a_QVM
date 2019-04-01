@@ -83,7 +83,7 @@ def run_sample_error(ansatz_, j=1, V=1, matrix_num=0,):
         print('Unknown ansatz')
         return
     
-
+    ansatz_ = ansatz_(h.shape[0])
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
     if ansatz_ is ansatz.one_particle:
         convert_op = matrix_to_op.one_particle
@@ -97,7 +97,7 @@ def run_sample_error(ansatz_, j=1, V=1, matrix_num=0,):
     
     qc = get_qc('{}q-qvm'.format(qubits))
     H = convert_op(h)
-    error_of_sample(H, qc, ansatz_, h.shape[0], start=1000, stop=2000, steps=3)
+    error_of_sample(H, qc, ansatz_, h.shape[0], start=1000, stop=5000, steps=15)
 
 def test_var(ansatz_, j=1, V=1, matrix_num=0,):
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
