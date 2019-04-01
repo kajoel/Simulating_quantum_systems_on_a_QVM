@@ -122,6 +122,8 @@ def save_sweep():
 
     data.save('1DimSweepSampNone',data_to_save,metadata)
 
+def test_variance():
+    
 
 
 if __name__ == '__main__':

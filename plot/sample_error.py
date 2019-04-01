@@ -18,19 +18,23 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     samples = range(start, stop, round((stop-start)/steps))
     exp_val = np.zeros(len(samples))
     para_error = np.zeros(len(samples))
-    # Placeholder variance
-    variance = np.random.random(len(samples))/20
+    variance = np.zeros(len(samples))
 
 
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
     for i,sample in enumerate(samples):
-        exp_val[i],para = vqe_eig.smallest(H, qc, initial_p(dim_h), ansatz_,
-                                          samples=sample, fatol=1e-2)
-        para_error[i] = np.linalg.norm(para-facit[1])
+        run_data = vqe_eig.smallest(H, qc, initial_p(dim_h), ansatz_,
+                                    samples=sample, fatol=1e-2,
+                                    return_all_data=True)
+        
+        variance[i] = np.sqrt(run_data['variance'][-1])
+        exp_val[i] = run_data['fun']
+        para_error[i] = np.linalg.norm(run_data['x']-facit[1])
         print('Done with calculation: {}/{}'.format(i+1,len(samples)))
 
-    if save_run: save_error_run(samples, exp_val, para_error, ansatz_, H)
+    if save_run: save_error_run(samples, exp_val, para_error, ansatz_, 
+                                H,variance)
 
     # Figure 0 is with energies
     plt.figure(0)
@@ -79,6 +83,7 @@ def run_sample_error(ansatz_, j=1, V=1, matrix_num=0,):
         print('Unknown ansatz')
         return
     
+
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
     if ansatz_ is ansatz.one_particle:
         convert_op = matrix_to_op.one_particle
@@ -92,11 +97,45 @@ def run_sample_error(ansatz_, j=1, V=1, matrix_num=0,):
     
     qc = get_qc('{}q-qvm'.format(qubits))
     H = convert_op(h)
-    error_of_sample(H, qc, ansatz_, h.shape[0], start=1000, stop=5000, steps=15)
+    error_of_sample(H, qc, ansatz_, h.shape[0], start=1000, stop=2000, steps=3)
 
+def test_var(ansatz_, j=1, V=1, matrix_num=0,):
+    h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
+    if ansatz_ is ansatz.one_particle:
+        convert_op = matrix_to_op.one_particle
+        qubits = h.shape[0]
+    elif ansatz_ is ansatz.multi_particle:
+        convert_op = matrix_to_op.multi_particle
+        qubits = int.bit_length(h.shape[0])
+    else:
+        print('Unknown ansatz')
+        return
+    
+    initial_p = init_params.alternate
+    h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
+    if ansatz_ is ansatz.one_particle:
+        convert_op = matrix_to_op.one_particle
+        qubits = h.shape[0]
+    elif ansatz_ is ansatz.multi_particle:
+        convert_op = matrix_to_op.multi_particle
+        qubits = int.bit_length(h.shape[0])
+    else:
+        print('Unknown ansatz')
+        return
+    
+    qc = get_qc('{}q-qvm'.format(qubits))
+    H = convert_op(h)
+    
+    sample=2000
 
+    var = vqe_eig.smallest(H, qc, initial_p(h.shape[0]), ansatz_, 
+                           samples=sample, fatol=1e-1,return_all_data=True)
 
-
+    print(var['fun'])
+    print(var['variance'])
+    for key in var: 
+        print(key)
+        print(var[key])
 
 ################################################################################
 # Main
