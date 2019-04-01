@@ -98,7 +98,7 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
 
 
 def trotterize(terms, trotter_order, trotter_steps) -> List[
-    List[Callable[[float], Program]]]:
+        List[Callable[[float], Program]]]:
     """
     Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
     Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
