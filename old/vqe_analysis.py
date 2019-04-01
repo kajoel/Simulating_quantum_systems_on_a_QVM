@@ -26,8 +26,8 @@ datetime(year, month, day)
 
 # Imports from our projects
 from core.matrix_to_op import multi_particle
-from core.lipkin_quasi_spin import hamiltonian
-from core.ansatz import multi_particle as ansatz
+from core.lipkin_quasi_spin import hamiltonian, eigs
+from core import ansatz
 from core.vqe_eig import smallest as vqe_eig, smallest
 
 
@@ -91,12 +91,12 @@ def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
             exp_val = []
 
             for para in parameters:
-                tmp = vqe.expectation(ansatz(np.array([para])), H,
+                tmp = vqe.expectation(ansatz_(np.array([para])), H,
                                       samples=samples, qc=qvm_qc)
                 exp_val.append(tmp)
                 if callback is not None: callback(para, tmp)
         else:
-            exp_val = [vqe.expectation(ansatz(np.array([para])), H,
+            exp_val = [vqe.expectation(ansatz_(np.array([para])), H,
                                        samples=samples, qvm=qvm_qc)
                        for para in parameters]
 
@@ -171,16 +171,24 @@ def main2(qc, H, samples=1000, sweep_params=100, callback=None, plot=False):
 ################################################################################
 
 if __name__ == '__main__':
-    samples = 5000
+    samples = 10000
     sweep_params = 30
 
     qc = get_qc('3q-qvm')
     j, V = 1, 1
     h = hamiltonian(j, V)[0]
+    dim = h.shape[0]
+
+    print(h.toarray())
+    print('\n')
+    eigvals = eigs(j, V)[0]
+    print(eigvals)
+    print('\n')
 
     oldx = None
     oldy = None
 
+    ansatz_ = ansatz.one_particle_ucc(dim)
 
     def testprint2(x, y):
         global oldx
@@ -207,5 +215,5 @@ if __name__ == '__main__':
 
 
     energies = smallest(multi_particle(h), qc, init_params.ones(h.shape[0]),
-                        ansatz_=ansatz, samples=samples,
+                        ansatz_=ansatz_, samples=samples,
                         disp_run_info=testprint, fatol=1e-1*16/np.sqrt(samples))[0]
