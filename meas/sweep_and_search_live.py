@@ -38,7 +38,7 @@ def testprint3(x, y):
     global figure
     global line
     (oldx, oldy) = line.get_data()
-    allx = np.concatenate((oldx, [x]))
+    allx = np.concatenate((oldx, x))
     ally = np.concatenate((oldy, [y]))
     line.set_data(allx, ally)
     figure.axes[0].relim()
@@ -61,7 +61,7 @@ def testprint(x, y):
 energies = vqe_eig.smallest(matrix_to_op.multi_particle(h), qc,
                             init_params.ones(
                                 h.shape[0]),
-                            ansatz_=ansatz.multi_particle, samples=samples,
+                            ansatz_=ansatz.multi_particle(h.shape[0]), samples=samples,
                             disp_run_info=testprint,
                             fatol=1e-1 * 16 / np.sqrt(samples))[0]
 plt.show()

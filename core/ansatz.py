@@ -13,7 +13,7 @@ from pyquil.gates import X
 from typing import Callable, List
 
 
-def one_particle(dim: int) -> Program:
+def one_particle(dim: int):
     """
     Creates a program to set up an arbitrary one-particle-state.
 
@@ -33,7 +33,7 @@ def one_particle(dim: int) -> Program:
     return wrap
 
 
-def multi_particle(dim: int) -> Program:
+def multi_particle(dim: int):
     """
     Creates a program to set up an arbitrary state.
 
