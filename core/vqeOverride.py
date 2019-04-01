@@ -89,9 +89,6 @@ class VQE_override(VQE):
         expectation_vals = []
         self.variance = []
         self._current_expectation = None
-        if samples is None:
-            print("""WARNING: Fast method for expectation will be used. Noise
-                     models will be ineffective""")
 
         if qc is None:
             qubits = hamiltonian.get_qubits()
@@ -115,6 +112,11 @@ class VQE_override(VQE):
                                                     qc)
             self.variance.append(tmp_vars)
             self._current_expectation = mean_value  # store for printing
+
+            if return_all:
+                iteration_params.append(params[0])
+                expectation_vals.append(self._current_expectation)
+
             return mean_value
 
         def print_current_iter(iter_vars):
@@ -127,19 +129,23 @@ class VQE_override(VQE):
                     "\tGrad-L2-Norm: {} ".format(np.linalg.norm(grad)))
 
             self._disp_fun("\tE => {}".format(self._current_expectation))
-            if return_all:
-                iteration_params.append(iter_vars)
-                expectation_vals.append(self._current_expectation)
+
 
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
+
+        def callback(iter_vars):
+            disp(iter_vars, self._current_expectation)
+            if return_all:
+                iteration_params.append(iter_vars)
+                expectation_vals.append(self._current_expectation)
 
         if disp is True and 'callback' in arguments:
             self.minimizer_kwargs['callback'] = print_current_iter
 
         if (callable(disp)) and 'callback' in arguments:
-            self.minimizer_kwargs['callback'] = lambda x: disp(x,
-                                                               self._current_expectation)
+            self.minimizer_kwargs['callback'] = lambda x: \
+                disp(x, self._current_expectation)
 
         args = [objective_function, initial_params]
         args.extend(self.minimizer_args)
@@ -162,6 +168,8 @@ class VQE_override(VQE):
             results.x = result
 
         if return_all:
+            iteration_params.append(result['x'][0])
+            expectation_vals.append(result['fun'])
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
             results.variance = self.variance
