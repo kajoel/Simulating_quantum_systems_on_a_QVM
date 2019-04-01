@@ -138,7 +138,7 @@ class VQE_override(VQE):
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
 
         def callback(iter_vars):
-            disp(iter_vars, self._current_expectation)
+            disp(iter_vars, self._current_expectation, self._current_variance)
             if return_all:
                 iteration_params.append(iter_vars)
                 expectation_vals.append(self._current_expectation)
