@@ -126,7 +126,7 @@ def trotterize(terms, trotter_order, trotter_steps) -> List[
     return exp_maps
 
 
-def multi_particle_ucc(dim):
+def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
     states). This is basically an implementation of create_arbitrary_state
@@ -160,12 +160,43 @@ def multi_particle_ucc(dim):
     for state in range(dim):
         term = QubitOperator(())
         for qubit in range(int.bit_length(state)):
-            if state & (1 << qubit):
-                term *= QubitOperator((qubit, 'X'))
+            if (state ^ reference) & (1 << qubit):
+                # lower/raise qubit
+                term *= QubitOperator((qubit, "X"), 1 / 2) + \
+                        QubitOperator((qubit, "Y"),
+                                      1j * (int(
+                                          reference & (
+                                                  1 << qubit) != 0) - 1 / 2))
+            else:
+                # check that qubit has correct value (same as i and j)
+                term *= QubitOperator((), 1 / 2) \
+                        + QubitOperator((qubit, "Z"),
+                                        1 / 2 - int(
+                                            reference & (1 << qubit) != 0))
         term = qubitop_to_pyquilpauli(term)
-        assert len(term) == 1, "Term has not length one!"
+        # assert len(term) == 1, "Term has not length one!"
         terms.append(term[0])
-    return exponential_map_commuting_pauli_terms(terms)
+
+    exp_maps = trotterize(terms, trotter_order, trotter_steps)
+
+    def wrap(theta):
+        """
+        Returns the ansatz Program.
+
+        :param np.ndarray theta: parameters
+        :return: the Program
+        :rtype: pyquil.Program
+        """
+        prog = Program()
+        for qubit in range(int.bit_length(reference)):
+            if reference & (1 << qubit):
+                prog += X(qubit)
+        for idx, exp_map in enumerate(exp_maps):
+            for exp in exp_map:
+                prog += exp(theta[idx])
+        return prog
+
+    return wrap
 
 
 def exponential_map_commuting_pauli_terms(terms):
@@ -186,7 +217,7 @@ def exponential_map_commuting_pauli_terms(terms):
         terms = terms.terms
     exp_map = []
     for term in terms:
-        exp_map.append(exponential_map(-1j * term))
+        exp_map.append(exponential_map(term))
 
     def wrap(theta):
         """

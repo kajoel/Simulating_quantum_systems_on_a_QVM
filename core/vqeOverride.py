@@ -114,7 +114,7 @@ class VQE_override(VQE):
             self._current_expectation = mean_value  # store for printing
 
             if return_all:
-                iteration_params.append(params[0])
+                iteration_params.append(params)
                 expectation_vals.append(self._current_expectation)
 
             return mean_value
@@ -168,7 +168,7 @@ class VQE_override(VQE):
             results.x = result
 
         if return_all:
-            iteration_params.append(result['x'][0])
+            iteration_params.append(result['x'])
             expectation_vals.append(result['fun'])
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
