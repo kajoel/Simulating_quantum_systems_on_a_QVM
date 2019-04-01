@@ -31,19 +31,20 @@ min_eig = vqe_eig.smallest(H, qc=qc,
                            initial_params=
                            init_params.alternate(
                                h.shape[0]),
+                           ansatz_=ansatz.multi_particle(h.shape[0]),
                            disp_run_info=True,
                            fatol=5e-1, samples=samples,
                            return_all_data=True)
 
 print('Min eig vqe: ', min_eig)
 optparam = min_eig['x']
-min_eig_exp, variance = vqe.expectation(ansatz.multi_particle(optparam), H,
+min_eig_exp, variance = vqe.expectation(ansatz.multi_particle(h.shape[0])(optparam), H,
                                         samples=10000,
                                         qc=qc)
 
 
 sweep_vals = [
-    list(vqe.expectation(ansatz.multi_particle(np.array([para])), H,
+    list(vqe.expectation(ansatz.multi_particle(h.shape[0])(np.array([para])), H,
                          samples=samples,
                          qc=qc)) for para in parameters]
 exp_val = [returns[0] for returns in sweep_vals]
@@ -74,7 +75,7 @@ for i, p_1 in enumerate(parameters):
 
 parameters_none = np.linspace(-5, 5, 500)
 exp_val2 = [
-    vqe.expectation(ansatz.multi_particle(np.array([para])), H, samples=None,
+    vqe.expectation(ansatz.multi_particle(h.shape[0])(np.array([para])), H, samples=None,
                     qc=qc)[0] for para in parameters_none]
 
 plt.figure(0)
