@@ -91,7 +91,8 @@ def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
             exp_val = []
 
             for para in parameters:
-                tmp = vqe.expectation(ansatz(np.array([para])), H,
+                para = np.array([para])
+                tmp = vqe.expectation(ansatz(para.size+1)(para), H,
                                       samples=samples, qc=qvm_qc)
                 exp_val.append(tmp)
                 if callback is not None: callback(para, tmp)

@@ -11,7 +11,7 @@ from scipy.optimize import minimize
 from grove.pyvqe.vqe import VQE
 
 
-def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10, 
+def sweep(h, qc, ansatz_, matrix_operator, num_para=20, start=-10, stop=10,
                  samples=None):
     """@author: Axel
     Sweeps over parameters for a given Hamiltonian and ansatz. Works for both a 
@@ -43,8 +43,7 @@ def sweep(h, qc,ansatz_,matrix_operator, num_para=20, start=-10, stop=10,
         H = matrix_operator(h)
         exp_val = [vqe.expectation(ansatz_(np.array([para])), H, samples=samples, 
                                    qc=qc) for para in parameters]
-
-        return (exp_val, parameters)
+        return exp_val, parameters
     else:
         H = matrix_operator(h)
         exp_val = np.zeros((num_para, num_para))
