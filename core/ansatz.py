@@ -8,23 +8,30 @@ from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner
 from forestopenfermion import qubitop_to_pyquilpauli
-from pyquil.paulis import PauliSum, exponential_map, suzuki_trotter
+from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
-from typing import Callable, List
+from typing import Callable, List, Union
 
 
-def one_particle(dim: int) -> Program:
+def one_particle(dim: int):
     """
-    Creates a program to set up an arbitrary one-particle-state.
+    Creates a function(theta) that creates a program to set up an arbitrary
+    one-particle-state.
 
     @author: Joel, Carl
 
-    :param theta: Vector representing the state.
-    :return: PyQuil program setting up the state.
+    :param dim: The dimension of the spanned space.
+    :return: function(theta) -> pyquil program setting up the state.
     """
 
-    def wrap(theta: np.ndarray):
-        vector = np.zeros(2 ** (dim))
+    def wrap(theta: np.ndarray) -> Program:
+        """
+        Creates arbitrary one-particle state.
+
+        :param theta: Coefficients in superposition.
+        :return: Pyquil program setting up the state.
+        """
+        vector = np.zeros(2 ** dim)
         vector[1] = 1 / np.sqrt(dim)
         vector[[2 ** (i + 1) for i in range(dim - 1)]] = theta
         vector *= 1 / np.linalg.norm(vector)
@@ -33,17 +40,24 @@ def one_particle(dim: int) -> Program:
     return wrap
 
 
-def multi_particle(dim: int) -> Program:
+def multi_particle(dim: int):
     """
-    Creates a program to set up an arbitrary state.
+    Creates a function(theta) that creates a program to set up an arbitrary
+    state.
 
     @author: Joel
 
-    :param theta: Vector representing the state.
-    :return: PyQuil program setting up the state.
+    :param dim: The dimension of the spanned space.
+    :return: function(theta) -> pyquil program setting up the state.
     """
 
     def wrap(theta: np.ndarray):
+        """
+        Creates arbitrary state.
+
+        :param theta: Vector representing the state.
+        :return: PyQuil program setting up the state.
+        """
         theta = np.concatenate((np.array([1]) / np.sqrt(dim), theta), axis=0)
         return create_arbitrary_state(theta)
 
@@ -151,6 +165,9 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
     @author: Joel
 
     :param int dim: dimension of the space = num_qubits**2
+    :param reference: integer representation of reference state
+    :param trotter_order: Trotter order in trotterization
+    :param trotter_steps: Trotter steps in trotterization
     :return: function(theta) which returns the ansatz Program. -1j*theta[i] is
         the coefficient in front of the term prod_k X_k^bit(i,k) where
         bit(i, k) is the k'th bit of i in binary, in the exponent.
@@ -174,8 +191,7 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
                                         1 / 2 - int(
                                             reference & (1 << qubit) != 0))
         term = qubitop_to_pyquilpauli(term)
-        # assert len(term) == 1, "Term has not length one!"
-        terms.append(term[0])
+        terms.append(term)
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
@@ -199,7 +215,8 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-def exponential_map_commuting_pauli_terms(terms):
+def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
+                                                       PauliSum]):
     """
     Returns a function f(theta) which, given theta, returns the Program
     corresponding to exp(-1j sum_i theta[i]*term[i]) =
@@ -209,7 +226,8 @@ def exponential_map_commuting_pauli_terms(terms):
 
     @author = Joel
 
-    :param list of pyquil.paulis.PauliTerm terms: a list of pauli terms
+    :param  terms:
+        a list of pauli terms
     :return: a function that takes a vector parameter and returns a Program.
     """
 
