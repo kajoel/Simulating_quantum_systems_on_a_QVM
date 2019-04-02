@@ -65,12 +65,12 @@ h = lipkin_quasi_spin.hamiltonian(j, V)[i]
 no_of_qubits = int.bit_length(h.shape[0])
 qc = get_qc('{}q-qvm'.format(no_of_qubits))
 
-sweep_meas_none = sweep(h, qc, ansatz_=ansatz.multi_particle,
-                        matrix_operator=matrix_to_op.multi_particle,
+sweep_meas_none = sweep(h, qc, ansatz_=ansatz_,
+                        matrix_operator=matrix_to_op_,
                         num_para=10,
                         start=-5, stop=5, samples=None)
-sweep_meas = sweep(h, qc, ansatz_=ansatz.multi_particle,
-                   matrix_operator=matrix_to_op.multi_particle,
+sweep_meas = sweep(h, qc, ansatz_=ansatz_,
+                   matrix_operator=matrix_to_op_,
                    num_para=10,
                    start=-5, stop=5, samples=samples)
 
@@ -81,11 +81,11 @@ if samples < 10000:
 else:
     fatol = 5e-2
 print('fatol set to: ', fatol)
-H = matrix_to_op.multi_particle(h)
+H = matrix_to_op_(h)
 min_eig, opt_param = vqe_eig.smallest(H, qc=qc,
                                       initial_params=init_params.alternate(
                                           h.shape[0]), disp_run_info=True,
-                                      fatol=fatol, num_samples=samples)
+                                      fatol=fatol, samples=samples)
 min_eig_exp = vqe.expectation(ansatz.multi_particle(opt_param), H,
                               samples=samples,
                               qc=qc)
