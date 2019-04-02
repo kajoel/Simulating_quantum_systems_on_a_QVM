@@ -3,21 +3,49 @@ from constants import ROOT_DIR
 from os.path import join
 import matplotlib2tikz as tikz
 import matplotlib.pyplot as plt
+import numpy as np
 
-def create(title, datatitle):
-    data_, metadata = data.load(datatitle)
 
-    data_keys = data_.keys()
+def create(title):
+    tikz.save(title + ".tex")
 
-    if len(data_keys) == 2:
-        x = data_keys[0]
-        y = data_keys[1]
-        plt.plot(x,y)
-        tikz.save(title + ".tex")
 
 ###############################################################################
-#TEST
+# TEST
 ###############################################################################
-datatitle = join(ROOT_DIR,'data', '2DimSweepSampNone.pkl')
+datatitle = join(ROOT_DIR, 'data', 'ErrorOfSamples2.pkl')
 
-create('test', datatitle)
+data_, metadata = data.load(datatitle)
+print(data_['Expected_values'])
+print(metadata.keys())
+
+'''
+data_ = {'Samples' : samples,'Expected_values': exp_value,
+             'Parameter_error': para_error,'Variance': variance, 
+             'Iterations': iterations}
+'''
+
+facit = -np.sqrt(2)
+
+samples = data_['Samples']
+exp_val = data_['Expected_values']
+variance = data_['Variance']
+start = samples[0]
+stop = samples[-1]
+
+
+fig = plt.figure()  # create a figure object
+ax = fig.add_subplot(1, 1, 1)  # create an axes object in the figure
+#ax.plot([1, 2, 3, 4])
+#ax.set_ylabel('some numbers')
+
+
+plot_ = ax.hlines(facit, start, stop, colors='r', linestyles='dashed',
+           label='True eig: {}'.format(round(facit, 4)))
+ax.errorbar(samples, exp_val, variance, fmt='o',
+             label='Eig calculated with Nelder-Mead')
+ax.legend()
+ax.set_xlabel('Samples')
+ax.set_ylabel('Eigenvalue')
+
+create('test')
