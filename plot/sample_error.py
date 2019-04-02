@@ -6,7 +6,8 @@ Created on Tus Mar 27 14:26 2019
 @author: axel
 """
 # Imports
-from core import ansatz, matrix_to_op, init_params, lipkin_quasi_spin, vqe_eig, data, vqeOverride
+from core import ansatz, matrix_to_op, init_params, lipkin_quasi_spin, vqe_eig 
+from core import data, vqeOverride
 from scipy.optimize import minimize
 import numpy as np
 from pyquil import get_qc
@@ -16,7 +17,7 @@ import matplotlib.pyplot as plt
 
 def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
                     start = 1000, stop = 2000, steps = 3, save_run=False, 
-                    label_ = None, ansatz_name=None, fig_nr=0):
+                    label_ = None, ansatz_name=None, fig_nr=0, qubits = None):
 
     vqe = vqeOverride.VQE_override(minimizer=minimize,
                                minimizer_kwargs={'method': 'Nelder-Mead'})
@@ -31,6 +32,7 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     # Calculates a facit with sample=None
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
+
     # Main part of method, 
     for i,sample in enumerate(samples):
         print('Number of samples: {}'.format(sample))
@@ -56,10 +58,11 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
         print('Done with calculation: {}/{}'.format(i+1,len(samples)))
 
     if save_run: save_error_run(samples, exp_val, para_error, ansatz_name, 
-                                H,variance, iterations, qc=qc)
+                                H,variance, iterations, qubit=qubits,
+                                facit=facit)
 
-    plot_error(facit, samples, exp_val, para_error, variance, iterations, start, stop, 
-               label_, fig_nr)
+    plot_error(facit, samples, exp_val, para_error, variance, iterations, start, 
+               stop, label_, fig_nr)
     
 
 
@@ -70,14 +73,14 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
 
 # Help-method that saves the run
 def save_error_run(samples,exp_value,para_error,ansatz_, H,variance=None,
-                   iterations=None, qc=None):
+                   iterations=None, qubit=None, facit= None):
 
     data_ = {'Samples' : samples,'Expected_values': exp_value,
              'Parameter_error': para_error,'Variance': variance, 
              'Iterations': iterations}
 
     metadata = {'ansatz': ansatz_, 'Hamiltonian': H,'minimizer': 'Nelder-Mead',
-                'qc': qc,
+                'Quibits': qubit,
                 'Type_of_measurement': 'Eigenvalues, parametererrors and iterations for different samples.'}
 
     data.save(data=data_,metadata=metadata)
@@ -146,7 +149,7 @@ def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0,
     
     error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=6000, steps=20, 
                     label_=label_, save_run=True, ansatz_name=ansatz_name, 
-                    fig_nr=fig_nr)
+                    fig_nr=fig_nr, qubits=qubits)
 
 def test_var(ansatz_, convert_op, j=1, V=1, matrix_num=0,):
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
