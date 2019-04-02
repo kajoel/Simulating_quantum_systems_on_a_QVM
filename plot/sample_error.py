@@ -26,15 +26,17 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     exp_val = np.zeros(len(samples))
     para_error = np.zeros(len(samples))
     variance = np.zeros(len(samples))
+    iterations = np.zeros(len(samples))
+    
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
     # Main part of method, 
     for i,sample in enumerate(samples):
-        print(sample)
-        xatol_ = 1e-4
+        print('Number of samples: {}'.format(sample))
+        xatol_ = 1e-3
 
         # Makes one calculation with given samples, sets fatol accordingly.
-        _, temp_var = vqe.expectation(ansatz_([1]), H,
+        _, temp_var = vqe.expectation(ansatz_(initial_p(dim_h)), H,
                                         samples=sample,qc=qc)
         fatol_ = np.sqrt(temp_var)
 
@@ -46,14 +48,15 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
         exp_val[i], temp_var = vqe.expectation(ansatz_(run_data['x']), H,
                                         samples=sample,qc=qc)
 
+        iterations[i] = len(run_data['expectation_vals'])
         variance[i] = 2*np.sqrt(temp_var)
         para_error[i] = np.linalg.norm(run_data['x']-facit[1])
         print('Done with calculation: {}/{}'.format(i+1,len(samples)))
 
     if save_run: save_error_run(samples, exp_val, para_error, ansatz_name, 
-                                H,variance)
+                                H,variance, iterations)
 
-    plot_error(facit, samples, exp_val, para_error, variance, start, stop, 
+    plot_error(facit, samples, exp_val, para_error, variance, iterations, start, stop, 
                label_, fig_nr)
     
 
@@ -64,24 +67,28 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
 ################################################################################
 
 # Help-method that saves the run
-def save_error_run(samples,exp_value,para_error,ansatz_, H,variance=None):
+def save_error_run(samples,exp_value,para_error,ansatz_, H,variance=None,
+                   iterations=None):
+
     data_ = {'Samples' : samples,'Expected_values': exp_value,
-             'Parameter_error': para_error,'Variance': variance}
+             'Parameter_error': para_error,'Variance': variance, 
+             'Iterations': iterations}
 
     metadata = {'ansatz': ansatz_, 'Hamiltonian': H,'minimizer': 'Nelder-Mead', 
-                'Type_of_measurement': 'Eigenvalues and parametererrors for different samples.'}
+                'Type_of_measurement': 'Eigenvalues, parametererrors and iterations for different samples.'}
 
     data.save(data=data_,metadata=metadata)
 
 
 # Help method that plots a run
-def plot_error(facit, samples, exp_val, para_error, variance,
+def plot_error(facit, samples, exp_val, para_error, variance, iterations,
                start, stop, label=None, fig_nr = 0):
     if label is None:
         label_1 = 'Eig calculated with Nelder-Mead'
         label_2 = 'Error of parameter'
+        label_3 = 'Number of iterations'
     else:
-        label_1, label_2 = label,label
+        label_1, label_2, label_3 = label, label, label
     
     # First figure is with energies
     plt.figure(fig_nr)
@@ -102,20 +109,28 @@ def plot_error(facit, samples, exp_val, para_error, variance,
     plt.ylabel('Error in parameter')
     plt.legend()
 
+    # Third one with iterations
+    plt.figure(fig_nr+2)
+    plt.scatter(samples,iterations,label=label_3)
+    plt.xlabel('Samples')
+    plt.ylabel('Number of iterations')
+    plt.legend()
+
 
 
 ################################################################################
 # Test
 ################################################################################
-def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0, label_ = None,
-                     fig_nr=0):
+def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0, 
+                    label_ = None, fig_nr=0):
+    
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
 
     ansatz_name = ansatz_.__name__
     ansatz_ = ansatz_(h.shape[0])
     if label_ is None: label_ = 'Dim of matrix: {}'.format(h.shape[0])
     h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
-
+    
     if convert_op is matrix_to_op.one_particle: qubits = h.shape[0]
     elif convert_op is matrix_to_op.multi_particle:
         qubits = qubits = int.bit_length(h.shape[0])
@@ -126,7 +141,7 @@ def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0, label_ = None,
     qc = get_qc('{}q-qvm'.format(qubits))
     H = convert_op(h)
     
-    error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=8000, steps=30, 
+    error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=6000, steps=60, 
                     label_=label_, save_run=True, ansatz_name=ansatz_name, 
                     fig_nr=fig_nr)
 
@@ -165,8 +180,8 @@ if __name__ == '__main__':
     ansatz_ = ansatz.multi_particle
 
 
-    j_=1
-    run_sample_error(ansatz_,convert_op ,j=j_,matrix_num=0 ,fig_nr=j_*2)
+    j_=2
+    run_sample_error(ansatz_,convert_op ,j=j_,matrix_num=1 ,fig_nr=j_*2)
 
     plt.show()
 
