@@ -4,7 +4,7 @@ from os.path import join
 import matplotlib2tikz as tikz
 import matplotlib.pyplot as plt
 import numpy as np
-
+from core import lipkin_quasi_spin
 
 def create(title):
     tikz.save(title + ".tex")
@@ -13,7 +13,7 @@ def create(title):
 ###############################################################################
 # TEST
 ###############################################################################
-datatitle = join(ROOT_DIR, 'data', 'ErrorOfSamples2.pkl')
+datatitle = join(ROOT_DIR, 'data', 'SampleErrorRunj2i1V1.pkl')
 
 data_, metadata = data.load(datatitle)
 print(data_['Expected_values'])
@@ -25,7 +25,9 @@ data_ = {'Samples' : samples,'Expected_values': exp_value,
              'Iterations': iterations}
 '''
 
-facit = -np.sqrt(2)
+facit = lipkin_quasi_spin.eigs(2,1)[1]
+print(facit)
+facit = float(facit[0])
 
 samples = data_['Samples']
 exp_val = data_['Expected_values']
@@ -48,4 +50,5 @@ ax.legend()
 ax.set_xlabel('Samples')
 ax.set_ylabel('Eigenvalue')
 
-create('test')
+plt.show()
+#create('test')
