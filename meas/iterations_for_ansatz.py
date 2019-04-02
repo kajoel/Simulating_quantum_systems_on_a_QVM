@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tus Mar 27 14:26 2019
+Created on April  2 16:40 2019
 
-@author: axel
+@author: axelnathanson
 """
+
 # Imports
 from core import ansatz, matrix_to_op, init_params, lipkin_quasi_spin, vqe_eig 
 from core import data, vqeOverride
@@ -15,25 +16,17 @@ import matplotlib.pyplot as plt
 
 
 
-def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
-                    start = 1000, stop = 2000, steps = 3, save_run=False, 
-                    label_ = None, ansatz_name=None, fig_nr=0, qubits = None,
-                    plot=True):
+def iterations_of_ansatz(H, qc, ansatz_, dim_h, samples, ansatz_name=None,
+                         initial_p = init_params.alternate, save_run=False, 
+                         label_ = None, fig_nr=0, qubits = None):
+
 
     vqe = vqeOverride.VQE_override(minimizer=minimize,
                                minimizer_kwargs={'method': 'Nelder-Mead'})
 
-    # Sets up samples, and all vectors to save run in 
-    samples = range(start, stop, round((stop-start)/steps))
-    exp_val = np.zeros(len(samples))
-    para_error = np.zeros(len(samples))
-    variance = np.zeros(len(samples))
+    # Sets up samples, and all vectors to save run in     
     iterations = np.zeros(len(samples))
     
-    # Calculates a facit with sample=None
-    facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
-    
-
     # Main part of method, 
     for i,sample in enumerate(samples):
         print('Number of samples: {}'.format(sample))
@@ -48,26 +41,14 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
         run_data = vqe_eig.smallest(H, qc, initial_p(dim_h), ansatz_,
                                     samples=sample, fatol=fatol_, xatol=xatol_,
                                     return_all_data=True)
-        
-
-        exp_val[i], temp_var = vqe.expectation(ansatz_(run_data['x']), H,
-                                        samples=sample,qc=qc)
-
+    
         iterations[i] = len(run_data['expectation_vals'])
-        variance[i] = 2*np.sqrt(temp_var)
-        para_error[i] = np.linalg.norm(run_data['x']-facit[1])
         print('Done with calculation: {}/{}'.format(i+1,len(samples)))
 
-    if save_run: save_error_run(samples, exp_val, para_error, ansatz_name, 
-                                H,variance, iterations, qubit=qubits,
-                                facit=facit)
+    if save_it_run: save_run(samples, ansatz_name, H, iterations, 
+                                qubit=qubits)
 
-    if plot:
-        plot_error(facit, samples, exp_val, para_error, variance, iterations, 
-                   start, stop, label_, fig_nr)
-    
-    return samples, exp_val,para_error, variance, iterations
-    
+    return iterations    
 
 
 
@@ -76,22 +57,19 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
 ################################################################################
 
 # Help-method that saves the run
-def save_error_run(samples,exp_value,para_error,ansatz_, H,variance=None,
-                   iterations=None, qubit=None, facit= None):
+def save_it_run(samples, ansatz_, H, iterations=None, qubit=None):
 
-    data_ = {'Samples' : samples,'Expected_values': exp_value,
-             'Parameter_error': para_error,'Variance': variance, 
-             'Iterations': iterations}
+    data_ = {'Samples' : samples, 'Iterations': iterations}
 
     metadata = {'ansatz': ansatz_, 'Hamiltonian': H,'minimizer': 'Nelder-Mead',
                 'Quibits': qubit,
-                'Type_of_measurement': 'Eigenvalues, parametererrors and iterations for different samples.'}
+                'Type_of_measurement': 'Iterations for different samples.'}
 
     data.save(data=data_,metadata=metadata)
 
 
 # Help method that plots a run
-def plot_error(facit, samples, exp_val, para_error, variance, iterations,
+def plot_iterations(facit, samples, exp_val, para_error, variance, iterations,
                start, stop, label=None, fig_nr = 0):
     if label is None:
         label_1 = 'Eig calculated with Nelder-Mead'
@@ -152,35 +130,9 @@ def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0,
     H = convert_op(h)
     
     error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=3000, steps=20, 
-                    label_=label_, save_run=True, ansatz_name=ansatz_name, 
+                    label_=label_, save_run=False, ansatz_name=ansatz_name, 
                     fig_nr=fig_nr, qubits=qubits)
 
-def test_var(ansatz_, convert_op, j=1, V=1, matrix_num=0,):
-    h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
-
-    if convert_op is matrix_to_op.one_particle:
-        qubits = h.shape[0]
-    elif convert_op is matrix_to_op.multi_particle:
-        qubits = qubits = int.bit_length(h.shape[0])
-    else:
-        print('Unknown ansatz')
-        return
-
-    ansatz_ = ansatz_(h.shape[0])
-    initial_p = init_params.alternate
-    h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
-    qc = get_qc('{}q-qvm'.format(qubits))
-    H = convert_op(h)
-    
-    sample=2000
-    
-    var = vqe_eig.smallest(H, qc, initial_p(h.shape[0]), ansatz_, 
-                           samples=sample, fatol=1e-1,return_all_data=True)
-
-    print(var['fun'])
-    for key in var: 
-        print(key)
-        print(var[key])
 
 ################################################################################
 # Main
