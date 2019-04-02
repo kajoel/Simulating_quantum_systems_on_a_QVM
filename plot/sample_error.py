@@ -13,10 +13,10 @@ from pyquil import get_qc
 import matplotlib.pyplot as plt
 
 
-# Main method
+
 def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
-                    start=1000, stop=2000, steps=3,save_run=False,label_ = None, 
-                    ansatz_name=None, fig_nr=0):
+                    start = 1000, stop = 2000, steps = 3, save_run=False, 
+                    label_ = None, ansatz_name=None, fig_nr=0):
 
     vqe = vqeOverride.VQE_override(minimizer=minimize,
                                minimizer_kwargs={'method': 'Nelder-Mead'})
@@ -28,6 +28,7 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
     variance = np.zeros(len(samples))
     iterations = np.zeros(len(samples))
     
+    # Calculates a facit with sample=None
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
     # Main part of method, 
@@ -38,7 +39,8 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
         # Makes one calculation with given samples, sets fatol accordingly.
         _, temp_var = vqe.expectation(ansatz_(initial_p(dim_h)), H,
                                         samples=sample,qc=qc)
-        fatol_ = np.sqrt(temp_var)
+        fatol_ =2 * np.sqrt(temp_var)
+        print('Tolerance: {}'.format(fatol_))
 
         run_data = vqe_eig.smallest(H, qc, initial_p(dim_h), ansatz_,
                                     samples=sample, fatol=fatol_, xatol=xatol_,
@@ -54,7 +56,7 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
         print('Done with calculation: {}/{}'.format(i+1,len(samples)))
 
     if save_run: save_error_run(samples, exp_val, para_error, ansatz_name, 
-                                H,variance, iterations)
+                                H,variance, iterations, qc=qc)
 
     plot_error(facit, samples, exp_val, para_error, variance, iterations, start, stop, 
                label_, fig_nr)
@@ -68,13 +70,14 @@ def error_of_sample(H, qc, ansatz_, dim_h, initial_p = init_params.alternate,
 
 # Help-method that saves the run
 def save_error_run(samples,exp_value,para_error,ansatz_, H,variance=None,
-                   iterations=None):
+                   iterations=None, qc=None):
 
     data_ = {'Samples' : samples,'Expected_values': exp_value,
              'Parameter_error': para_error,'Variance': variance, 
              'Iterations': iterations}
 
-    metadata = {'ansatz': ansatz_, 'Hamiltonian': H,'minimizer': 'Nelder-Mead', 
+    metadata = {'ansatz': ansatz_, 'Hamiltonian': H,'minimizer': 'Nelder-Mead',
+                'qc': qc,
                 'Type_of_measurement': 'Eigenvalues, parametererrors and iterations for different samples.'}
 
     data.save(data=data_,metadata=metadata)
@@ -141,7 +144,7 @@ def run_sample_error(ansatz_, convert_op, j=1, V=1, matrix_num=0,
     qc = get_qc('{}q-qvm'.format(qubits))
     H = convert_op(h)
     
-    error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=6000, steps=60, 
+    error_of_sample(H, qc, ansatz_, h.shape[0], start=100, stop=6000, steps=20, 
                     label_=label_, save_run=True, ansatz_name=ansatz_name, 
                     fig_nr=fig_nr)
 
@@ -181,7 +184,7 @@ if __name__ == '__main__':
 
 
     j_=2
-    run_sample_error(ansatz_,convert_op ,j=j_,matrix_num=1 ,fig_nr=j_*2)
+    run_sample_error(ansatz_,convert_op ,j=j_,matrix_num=0 ,fig_nr=j_*2)
 
     plt.show()
 
