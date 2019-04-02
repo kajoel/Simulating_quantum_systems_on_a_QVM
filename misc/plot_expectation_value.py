@@ -16,9 +16,9 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 
 ###############################################################################
-samples = 10000
-matrix = 0
-j = 1
+samples = 1000
+matrix = 1
+j = 2
 V = 1
 h = hamiltonian(j, V)[matrix]
 dim = h.shape[0]
@@ -27,12 +27,12 @@ print('\n')
 eigvals = eigs(j, V)[matrix]
 print(eigvals)
 print('\n')
-qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-#qc = get_qc(str(h.shape[0]) + 'q-qvm')
+#qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
+qc = get_qc(str(h.shape[0]) + 'q-qvm')
 ###############################################################################
-H = matrix_to_op.multi_particle(h)
-initial_params = init_params.ucc(dim)
-ansatz_ = ansatz.multi_particle_ucc(dim)
+H = matrix_to_op.one_particle(h)
+initial_params = init_params.alternate(dim)
+ansatz_ = ansatz.one_particle_ucc(dim)
 ###############################################################################
 # Smallest samples=None
 
@@ -44,7 +44,7 @@ result_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_,
 # Sweep
 
 sweep = sweep.sweep(h, qc, ansatz_, matrix_to_op.one_particle,
-                               start=-10, stop=10)
+                               start=-2, stop=2)
 ###############################################################################
 # Plot
 
