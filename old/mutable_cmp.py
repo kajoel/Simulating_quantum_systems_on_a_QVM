@@ -34,3 +34,4 @@ class MutableCompare:
 
     def __repr__(self):
         return self.value.__repr__()
+
