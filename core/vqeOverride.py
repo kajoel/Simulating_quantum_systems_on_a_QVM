@@ -319,7 +319,7 @@ def expectation_from_sampling(pyquil_program: Program,
     program += pyquil_program
     program += [MEASURE(qubit, r) for qubit, r in
                 zip(list(range(max(marked_qubits) + 1)), ro)]
-    program.wrap_in_numshots_loop(samples)
+    program.wrap_in_numshots_loop(samples.value)
     executable = qc.compile(program)
     bitstring_samples = qc.run(executable)
     bitstring_tuples = list(map(tuple, bitstring_samples))
@@ -334,6 +334,6 @@ def expectation_from_sampling(pyquil_program: Program,
             exp_list.append(count)
         else:
             exp_list.append(-1 * count)
-    expectation = np.sum(exp_list) / samples
-    variance = (1 - expectation ** 2) / samples
+    expectation = np.sum(exp_list) * (1/samples)
+    variance = (1 - expectation ** 2) * (1/samples)
     return expectation, variance
