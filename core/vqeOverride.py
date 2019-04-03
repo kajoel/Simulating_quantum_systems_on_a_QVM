@@ -29,7 +29,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False):
+                return_all=False, callback=None):
         """
         functional minimization loop.
 
@@ -137,38 +137,55 @@ class VQE_override(VQE):
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
 
-        def callback(iter_vars):
-            disp(iter_vars, self._current_expectation, self._current_variance)
-            if return_all:
-                iteration_params.append(iter_vars)
-                expectation_vals.append(self._current_expectation)
-                expectation_vars.append(self._current_variance)
+        if 'callback' in self.minimizer_kwargs:
+            minimizer_callback = self.minimizer_kwargs.callback
+        else:
+            def minimizer_callback(*args, **kwargs): pass
 
-        if disp is True and 'callback' in arguments:
-            self.minimizer_kwargs['callback'] = print_current_iter
+        if callback is None:
+            def callback(*args, **kwargs): pass
 
-        if (callable(disp)) and 'callback' in arguments:
-            self.minimizer_kwargs['callback'] = callback
+        def wrap_callbacks(iter_vars, *args, **kwargs):
+            # call the minimizer's callback
+            minimizer_callback(iter_vars, *args, **kwargs)
+            # save values
+            iteration_params.append(iter_vars)
+            expectation_vals.append(self._current_expectation)
+            expectation_vars.append(self._current_variance)
+            # call VQE's callback
+            callback(iteration_params, expectation_vals, expectation_vars)
+            # display
+            if disp is True:
+                print_current_iter(iter_vars)
+
+        if 'callback' in arguments:
+            self.minimizer_kwargs['callback'] = wrap_callbacks
 
         args = [objective_function, initial_params]
         args.extend(self.minimizer_args)
         if 'jac' in arguments:
             self.minimizer_kwargs['jac'] = jacobian
 
-        result = self.minimizer(*args, **self.minimizer_kwargs)
-
-        if hasattr(result, 'status'):
-            if result.status != 0:
-                self._disp_fun(
-                    "Classical optimization exited with an error index: %i"
-                    % result.status)
-
-        results = OptResults()
-        if hasattr(result, 'x'):
-            results.x = result.x
-            results.fun = result.fun
+        try:
+            result = self.minimizer(*args, **self.minimizer_kwargs)
+        except BreakError:
+            results = OptResults()
+            results.x = iteration_params[-1]
+            results.fun = expectation_vals[-1]
         else:
-            results.x = result
+            if hasattr(result, 'status'):
+                if result.status != 0:
+                    self._disp_fun(
+                        "Classical optimization exited with an error index: %i"
+                        % result.status)
+
+            results = OptResults()
+            if hasattr(result, 'x'):
+                results.x = result.x
+                results.fun = result.fun
+            else:
+                results.x = result
+                results.fun = expectation_vals[-1]
 
         if return_all:
             # iteration_params.append(result['x'][0])
@@ -337,3 +354,10 @@ def expectation_from_sampling(pyquil_program: Program,
     expectation = np.sum(exp_list) * (1/samples)
     variance = (1 - expectation ** 2) * (1/samples)
     return expectation, variance
+
+
+class BreakError(Exception):
+    """
+    Expectation that callback can raise to stop the minimizer dynamically.
+    """
+    pass
