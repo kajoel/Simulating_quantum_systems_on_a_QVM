@@ -82,7 +82,7 @@ def NM_sample_sweep(H,
     # Calculates a facit with sample=None
     facit= vqe_eig.smallest(H, qc, initial_p(dim_h),ansatz_)
     
-    # Main part of method,
+
     for i,sample in enumerate(samples):
         print('Number of samples: {}'.format(sample))
 
@@ -94,8 +94,8 @@ def NM_sample_sweep(H,
 
         
         run_data.append( vqe_eig.smallest(H, qc, initial_p(dim_h), ansatz_,
-                                    samples=sample, fatol=fatol_, xatol=xatol,
-                                    return_all_data=True) )
+                                          samples=sample, fatol=fatol_, 
+                                          xatol=xatol, return_all_data=True) )
         
 
         data_[0,i], temp_var = vqe.expectation(ansatz_(run_data[-1]['x']), H,
