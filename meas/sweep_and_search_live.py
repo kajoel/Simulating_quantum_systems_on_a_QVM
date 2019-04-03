@@ -18,7 +18,7 @@ h = lipkin_quasi_spin.hamiltonian(j, V)[0]
 
 
 plot = liveplot.Liveplot()
-vqe_analysis.sweep_parameters(h, qc, new_version=True, samples=samples,
+vqe_analysis.sweep_parameters(h, qc, new_version=True, samples=None,
                               num_para=sweep_params, start=-3, stop=3, callback=
                               plot.plotline, plot=False)
 

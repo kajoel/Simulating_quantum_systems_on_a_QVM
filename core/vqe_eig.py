@@ -78,20 +78,32 @@ def smallest_dynamic(H, qc, initial_params,
     if samples is None:
         raise TypeError(
             'Samples must be a number in this method. Use smallest() instead')
-    tol = 16 / np.sqrt(samples)
-    # 16 because tol = 2 sigma, sigma = x/sqrt(samp), x \approx 8
+    disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
+                    'maxiter': maxiter}
+    vqe = vqeOverride.VQE_override(minimizer=minimize,
+                                   minimizer_kwargs={'method':
+                                                         opt_algorithm,
+                                                     'options': disp_options})
+    # Starting values of iteration:
+    samp = 100
     params = initial_params
-    samp = 1000
+    # Do one meas to get initial variance
+    eig_start, var_start = vqe.expectation(
+        ansatz.multi_particle(params), H,
+        samples=samp,
+        qc=qc)
+    # Tolerance is 2 std. deviations. Maybe change?
+    tol = 2*np.sqrt(var_start)
+
     if tol < fatol:
-        raise ValueError('fatol too large')
+        raise ValueError('fatol too large, already satisfied')
     while tol > fatol:
-        result = smallest(H, qc, params, samples=samp, fatol=tol,
-                          ansatz_=ansatz_,
-                          xatol=xatol, return_all_data=return_all_data,
-                          maxiter=maxiter,
-                          disp_run_info=disp_run_info,
-                          opt_algorithm=opt_algorithm,
-                          display_after_run=display_after_run)
+        run = vqe.vqe_run(ansatz_, H, params, samples=samp, qc=qc,
+                          disp=disp_run_info, return_all=True)
+
+        params = run['x']
+        tol
+
         print('Increasing samples')
         params = result[1]
         samples *= 4
