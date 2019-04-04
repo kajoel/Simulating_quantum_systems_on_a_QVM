@@ -114,7 +114,6 @@ class VQE_override(VQE):
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
 
-
             return mean_value
 
         def print_current_iter(iter_vars):
@@ -128,17 +127,11 @@ class VQE_override(VQE):
 
             self._disp_fun("\tE => {}".format(self._current_expectation))
 
-            if return_all:
-                iteration_params.append(iter_vars)
-                expectation_vals.append(self._current_expectation)
-                expectation_vars.append(self._current_variance)
-
-
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
 
         if 'callback' in self.minimizer_kwargs:
-            minimizer_callback = self.minimizer_kwargs.callback
+            minimizer_callback = self.minimizer_kwargs['callback']
         else:
             def minimizer_callback(*args, **kwargs): pass
 
@@ -336,7 +329,10 @@ def expectation_from_sampling(pyquil_program: Program,
     program += pyquil_program
     program += [MEASURE(qubit, r) for qubit, r in
                 zip(list(range(max(marked_qubits) + 1)), ro)]
-    program.wrap_in_numshots_loop(samples.value)
+    if isinstance(samples,int):
+        program.wrap_in_numshots_loop(samples)
+    else:
+        program.wrap_in_numshots_loop(samples.value)
     executable = qc.compile(program)
     bitstring_samples = qc.run(executable)
     bitstring_tuples = list(map(tuple, bitstring_samples))

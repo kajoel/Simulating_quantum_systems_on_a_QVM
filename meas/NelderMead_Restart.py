@@ -1,4 +1,4 @@
-# Carl 4/4
+# Sebastian, Carl 4/4
 ###############################################################################
 # Imports
 from core.lipkin_quasi_spin import hamiltonian, eigs
@@ -14,9 +14,9 @@ from meas import sweep
 import matplotlib.pyplot as plt
 
 ###############################################################################
-samples = 1000
+samples = 3000
 matrix = 0
-j = 3
+j = 1
 V = 1
 h = hamiltonian(j, V)[matrix]
 dim = h.shape[0]
@@ -32,4 +32,6 @@ H = matrix_to_op.one_particle(h)
 initial_params = init_params.ones(dim)
 ansatz_ = ansatz.one_particle_ucc(dim)
 
-eig = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_, samples, xatol=1e-2, fatol=1e-3)
+eig = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_, samples,
+                               xatol=1e-2, fatol=1e-3, return_all_data=True)
+print(eig)

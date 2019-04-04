@@ -41,16 +41,16 @@ def callback(*args, **kwargs):
 
 
 res = smallest(H, qc, ones(h.shape[0]),
-              ansatz_=ansatz.multi_particle(h.shape[0]),
-              samples=samples,
-              opt_algorithm='Nelder-Mead',
-              maxiter=10000,
-              disp_run_info=callback,
-              display_after_run=True,
-              xatol=1e-2, fatol=1e-1,
-              return_all_data=True,
-              convert_op=matrix_to_op.multi_particle,
-              print_option=None)
+               ansatz_=ansatz.multi_particle(h.shape[0]),
+               samples=samples,
+               opt_algorithm='Nelder-Mead',
+               maxiter=10000,
+               disp=callback,
+               display_after_run=True,
+               xatol=1e-2, fatol=1e-1,
+               return_all_data=True,
+               convert_op=matrix_to_op.multi_particle,
+               print_option=None)
 
 params = np.array(res['iteration_params'])
 exp_vals = np.array(res['expectation_vals'])

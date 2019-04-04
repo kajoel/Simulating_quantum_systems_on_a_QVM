@@ -37,7 +37,7 @@ min_eig = vqe_eig.smallest(H, qc=qc,
                            init_params.alternate(
                                h.shape[0]),
                            ansatz_=ansatz.multi_particle(h.shape[0]),
-                           disp_run_info=True,
+                           disp=True,
                            fatol=tol, xatol=1e-4, samples=samples,
                            return_all_data=True)
 

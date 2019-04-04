@@ -34,7 +34,7 @@ ansatz_ = ansatz.one_particle(dim)
 #ansatz_ = ansatz.one_particle_ucc(dim, trotter_order=1, trotter_steps=4)
 ###############################################################################
 parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_,
-                 samples=None, fatol=1e-1, xatol=7e-2, disp_run_info = True,
+                                  samples=None, fatol=1e-1, xatol=7e-2, disp= True,
                                   display_after_run=True)[1]
 
 print('\n', 'Paramater (samples = None):', parameter_None, '\n')
@@ -44,7 +44,7 @@ print('\n', 'Paramater (samples = None):', parameter_None, '\n')
 #plt.show()
 ###############################################################################
 result = vqe_eig.smallest(H, qc, initial_params, ansatz_, samples=samples,
-                         disp_run_info=True, display_after_run=False,
+                          disp=True, display_after_run=False,
                           xatol=1e-2, fatol=1e-3)
 ###############################################################################
 parameter = result[1]

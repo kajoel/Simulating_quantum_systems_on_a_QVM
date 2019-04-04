@@ -19,9 +19,9 @@ def alternate(size):
 
 def ones(size):
     """
-    Creates an inital state for an anstaz.
+    Creates an initial state for an ansätze.
 
-    @author: Joel, Eric, Carl, Axel
+    @author: Joel, Eric, Carl, Axel, Sebastian
 
     :param size:  int representing the size of hamiltonian matrix
     :return: array of ones of proper length
