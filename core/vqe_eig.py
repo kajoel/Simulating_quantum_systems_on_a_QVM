@@ -64,6 +64,62 @@ def smallest(H, qc, initial_params,
         return eigval, optparam
 
 
+def smallest_restart(H, qc, initial_params,
+             ansatz_=None,
+             samples=None,
+             opt_algorithm='Nelder-Mead',
+             maxiter=10000,
+             display_after_run=False,
+             xatol=1e-2, fatol=1e-3,
+             return_all_data=False):
+
+    class RestartError(Exception):
+        def __init__(self, param, *args, **kwargs):
+            super().__init__(*args,**kwargs)
+            self.param = param
+
+
+    class NelderMeadError(Exception):
+        pass
+
+    def same_parameter(params, exps, *args, **kwargs):
+        if len(params) > 4:
+            bool_tmp = True
+            for x in range(2,6):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1]-params[-x])
+            if bool_tmp:
+                raise RestartError(params[-1])
+
+
+    if ansatz_ is None:
+        ansatz_ = ansatz.multi_particle
+
+    # All options to Nelder-Mead
+    disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
+                    'maxiter': maxiter}
+
+    vqe = vqeOverride.VQE_override(minimizer=minimize,
+                                   minimizer_kwargs={'method':
+                                                         opt_algorithm,
+                                                     'options': disp_options})
+    # If disp_run_info is True we will print every step of the Nelder-Mead
+
+
+    for i in range(100):
+        try:
+            eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
+                          disp=True, return_all=True, callback=same_parameter)
+            if return_all_data:
+                return eig
+            else:
+                eigval = eig['fun']
+                optparam = eig['x']
+                return eigval, optparam
+        except RestartError as e:
+            initial_params = e.param
+
+    raise NelderMeadError('Fuck Nelder-Mead')
+
 def smallest_dynamic(H, qc, initial_params,
                      ansatz_=None,
                      samples=1000,
