@@ -114,11 +114,12 @@ def NM_sample_sweep(H,
                  'all_data': run_data}
 
     if save_after_run:
-        metadata = {'ansatz': ansatz_name, 'Hamiltonian': H,
-                    'minimizer': 'Nelder-Mead','Quibits': qubits,
-                    'Type_of_meas': 'eig, var, para errors and iterations'}
+        metadata = {'ansatz': ansatz_name, 'Hamiltonian': H, 'xatol': xatol, 
+                    'minimizer': 'Nelder-Mead','Qubits': qubits,
+                    'Type_of_meas': 'eig, var, para errors and iterations', 
+                    'fatol': 'Varierande med variansen'}
 
-        data.save(file = file_name, data=save_dict,metadata=metadata)
+        data.save(file = file_name, data=save_dict, metadata=metadata)
 
     if plot_after_run: 
         if label is None: label = ansatz_name
@@ -126,7 +127,6 @@ def NM_sample_sweep(H,
     
     return save_dict
     
-
 
 
 ################################################################################
@@ -178,30 +178,32 @@ def plot_run(data, label=None):
 # Tests of the methods / Measurments made with the module
 ################################################################################
 def run_NM_sample_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0, 
-                        label = None, save = False, file_name = None,
-                        start=100, stop=6000, steps=30):
+                        label = None, save = False, plot = False, 
+                        file_name = None,
+                        start=100, stop=8000, steps=50):
     if h is None:
         h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
 
     ans_name = ansatz_.__name__
+    if ans_name == 'one_particle_ucc': inital_p = init_params.ones
     ansatz_ = ansatz_(h.shape[0])
     if label is None: label = ans_name
     
     
     if convert_op is matrix_to_op.one_particle: qubit = h.shape[0]
     elif convert_op is matrix_to_op.multi_particle:
-        qubit = qubits = int.bit_length(h.shape[0])
+        qubit = int.bit_length(h.shape[0])
     else:
         print('Unknown ansatz')
         return
 
-    qc = get_qc('{}q-qvm'.format(qubits))
+    qc = get_qc('{}q-qvm'.format(qubit))
     H = convert_op(h)
     
     return NM_sample_sweep(H, qc, ansatz_, h.shape[0], start=start, stop=stop, 
                            steps=steps, save_after_run=save, label=label, 
                            ansatz_name=ans_name, qubits=qubit, 
-                           file_name=file_name)
+                           file_name=file_name, plot_after_run=False)
 
 
 def plot_from_data():
@@ -220,9 +222,11 @@ def plot_from_data():
 def multiple_ansatzer(j=1, V=1, matrix_num=0):
     h_ = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
 
+
     ansatz_ = ansatz.one_particle
     convert_op = matrix_to_op.one_particle
     run_NM_sample_sweep(ansatz_, convert_op, h=h_, label='One')
+
 
     ansatz_ = ansatz.one_particle_ucc
     run_NM_sample_sweep(ansatz_, convert_op, h=h_, label='One UCC')
@@ -232,15 +236,27 @@ def multiple_ansatzer(j=1, V=1, matrix_num=0):
     convert_op = matrix_to_op.multi_particle
     run_NM_sample_sweep(ansatz_, convert_op, h=h_, label='Multi')
 
+def multiple_runs_and_save(h, count):
+    ansatzer = [ansatz.one_particle, ansatz.one_particle_ucc, 
+                ansatz.multi_particle]
+    
+    for index, ansatz_ in enumerate(ansatzer):
+        file_name = 'data/over_night_run/OverNightRun{}'.format(count)
+        convert_op = matrix_to_op.one_particle
+
+        if index == 2: convert_op = matrix_to_op.multi_particle
+        run_NM_sample_sweep(ansatz_, convert_op, h, save=True, 
+                            file_name=file_name,
+                            start=100, stop=10000, steps=100)
+        count+=1
+    
+    return count
+    
+    
 
 ################################################################################
 # Main
 ################################################################################
 if __name__ == '__main__':
-    ansatz_ = ansatz.multi_particle
-    convert_op = matrix_to_op.multi_particle
-    run_NM_sample_sweep(ansatz_, convert_op, steps=5, stop=1000)
-    plt.show()
-
-
+    print('Hej')
 
