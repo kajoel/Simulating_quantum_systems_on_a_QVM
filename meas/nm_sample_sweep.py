@@ -241,7 +241,8 @@ def multiple_runs_and_save(h, count):
                 ansatz.multi_particle]
     
     for index, ansatz_ in enumerate(ansatzer):
-        file_name = 'data/over_night_run/OverNightRun{}'.format(count)
+        file_name = join(ROOT_DIR, 'data', 'over_night_run',
+                         'OverNightRun{}'.format(count))
         convert_op = matrix_to_op.one_particle
 
         if index == 2: convert_op = matrix_to_op.multi_particle
