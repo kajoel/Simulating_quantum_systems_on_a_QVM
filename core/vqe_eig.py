@@ -87,10 +87,10 @@ def smallest_restart(H, qc, initial_params,
     :return:
     '''
 
-    max = 3 # antal som får vara samma
+    max = 5 # antal som får vara samma
     tol = 1e-4
     def same_parameter(params, *args, **kwargs):
-        if len(params) > max -1 :
+        if len(params) > max -1:
             bool_tmp = True
             for x in range(2,max +1):
                 bool_tmp = bool_tmp and np.linalg.norm(params[-1]-params[-x])\
@@ -103,8 +103,7 @@ def smallest_restart(H, qc, initial_params,
         ansatz_ = ansatz.multi_particle
 
     # All options to Nelder-Mead
-    disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
-                    'maxiter': maxiter}
+
 
 
     # If disp_run_info is True we will print every step of the Nelder-Mead
@@ -116,6 +115,10 @@ def smallest_restart(H, qc, initial_params,
         print("samples: {}".format(samples))
         # Have to make new vqe every time, else the callback gets duplicated
         # each iter (bug?)
+        disp_options = {'disp': display_after_run, 'xatol': xatol,
+                        'fatol': fatol,
+                        'maxiter': maxiter}
+
         vqe = vqeOverride.VQE_override(minimizer=minimize,
                                        minimizer_kwargs={'method':
                                                              opt_algorithm,
@@ -123,8 +126,7 @@ def smallest_restart(H, qc, initial_params,
         try:
             eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                           disp=True, return_all=True,
-                              callback=callback.merge_callbacks(
-                                  callback.scatter(),same_parameter))
+                              callback=same_parameter)
             if return_all_data:
                 return eig
             else:
@@ -134,6 +136,9 @@ def smallest_restart(H, qc, initial_params,
         except RestartError as e:
             initial_params = e.param
             samples = samples + 1000
+            _, var = vqe.expectation(ansatz_(initial_params), H,
+                                     samples=samples, qc=qc)
+            fatol = 2 * np.sqrt(var)
 
     raise NelderMeadError('Fuck Nelder-Mead')
 
