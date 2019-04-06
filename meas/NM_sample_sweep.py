@@ -61,6 +61,7 @@ def NM_sample_sweep(H,
         save_after_run {bool} -- Saves run if True (default: {False})
         plot_after_run {bool} -- Plots the run if True (default: {True})
         label {str} -- Label for the plot (default: {None})
+        
         Below is variables for the metadata if save_after_run is True.
         ansatz_name {str} -- Name of the ansatz (default: {None})
         qubits {int} -- Number of qubits (default: {None})

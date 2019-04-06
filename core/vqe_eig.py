@@ -74,20 +74,24 @@ def smallest_bayes(H, qc,
                    return_all_data = False,
                    disp = False,
                    acq_func = "gp_hedge",      
-                   n_calls = 100,          
+                   n_calls = 30,          
                    n_random_starts= 5,         
                    random_state = 123,
                    x0 = None ):
     """
     Finds the smallest eigenvalue using a Bayesian optimization algoritm.     
     @author: Axel
+    
+    TODO: Go into VQEOverrode and look at what you can return, because now 
+    we are not getting the data from the Bayesian Optimization returned, only 
+    the exp_val, parameter and variance. 
 
     :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
     :param dimension: A list of tuples, with the intervals for the parameters 
     :param ansatz_: ansatz function
-    :param num_samples: number of samples on the qvm
-    :param return_all_data: If True returns data from all te runs.
+    :param samples: Number of samples on the qvm
+    :param return_all_data: If True returns data from all the runs.
     :param disp: Displays all data during the run. (It is ALOT)
     
     For the parameters below, see the skopt documentation: 
@@ -124,7 +128,9 @@ def smallest_bayes(H, qc,
     # The actual run
     eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
                       disp=disp, return_all=True)
-
+    
+    eig['expectation_vars'] = noise
+    
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
         return eig
