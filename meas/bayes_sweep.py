@@ -320,7 +320,7 @@ def run_bayes_sample_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0,
 
 def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0, 
                          label = None, save = False, file_name = None,
-                         start=10, stop=50, steps=2):
+                         start=10, stop=30, steps=4):
     if h is None:
         h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
 
@@ -331,12 +331,12 @@ def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=
     
     if convert_op is matrix_to_op.one_particle: qubit = h.shape[0]
     elif convert_op is matrix_to_op.multi_particle:
-        qubit = qubits = int.bit_length(h.shape[0])
+        qubit = int.bit_length(h.shape[0])
     else:
         print('Unknown ansatz')
         return
 
-    qc = get_qc('{}q-qvm'.format(qubits))
+    qc = get_qc('{}q-qvm'.format(qubit))
     H = convert_op(h)
     
     return bayes_iteration_sweep(H, qc, ansatz_, h.shape[0], samples=200,
@@ -368,8 +368,8 @@ if __name__ == '__main__':
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
     #run_bayes_sample_sweep(ansatz_, convert_op, steps=5, stop=1000)
-    run_bayes_iteration_sweep(ansatz_, convert_op, steps=2, stop=60)
-    
+    #run_bayes_iteration_sweep(ansatz_, convert_op, steps=2, stop=60)
+    multiple_ansatzer()
     
     
     plt.show()
