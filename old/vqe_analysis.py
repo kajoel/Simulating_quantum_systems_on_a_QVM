@@ -216,5 +216,5 @@ if __name__ == '__main__':
 
 
     energies = smallest(multi_particle(h), qc, init_params.ones(h.shape[0]),
-                        ansatz_=ansatz_, samples=samples,
-                        disp_run_info=testprint, fatol=1e-1*16/np.sqrt(samples))[0]
+                        ansatz_=ansatz, samples=samples,
+                        disp=testprint, fatol=1e-1 * 16 / np.sqrt(samples))[0]

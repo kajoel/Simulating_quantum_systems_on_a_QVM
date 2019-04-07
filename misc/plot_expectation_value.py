@@ -34,7 +34,9 @@ H = matrix_to_op.multi_particle(h)
 initial_params = init_params.ucc(dim)
 ansatz_ = ansatz.multi_particle_ucc(dim)
 ###############################################################################
-# Smallest samples=None
+parameter_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_,
+                                  samples=None, fatol=1e-1, xatol=7e-2, disp= True,
+                                  display_after_run=True)[1]
 
 result_None = vqe_eig.smallest(H, qc, initial_params, ansatz_=ansatz_,
                                samples=None, fatol=1e-3, xatol=1e-2,
@@ -104,7 +106,7 @@ plot_(result_None,sweep)
 
 '''
 result = vqe_eig.smallest(H, qc, initial_params, ansatz_, samples=samples,
-                         disp_run_info=True, display_after_run=False,
+                          disp=True, display_after_run=False,
                           xatol=1e-2, fatol=1e-3)
 ###############################################################################
 parameter = result[1]
