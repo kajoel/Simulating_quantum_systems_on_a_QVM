@@ -266,5 +266,5 @@ if __name__ == "__main__":
     compete([test1, test2], start=10, stop=3000, plottype="loglog", labels=["a", "b"])
 
     # another example (using functions from lipkin_quasi_spin)
-    # compete([eigenvalues_positive, eigenvalues, hamiltonian],
+    # compete([eigs_positive, eigs, hamiltonian],
     #         objgenerator= lambda x: x/2, args = [[1]]*3)

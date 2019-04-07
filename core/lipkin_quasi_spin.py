@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 """
-Functions for calculating Hamiltonian and corresponding eigenvalues using
+Functions for calculating Hamiltonian and corresponding eigs using
 the quasi-spin formalism.
 
 Note: - Currently the code doesn't work for j=0 (corresponding to N=0).
-    - eigsh can returns eigenvalues and -vectors so this code could be used
+    - eigsh can returns eigs and -vectors so this code could be used
       for the latter as well (with minimal modification)
 
 Created on Fri Feb 15 14:16:40 2019
+
 @author: Joel
 """
 # Imports
@@ -16,6 +16,7 @@ import numpy as np
 import scipy.sparse as sparse
 from scipy.sparse.linalg import eigsh
 from functools import lru_cache
+
 
 @lru_cache(maxsize=1)
 def hamiltonian(j, V, e=1):
@@ -28,7 +29,9 @@ def hamiltonian(j, V, e=1):
 
     H2 has :math:`m \in \{-j+1, -j+3, ...\}`
 
-    :param j:
+    @author: Joel
+
+    :param j: j in the Lipkin model
     :param V: V in the Lipkin-model
     :param e: epsilon in the Lipkin-model
     :return: Matrixes H1 and H2
@@ -38,15 +41,19 @@ def hamiltonian(j, V, e=1):
     return (H1, H2)
 
 
-def eigenvalues(j, V, e=1):
+def eigs(j, V, e=1):
     """
-    Function which returns eigenvalues for specified value of j. The output is
-    two 1D ndarrays with sorted eigenvalues corresponding to H1 and H2.
+    Function which returns eigs for specified value of j. The output is
+    two 1D ndarrays with sorted eigs corresponding to H1 and H2.
 
-    The input parameter e is epsilon in the Lipkin-model
+    The input parameter e is epsilon in the Lipkin-model.
+
+    @author: Joel
     """
     # Preallocate and store in tuple to keep DRY
-    eigvals = (np.empty(math.ceil((2 * j + 1) / 2)), np.empty(math.floor((2 * j + 1) / 2)))
+    eigvals = (
+        np.empty(math.ceil((2 * j + 1) / 2)),
+        np.empty(math.floor((2 * j + 1) / 2)))
 
     # Get matrices
     args = [j, V]
@@ -66,18 +73,20 @@ def eigenvalues(j, V, e=1):
     return eigvals
 
 
-def eigenvalues_positive(j, V, e=1):
+def eigs_positive(j, V, e=1):
     """
-    Function which returns eigenvalues for specified value of j. The output is
-    a 1D ndarray. The eigenvalues are sorted by size and only the positive
-    eigenvalues are returned.
+    Function which returns eigs for specified value of j. The output is
+    a 1D ndarray. The eigs are sorted by size and only the positive
+    eigs are returned.
 
-    The input parameter e is epsilon in the Lipkin-model
+    The input parameter e is epsilon in the Lipkin-model.
+
+    @author: Joel
     """
     # We use that we now that there are floor((2j+1)/2) strictly positive
-    # eigenvalues. This avoids numerical problems with eigenvalues
+    # eigs. This avoids numerical problems with eigs
     # that are 0 but calculated to (say) 1.7e-15
-    eigvals = eigenvalues(j, V, e)
+    eigvals = eigs(j, V, e)
     eigvals = np.concatenate(eigvals)
     eigvals.sort()
     return eigvals[math.ceil((eigvals.shape[0]) / 2):]
@@ -90,8 +99,10 @@ def _quasi_internal(j, m_start, V, e):
     m = m_start + 2 * np.array(range(size), dtype="float")
 
     idx = np.array(range(size))
-    data = np.sqrt((j - m[0:-1]) * (j + m[0:-1] + 1) * (j - m[0:-1] - 1) * (j + m[0:-1] + 2))
-    J_p2 = sparse.coo_matrix((data, (1 + idx[0:-1], idx[0:-1])), shape=(size, size))
+    data = np.sqrt((j - m[0:-1]) * (j + m[0:-1] + 1) * (j - m[0:-1] - 1) * (
+            j + m[0:-1] + 2))
+    J_p2 = sparse.coo_matrix((data, (1 + idx[0:-1], idx[0:-1])),
+                             shape=(size, size))
     J_p2 = J_p2.tocsr()
     J_m2 = J_p2.transpose()
 

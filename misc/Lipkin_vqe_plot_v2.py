@@ -13,7 +13,6 @@ from scipy.optimize import minimize
 import lipkin_quasi_spin as lqs
 from matrix_to_pyquil import matrix_to_pyquil
 import ansatz as ansatz
-
 #################################################################################
 vqe = VQE(minimizer=minimize,minimizer_kwargs={'method': 'L-BFGS-B'})
 #vqe = VQE(minimizer=minimize,minimizer_kwargs={'method': 'Nelder-Mead'})
@@ -22,7 +21,7 @@ qvm = api.QVMConnection()
 def vqe_eig(vqe, h, qvm):
     H = matrix_to_pyquil(h)
     initial_params = 1 / np.sqrt(h.shape[0]) * np.ones([h.shape[0]])
-    result = vqe.vqe_run(ansatz.one_particle_ansatz, H, initial_params, samples=None, qvm=qvm)
+    result = vqe.vqe_run(ansatz.one_particle, H, initial_params, samples=None, qvm=qvm)
     return result
 #################################################################################
 a = 10
