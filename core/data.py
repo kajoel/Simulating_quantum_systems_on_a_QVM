@@ -10,7 +10,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askopenfilenames, \
     asksaveasfilename
 from datetime import datetime
-from os.path import basename, join, dirname, isdir
+from os.path import basename, join, dirname, isdir, splitext
 from inspect import stack, getmodule
 from os import getuid, mkdir
 from pwd import getpwuid
@@ -21,7 +21,7 @@ USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
 
 
 def save(file=None, data=None, metadata=None,
-         base_dir=join(ROOT_DIR, 'data')):
+         base_dir=join(ROOT_DIR, 'data'), force_extension=True):
     """
     Save data and metadata to a file. Always set the first field of metadata
     as metadata={'description': info} (followed by other fields). Datetime of
@@ -37,6 +37,8 @@ def save(file=None, data=None, metadata=None,
 
     :param string file: file to save to
     :param string base_dir: prepended to file
+    :param bool force_extension: if True save will add the extension '.pkl' if
+        the file variable is missing extension.
     :param data: data to save
     :param dictionary  metadata: metadata describing the data
     :return: None
@@ -50,9 +52,13 @@ def save(file=None, data=None, metadata=None,
                                  initialdir=base_dir)
     else:
         file = join(base_dir, file)
+        # Create directory (if not existing)
         dir_ = dirname(file)
         if not isdir(dir_):
             mkdir(dir_)
+        # Add extension .pkl if extension is missing and force_extension
+        if not splitext(file)[1] and force_extension:
+            file = file + '.pkl'
 
     # Add some fields automatically to metadata
     if metadata is None:
@@ -80,13 +86,16 @@ def save(file=None, data=None, metadata=None,
         print('\033[91m' + format_exc() + '\033[0m')
 
 
-def load(file=None):
+def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
     """
     Load data and metadata from a file.
 
     @author = Joel
 
     :param string file: file to load from
+    :param string base_dir: prepended to file
+    :param bool force_extension: if True load will add the extension '.pkl' if
+        the file variable is missing extension.
     :return: (data, metadata)
     :rtype: (Any, dictionary )
     """
@@ -97,6 +106,12 @@ def load(file=None):
         file = askopenfilename(parent=tk, filetypes=[('Pickled', '.pkl'),
                                                      ('All files', '.*')],
                                initialdir=join(ROOT_DIR, 'data'))
+    else:
+        file = join(base_dir, file)
+        # Add extension .pkl if extension is missing and force_extension
+        if not splitext(file)[1] and force_extension:
+            file = file + '.pkl'
+
     if file is None:
         raise FileNotFoundError("Can't load without a file.")
 
