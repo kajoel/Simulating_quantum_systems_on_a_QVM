@@ -121,7 +121,7 @@ class VQE_override(VQE):
             return mean_value
 
         def print_current_iter(iter_vars):
-            self._disp_fun('\n','Function evaluations: {}'.format(fun_evals))
+            self._disp_fun('\nFunction evaluations: {}'.format(fun_evals))
             self._disp_fun("Parameters: {} ".format(iter_vars))
             if jacobian is not None:
                 grad = jacobian(iter_vars)
@@ -130,7 +130,7 @@ class VQE_override(VQE):
                 self._disp_fun(
                     "\tGrad-L2-Norm: {} ".format(np.linalg.norm(grad)))
 
-            self._disp_fun("E => {}".format(self._current_expectation), '\n')
+            self._disp_fun("E => {}".format(self._current_expectation))
 
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
