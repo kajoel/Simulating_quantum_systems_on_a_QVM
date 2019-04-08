@@ -30,8 +30,6 @@ from constants import ROOT_DIR
 from os.path import join
 
 
-
-
 def bayes_sample_sweep(H, 
                        qc, 
                        ansatz_, 
@@ -113,7 +111,7 @@ def bayes_sample_sweep(H,
     
     if plot_after_run: 
         if label is None: label = ansatz_name
-        plot_run(save_dict, label=label)
+        plot_sample_run(save_dict, label=label)
     
 
     return save_dict
@@ -192,7 +190,7 @@ def bayes_iteration_sweep(H,
     if save_after_run:
         metadata = {'ansatz': ansatz_name, 'Hamiltonian': H,
                     'minimizer': 'Bayesian Optimizer','Quibits': qubits,
-                    'Type_of_meas': 'Sweep over samples with Bayesian optimizer', 
+                    'Type_of_meas': 'Sweep over func evals with Bayesian optimizer', 
                     }
 
         data.save(file = file_name, data=save_dict,metadata=metadata)
@@ -318,9 +316,10 @@ def run_bayes_sample_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0,
                               ansatz_name=ans_name, file_name=file_name)
 
 
-def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0, 
-                         label = None, save = False, file_name = None,
-                         start=10, stop=30, steps=4):
+def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1, 
+                              matrix_num=0, label = None, save = False, 
+                              file_name = None, start=10, stop=40, steps=5):
+    
     if h is None:
         h = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
 
@@ -365,11 +364,11 @@ def multiple_ansatzer(j=1, V=1, matrix_num=0):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    ansatz_ = ansatz.multi_particle
-    convert_op = matrix_to_op.multi_particle
+    ansatz_ = ansatz.one_particle_ucc
+    convert_op = matrix_to_op.one_particle
     #run_bayes_sample_sweep(ansatz_, convert_op, steps=5, stop=1000)
-    #run_bayes_iteration_sweep(ansatz_, convert_op, steps=2, stop=60)
-    multiple_ansatzer()
+    run_bayes_iteration_sweep(ansatz_, convert_op, steps=25, stop=100)
+    #multiple_ansatzer()
     
     
     plt.show()
