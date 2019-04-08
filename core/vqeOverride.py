@@ -100,6 +100,7 @@ class VQE_override(VQE):
             self.qc = qc
 
         def objective_function(params):
+            
             """
             closure representing the functional
 

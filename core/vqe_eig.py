@@ -54,9 +54,10 @@ def smallest(H, qc, initial_params,
                                                      'options': disp_options})
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
-    print('Initial parameter:', initial_params, '\n')
+    #print('Initial parameter:', initial_params, '\n')
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       disp=disp_run_info, return_all=True)
+                      
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
@@ -72,12 +73,13 @@ def smallest_bayes(H, qc,
                    ansatz_,
                    samples=None, 
                    return_all_data = False,
-                   disp = False,
+                   disp = True,
                    acq_func = "gp_hedge",      
                    n_calls = 30,          
                    n_random_starts= 5,         
                    random_state = 123,
                    x0 = None ):
+
     """
     Finds the smallest eigenvalue using a Bayesian optimization algoritm.     
     @author: Axel
@@ -129,6 +131,10 @@ def smallest_bayes(H, qc,
     eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
                       disp=disp, return_all=True)
     
+    eig['fun'],_ = vqe.expectation(ansatz_(eig['x']), H,
+                                        samples=samples,qc=qc)
+    
+
     eig['expectation_vars'] = noise
     
     # If option return_all_data is True we return a dict with data from all runs
