@@ -64,6 +64,9 @@ def smallest(H, qc, initial_params,
 def smallest_restart(H, qc, initial_params,
              ansatz_=None,
              samples=None,
+             max_para = 5,
+             tol_para = 1e-4,
+             increase_samples = 0,
              opt_algorithm='Nelder-Mead',
              maxiter=10000,
              display_after_run=False,
@@ -87,14 +90,12 @@ def smallest_restart(H, qc, initial_params,
     :return:
     '''
 
-    max = 5 # antal som får vara samma
-    tol = 1e-4
     def same_parameter(params, *args, **kwargs):
-        if len(params) > max -1:
+        if len(params) > max_para -1:
             bool_tmp = True
-            for x in range(2,max +1):
+            for x in range(2,max_para +1):
                 bool_tmp = bool_tmp and np.linalg.norm(params[-1]-params[-x])\
-                           < tol
+                           < tol_para
             if bool_tmp:
                 raise RestartError(params[-1])
 
@@ -108,7 +109,7 @@ def smallest_restart(H, qc, initial_params,
 
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
-
+    fun_evals = []
     for i in range(5):
         print("iter: {}".format(i))
 
@@ -117,25 +118,25 @@ def smallest_restart(H, qc, initial_params,
         # each iter (bug?)
         disp_options = {'disp': display_after_run, 'xatol': xatol,
                         'fatol': fatol,
-                        'maxiter': maxiter}
+                        'maxiter': maxiter, 'return_all': True}
 
         vqe = vqeOverride.VQE_override(minimizer=minimize,
                                        minimizer_kwargs={'method':
                                                              opt_algorithm,
                                                          'options': disp_options})
         try:
-            eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
+            result = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                           disp=True, return_all=True,
                               callback=same_parameter)
             if return_all_data:
-                return eig
+                return result
             else:
-                eigval = eig['fun']
-                optparam = eig['x']
+                eigval = result['fun']
+                optparam = result['x']
                 return eigval, optparam
         except RestartError as e:
             initial_params = e.param
-            samples = samples + 1000
+            samples = samples + increase_samples
             _, var = vqe.expectation(ansatz_(initial_params), H,
                                      samples=samples, qc=qc)
             fatol = 2 * np.sqrt(var)
