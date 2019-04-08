@@ -6,7 +6,7 @@ Created on Mon Mar  4 10:50:49 2019
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
-from openfermion import FermionOperator, QubitOperator, jordan_wigner,\
+from openfermion import FermionOperator, QubitOperator, jordan_wigner, \
     hermitian_conjugated
 from forestopenfermion import qubitop_to_pyquilpauli
 from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
@@ -148,24 +148,22 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
     # TODO: should this function also return the expected length of theta?
     terms = []
     for state in range(dim):
-        term = QubitOperator(())
-        for qubit in range(int.bit_length(state)):
-            if (state ^ reference) & (1 << qubit):
-                # lower/raise qubit
-                term *= QubitOperator((qubit, "X"), 1 / 2) + \
-                        QubitOperator((qubit, "Y"),
-                                      1j * (int(
-                                          reference & (
-                                                  1 << qubit) != 0) - 1 / 2))
-            else:
-                # check that qubit has correct value (same as i and j)
-                term *= QubitOperator((), 1 / 2) \
-                        + QubitOperator((qubit, "Z"),
-                                        1 / 2 - int(
-                                            reference & (1 << qubit) != 0))
-        terms.append(
-            qubitop_to_pyquilpauli(term - hermitian_conjugated(term))
-        )
+        if state != reference:
+            term = QubitOperator(())
+            for qubit in range(int.bit_length(state)):
+                if (state ^ reference) & (1 << qubit):
+                    # lower/raise qubit
+                    term *= QubitOperator((qubit, "X"), 1 / 2) \
+                            + QubitOperator((qubit, "Y"), 1j * (int(
+                                reference & (1 << qubit) != 0) - 1 / 2))
+                else:
+                    # check that qubit has correct value (same as i and j)
+                    term *= QubitOperator((), 1 / 2) \
+                            + QubitOperator((qubit, "Z"), 1 / 2 - int(
+                                reference & (1 << qubit) != 0))
+            terms.append(
+                qubitop_to_pyquilpauli(term - hermitian_conjugated(term))
+            )
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
@@ -244,8 +242,8 @@ def suzuki_trotter_karlsson(num_op, trotter_order, trotter_steps):
         if trotter_order != 1:
             raise ValueError('suzuki_trotter_karlsson decomposition currently'
                              'requires num_op=2 or trotter_order=1.')
-        order_slices = trotter_steps*[(1/trotter_steps, i)
-                                      for i in range(num_op)]
+        order_slices = trotter_steps * [(1 / trotter_steps, i)
+                                        for i in range(num_op)]
     return order_slices
 
 
