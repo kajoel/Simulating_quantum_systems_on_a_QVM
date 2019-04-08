@@ -91,10 +91,11 @@ def sweep_parameters(H, qvm_qc, new_version=True, num_para=20, start=-10,
             exp_val = []
 
             for para in parameters:
-                tmp = vqe.expectation(ansatz_(np.array([para])), H,
+                para = np.array([para])
+                tmp = vqe.expectation(ansatz(para.size+1)(para), H,
                                       samples=samples, qc=qvm_qc)
                 exp_val.append(tmp)
-                if callback is not None: callback(para, tmp)
+                if callback is not None: callback(para[0], tmp, None)
         else:
             exp_val = [vqe.expectation(ansatz_(np.array([para])), H,
                                        samples=samples, qvm=qvm_qc)
@@ -215,5 +216,5 @@ if __name__ == '__main__':
 
 
     energies = smallest(multi_particle(h), qc, init_params.ones(h.shape[0]),
-                        ansatz_=ansatz_, samples=samples,
-                        disp_run_info=testprint, fatol=1e-1*16/np.sqrt(samples))[0]
+                        ansatz_=ansatz, samples=samples,
+                        disp=testprint, fatol=1e-1 * 16 / np.sqrt(samples))[0]

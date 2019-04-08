@@ -9,41 +9,47 @@ from core import vqe_eig
 from core import init_params
 import matplotlib.pyplot as plt
 from core import vqeOverride
+from pyquil import paulis
 from matplotlib import cm
 from pyquil.api import WavefunctionSimulator
 from mpl_toolkits.mplot3d import Axes3D
 
-samples = 1000
-j = 2
+samples = 100
+j = 3 / 2
 V = 1
-h = hamiltonian(j, V)[1]
+i = 1
+h = hamiltonian(j, V)[i]
 print(h.toarray())
-eigvals = eigs(j, V)[1]
+eigvals = eigs(j, V)[i]
 print(eigvals)
 qc = get_qc('3q-qvm')
 H = matrix_to_op.multi_particle(h)
+coeffsquare = [(term.coefficient ** 2).real for term in H.terms]
+tol = np.sqrt(sum(coeffsquare)) / np.sqrt(samples)
+
 vqe = vqeOverride.VQE_override(minimizer=minimize,
                                minimizer_kwargs={'method': 'Nelder-Mead'})
 sweep_steps = 30
 parameters = np.linspace(-5, 5, sweep_steps)
-
+print('Tolerance: ', tol)
 min_eig = vqe_eig.smallest(H, qc=qc,
                            initial_params=
                            init_params.alternate(
                                h.shape[0]),
-                           disp_run_info=True,
-                           fatol=5e-1, samples=samples,
+                           ansatz_=ansatz.multi_particle(h.shape[0]),
+                           disp=True,
+                           fatol=tol, xatol=1e-4, samples=samples,
                            return_all_data=True)
 
 print('Min eig vqe: ', min_eig)
 optparam = min_eig['x']
-min_eig_exp, variance = vqe.expectation(ansatz.multi_particle(optparam), H,
-                                        samples=10000,
-                                        qc=qc)
-
+min_eig_exp, variance = vqe.expectation(
+    ansatz.multi_particle(h.shape[0])(optparam), H,
+    samples=10000,
+    qc=qc)
 
 sweep_vals = [
-    list(vqe.expectation(ansatz.multi_particle(np.array([para])), H,
+    list(vqe.expectation(ansatz.multi_particle(h.shape[0])(np.array([para])), H,
                          samples=samples,
                          qc=qc)) for para in parameters]
 exp_val = [returns[0] for returns in sweep_vals]
@@ -74,7 +80,8 @@ for i, p_1 in enumerate(parameters):
 
 parameters_none = np.linspace(-5, 5, 500)
 exp_val2 = [
-    vqe.expectation(ansatz.multi_particle(np.array([para])), H, samples=None,
+    vqe.expectation(ansatz.multi_particle(h.shape[0])(np.array([para])), H,
+                    samples=None,
                     qc=qc)[0] for para in parameters_none]
 
 plt.figure(0)

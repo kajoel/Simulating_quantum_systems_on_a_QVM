@@ -6,7 +6,8 @@ Created on Mon Mar  4 10:50:49 2019
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
-from openfermion import FermionOperator, QubitOperator, jordan_wigner
+from openfermion import FermionOperator, QubitOperator, jordan_wigner,\
+    hermitian_conjugated
 from forestopenfermion import qubitop_to_pyquilpauli
 from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
@@ -86,8 +87,9 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
                 if not reference & (1 << unoccupied):
                     term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
-                    term = qubitop_to_pyquilpauli(jordan_wigner(term))
-                    terms.append(term)
+                    terms.append(
+                        qubitop_to_pyquilpauli(jordan_wigner(term))
+                    )
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
@@ -109,35 +111,6 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
         return prog
 
     return wrap
-
-
-def trotterize(terms, trotter_order, trotter_steps) -> List[
-        List[Callable[[float], Program]]]:
-    """
-    Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
-    Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
-    but you get the idea).
-
-    @author = Joel, Carl
-
-    :param List[PauliSum] terms: PauliSums of length 2
-    :param int trotter_order: trotter order in suzuki_trotter
-    :param int trotter_steps: trotter steps in suzuki_trotter
-    :return: list of lists of functions(theta) that returns Programs
-    """
-    # TODO: better docstring
-    exp_maps = []
-    order_slices = suzuki_trotter(trotter_order, trotter_steps)
-    for term in terms:
-        tmp = []
-        assert len(term) == 2, "Term has not length two!"
-        for coeff, operator in order_slices:
-            if operator == 0:
-                tmp.append(exponential_map(-1j * coeff * term[0]))
-            else:
-                tmp.append(exponential_map(-1j * coeff * term[1]))
-        exp_maps.append(tmp)
-    return exp_maps
 
 
 def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
@@ -190,8 +163,9 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
                         + QubitOperator((qubit, "Z"),
                                         1 / 2 - int(
                                             reference & (1 << qubit) != 0))
-        term = qubitop_to_pyquilpauli(term)
-        terms.append(term)
+        terms.append(
+            qubitop_to_pyquilpauli(term - hermitian_conjugated(term))
+        )
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
@@ -213,6 +187,66 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
         return prog
 
     return wrap
+
+
+def trotterize(terms, trotter_order, trotter_steps) -> List[
+        List[Callable[[float], Program]]]:
+    """
+    Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
+    Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
+    but you get the idea).
+
+    @author = Joel, Carl
+
+    :param List[PauliSum] terms: PauliSums
+    :param int trotter_order: trotter order in suzuki_trotter
+    :param int trotter_steps: trotter steps in suzuki_trotter
+    :return: list of lists of functions(theta) that returns Programs
+    """
+    # TODO: better docstring
+    exp_maps = []
+    old_len = None
+    order_slices = None
+    for term in terms:
+        if len(term) != old_len:
+            order_slices = suzuki_trotter_karlsson(len(term), trotter_order,
+                                                   trotter_steps)
+        tmp = []
+        for coeff, operator in order_slices:
+            tmp.append(exponential_map(-1j * coeff * term[operator]))
+        exp_maps.append(tmp)
+    return exp_maps
+
+
+def suzuki_trotter_karlsson(num_op, trotter_order, trotter_steps):
+    """
+    Generalization of the suzuki_trotter decomposition in the case
+    trotter_order=1 to be able to handle exp(A+B+C). To make the approximation
+    the following limit is used:
+    exp(sum_i A_i) = lim_{n \to inf} [prod_i (1 + exp(A_i)/n) ]^n
+
+    exp(sum_i A_i) is approximated as exp(w1 i1) exp(w2 i2)...
+
+    @author = Joel
+
+    :param int num_op: number of A_i's in exp(sum_i A_i)
+    :param int trotter_order: order of decomposition
+    :param int trotter_steps: steps of decomposition, n from above
+    :return: List of tuples (wk, ik) corresponding to the coefficient and
+        operator.
+    """
+
+    if num_op == 1:
+        order_slices = [(1, 0)]
+    elif num_op == 2:
+        order_slices = suzuki_trotter(trotter_order, trotter_steps)
+    else:
+        if trotter_order != 1:
+            raise ValueError('suzuki_trotter_karlsson decomposition currently'
+                             'requires num_op=2 or trotter_order=1.')
+        order_slices = trotter_steps*[(1/trotter_steps, i)
+                                      for i in range(num_op)]
+    return order_slices
 
 
 def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
