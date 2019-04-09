@@ -22,8 +22,6 @@ from core import data, vqeOverride, vqe_eig, init_params
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import numpy as np
-from pandas import DataFrame
-import seaborn as sns
 
 
 
@@ -198,6 +196,9 @@ def plot_iteration_run(data, label=None):
             i+=1
 
 def heatmap_from_data(data_):
+    from pandas import DataFrame
+    import seaborn as sns
+
     df = DataFrame(data_['para_error'], index=data_['sample_sweep'], 
                    columns=data_['func_eval'])
 
