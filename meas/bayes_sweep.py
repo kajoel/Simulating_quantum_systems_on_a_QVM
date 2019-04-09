@@ -229,7 +229,7 @@ def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1,
                               start=start, stop=stop, steps=steps, 
                               save_after_run=save, label=label, qubits=qubit,
                               ansatz_name=ans_name, file_name=file_name, 
-                              measurments=measurments, plot_after_run=plot)
+                              measurments_per_step=measurments, plot_after_run=plot)
 
 
 def heatmap(ansatz_, convert_op, h, label = None, save = False, 
@@ -266,7 +266,7 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
         data_[index] = temp['para_error']
         variance_mesh[index] = temp['variance']
         all_data.append(temp['all_data'])
-        print('Done with calculation: {}/{}'.format(index+1,len(samples_sweep)))
+        #print('Done with calculation: {}/{}'.format(index+1,len(samples_sweep)))
 
     save_dict = {'para_error': data_, 'sample_sweep': samples_sweep,
                  'func_eval': func_eval, 'all_runs': all_data,
@@ -281,6 +281,8 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
                     'dimension_of_parameters': '(-1,1)',
                     'minimizer': 'Bayesian Optimizer','Quibits': qubit,
                     'Measurments per average': measurments,
+                    'Sample interval': '{}-{}'.format(sample_start,sample_stop),
+                    'func_eval interval': '{}-{}'.format(func_start,func_stop),
                     'Type_of_meas': 'Sweep over samples with Bayesian optimizer', 
                     }
 
