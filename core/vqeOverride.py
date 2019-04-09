@@ -100,6 +100,7 @@ class VQE_override(VQE):
             self.qc = qc
 
         def objective_function(params):
+
             """
             closure representing the functional
 
@@ -113,7 +114,6 @@ class VQE_override(VQE):
                                                     qc)
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
-
 
             return mean_value
 
@@ -132,7 +132,6 @@ class VQE_override(VQE):
                 iteration_params.append(iter_vars)
                 expectation_vals.append(self._current_expectation)
                 expectation_vars.append(self._current_variance)
-
 
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
@@ -273,7 +272,7 @@ class VQE_override(VQE):
                                 samples)
 
                     expectation += term.coefficient * meas_outcome
-                    variance += (term.coefficient ** 2) * meas_vars
+                    variance += (np.abs(term.coefficient) ** 2) * meas_vars
 
                 return expectation.real, variance.real
 

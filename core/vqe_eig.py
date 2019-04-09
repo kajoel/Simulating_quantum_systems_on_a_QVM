@@ -3,6 +3,8 @@ Created on Wed Mar  6 16:35:25 2019
 """
 
 import numpy as np
+from skopt import gp_minimize
+
 # Imports for VQE
 from scipy.optimize import minimize
 from core import ansatz, vqeOverride
@@ -21,7 +23,7 @@ def smallest(H, qc, initial_params,
              return_all_data=False,
              # Varför har vi detta som in-argument? Används inte
              convert_op=matrix_to_op.multi_particle,
-             print_option=None):
+             print_option=True):
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -51,9 +53,88 @@ def smallest(H, qc, initial_params,
                                                      'options': disp_options})
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
-    print('Initial parameter:', initial_params, '\n')
+    #print('Initial parameter:', initial_params, '\n')
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       disp=disp_run_info, return_all=True)
+                      
+
+    # If option return_all_data is True we return a dict with data from all runs
+    if return_all_data:
+        return eig
+    else:
+        eigval = eig['fun']
+        optparam = eig['x']
+        return eigval, optparam
+
+
+def smallest_bayes(H, qc,
+                   dimension,
+                   ansatz_,
+                   samples=None, 
+                   return_all_data = False,
+                   disp = True,
+                   acq_func = "gp_hedge",      
+                   n_calls = 30,          
+                   n_random_starts= 5,         
+                   random_state = 123,
+                   x0 = None ):
+
+    """
+    Finds the smallest eigenvalue using a Bayesian optimization algoritm.     
+    @author: Axel
+    
+    TODO: Go into VQEOverrode and look at what you can return, because now 
+    we are not getting the data from the Bayesian Optimization returned, only 
+    the exp_val, parameter and variance. 
+
+    :param H: PauliSum of hamiltonian
+    :param qc: either qc or qvm object, depending on version
+    :param dimension: A list of tuples, with the intervals for the parameters 
+    :param ansatz_: ansatz function
+    :param samples: Number of samples on the qvm
+    :param return_all_data: If True returns data from all the runs.
+    :param disp: Displays all data during the run. (It is ALOT)
+    
+    For the parameters below, see the skopt documentation: 
+    https://github.com/scikit-optimize/scikit-optimize
+    :param acq_func: Function to minimize over the gaussian prior. 
+    :param n_calls: Number of calls to `func`
+    :param n_random_starts: Number of evaluations of `func` with random points 
+                            before approximating it with `base_estimator`.
+    :random_state: Set random state to something other than None for 
+                   reproducible results.
+    :return: list of energies or all data from all opttimization runs.
+    """
+
+    # All options to Bayes opt
+    opt_options = {'acq_func': acq_func,
+                   'n_calls': n_calls,
+                   'n_random_starts': n_random_starts,
+                   'random_state': random_state}
+
+    vqe = vqeOverride.VQE_override(minimizer=gp_minimize,
+                                   minimizer_kwargs=opt_options)
+
+    # Run to calculate the noise level
+    initial_param = [param[0] for param in dimension]
+    _, noise = vqe.expectation(ansatz_(initial_param), H,
+                               samples=samples, qc=qc)
+
+    opt_options['noise'] = noise
+
+    # Need to initiate the vqe again so we can give it the variance as noise
+    vqe = vqeOverride.VQE_override(minimizer=gp_minimize,
+                                   minimizer_kwargs=opt_options)
+
+    # The actual run
+    eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
+                      disp=disp, return_all=True)
+    
+    eig['fun'],_ = vqe.expectation(ansatz_(eig['x']), H,
+                                        samples=samples,qc=qc)
+    
+
+    eig['expectation_vars'] = noise
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
@@ -93,7 +174,7 @@ def smallest_dynamic(H, qc, initial_params,
         samples=samp,
         qc=qc)
     # Tolerance is 2 std. deviations. Maybe change?
-    tol = 2*np.sqrt(var_start)
+    tol = 2 * np.sqrt(var_start)
 
     if tol < fatol:
         raise ValueError('fatol too large, already satisfied')

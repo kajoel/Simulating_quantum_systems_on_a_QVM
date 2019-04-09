@@ -6,9 +6,8 @@ Created on Tus Mar 26 10:06 2019
 @author: axel
 """
 
-from core import init_params,matrix_to_op,ansatz,lipkin_quasi_spin, init_params,data
+from core import init_params,matrix_to_op,ansatz,lipkin_quasi_spin, init_params, data, vqe_eig
 from pyquil import get_qc
-from meas import sweep, benchNM
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import time
@@ -122,13 +121,37 @@ def save_sweep():
 
     data.save('1DimSweepSampNone',data_to_save,metadata)
 
-def test_variance():
+
+def test_bayes_opt():
+    j,V = 3,1
+
+    h = lipkin_quasi_spin.hamiltonian(j,V)[0]
+    print(h)
+    print(lipkin_quasi_spin.eigs(j,V))
+    qubits = h.shape[0]
+    qc = get_qc('{}q-qvm'.format(qubits))
+    ansatz_ = ansatz.one_particle(h.shape[0])
+    H = matrix_to_op.one_particle(h)
+    dimension = [(-1.0, 1.0) for i in range(h.shape[0]-1)]
+    print(dimension)
+
+
+
+    eig_val = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=None, 
+                           n_random_starts=10, n_calls=30)
     
+    initial_p = init_params.alternate(h.shape[0])
+    vqe_eig.smallest(H, qc, initial_p, ansatz_, return_all_data=True)
+    print(eig_val)
+def test_of_tuples():
+    dim = [(-1.0, 1.0),(-1.0, 1.0),(-1.0, 1.0)]
+    print(len(dim))
+    for tuple_ in dim:
+        print(type(tuple_))
+        print(tuple_)
+        print(tuple_[0])
+
 
 
 if __name__ == '__main__':
-    ansatz_=ansatz.one_particle
-    sweep_one()
-    plt.show()
-    
-
+    test_bayes_opt()
