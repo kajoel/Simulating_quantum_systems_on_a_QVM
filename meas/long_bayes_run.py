@@ -9,15 +9,26 @@ bays_sample_sweep for every single one.
 """
 
 # Imports
-from core import lipkin_quasi_spin
-from meas.bayes_sweep import 
+from core import ansatz, matrix_to_op, lipkin_quasi_spin
+from meas.bayes_sweep import heatmap
+import matplotlib.pyplot as plt
 
+ansatzer = [ansatz.multi_particle, ansatz.one_particle_ucc, 
+            ansatz.one_particle]
+convert_op = [matrix_to_op.multi_particle, matrix_to_op.one_particle,
+              matrix_to_op.one_particle]
 
-count = 0
-for j in range(1,10):
-    h_tupple = lipkin_quasi_spin.hamiltonian(j, 1)
-    for h in h_tupple:
-        if h.shape[0] == 1: continue
-        count=multiple_runs_and_save(h, count)
+j, V, i = 1, 1, 0
+h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
+
+for i,ansatz_ in enumerate(ansatzer):
+        heatmap(ansatz_, convert_op[i], h, save=True, 
+                file_name='heatmap{}j{}V{}i{}'.format(ansatz_.__name__,j,V,i),
+                sample_step=2, sample_start=100, sample_stop=2000, 
+                func_steps=2, func_start=10, func_stop=100, 
+                measurments=2, plot_after_run=False)
+
+plt.show()
+
 
 
