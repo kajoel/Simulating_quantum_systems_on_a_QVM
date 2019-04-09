@@ -273,7 +273,7 @@ class VQE_override(VQE):
                                 samples)
 
                     expectation += term.coefficient * meas_outcome
-                    variance += (term.coefficient ** 2) * meas_vars
+                    variance += (np.abs(term.coefficient) ** 2) * meas_vars
 
                 return expectation.real, variance.real
 
