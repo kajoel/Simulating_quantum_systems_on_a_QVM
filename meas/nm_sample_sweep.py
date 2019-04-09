@@ -207,17 +207,20 @@ def run_NM_sample_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0,
 
 
 def plot_from_data():
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1One100-6000.pkl')
-    dict_1,__ = data.load(datatitle)
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1OneUCC100-6000.pkl')
-    dict_2,__ = data.load(datatitle)
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1Multi100-6000.pkl')
-    dict_3,__ = data.load(datatitle)
+    datatitle = join('over_night_run', 'OverNightRun3.pkl')
+    dict_1, meta = data.load(datatitle)
     
-    plot_run(dict_1, 'One patricle')
-    plot_run(dict_2, 'One patricle UCC')
-    plot_run(dict_3, 'Multi patricle')
+    plot_run(dict_1, label=meta['ansatz'])
+    datatitle = join('over_night_run', 'OverNightRun4.pkl')
+    dict_1, meta = data.load(datatitle)
+    
+    plot_run(dict_1, label=meta['ansatz'])
+    datatitle = join('over_night_run', 'OverNightRun5.pkl')
+    dict_1, meta = data.load(datatitle)
+    
+    plot_run(dict_1, label=meta['ansatz'])
 
+    
 
 def multiple_ansatzer(j=1, V=1, matrix_num=0):
     h_ = lipkin_quasi_spin.hamiltonian(j, V)[matrix_num]
@@ -258,5 +261,6 @@ def multiple_runs_and_save(h, count):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    print('Hej')
+    plot_from_data()
+    plt.show()
 

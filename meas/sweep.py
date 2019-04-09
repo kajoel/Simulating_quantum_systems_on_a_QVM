@@ -10,6 +10,14 @@ import numpy as np
 from scipy.optimize import minimize
 from grove.pyvqe.vqe import VQE
 
+# Imports to run test
+from core import lipkin_quasi_spin, matrix_to_op, ansatz
+from pyquil import get_qc
+import matplotlib.pyplot as plt
+from pandas import DataFrame
+import seaborn as sns
+
+
 
 def sweep(h, qc, ansatz_, matrix_operator, num_para=20, start=-10, stop=10,
                  samples=None):
@@ -59,7 +67,7 @@ def sweep(h, qc, ansatz_, matrix_operator, num_para=20, start=-10, stop=10,
                                           samples=samples, qc=qc)
                           for p_2 in parameters]
             print('Done with sweep number {}/{}'.format(i+1,len(parameters)))
-        return (exp_val,mesh_1,mesh_2)
+        return (exp_val,parameters)
 
 
 ################################################################################
@@ -72,4 +80,20 @@ def sweep(h, qc, ansatz_, matrix_operator, num_para=20, start=-10, stop=10,
 ################################################################################
 
 if __name__ == '__main__':
-    print('Hej')
+    h = lipkin_quasi_spin.hamiltonian(2, 1)[0]
+    
+    convert_op = matrix_to_op.one_particle
+    ansatz_ = ansatz.one_particle(h.shape[0])
+
+    if convert_op is matrix_to_op.one_particle: qubit = h.shape[0]
+    elif convert_op is matrix_to_op.multi_particle:
+        qubit = int.bit_length(h.shape[0])
+    
+
+
+    qc = get_qc('{}q-qvm'.format(qubit))
+    exp_val, parameters =sweep(h,qc,ansatz_, convert_op, 50, -2, 2)
+    df = DataFrame(exp_val, index=parameters, columns=parameters)
+    sns.heatmap(df)
+
+    plt.show()
