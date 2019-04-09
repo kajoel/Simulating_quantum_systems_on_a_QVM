@@ -12,7 +12,6 @@ from core import init_params
 from core import matrix_to_op
 
 
-
 def smallest(H, qc, initial_params,
              ansatz_=None,
              samples=None,
@@ -108,25 +107,25 @@ def smallest_bayes(H, qc,
     """
 
     # All options to Bayes opt
-    opt_options = {  'acq_func': acq_func,      
-                     'n_calls':n_calls,          
-                     'n_random_starts': n_random_starts,         
-                     'random_state': random_state}  
+    opt_options = {'acq_func': acq_func,
+                   'n_calls': n_calls,
+                   'n_random_starts': n_random_starts,
+                   'random_state': random_state}
 
     vqe = vqeOverride.VQE_override(minimizer=gp_minimize,
                                    minimizer_kwargs=opt_options)
-    
+
     # Run to calculate the noise level
     initial_param = [param[0] for param in dimension]
     _, noise = vqe.expectation(ansatz_(initial_param), H,
-                                        samples=samples,qc=qc)
-    
+                               samples=samples, qc=qc)
+
     opt_options['noise'] = noise
 
     # Need to initiate the vqe again so we can give it the variance as noise
     vqe = vqeOverride.VQE_override(minimizer=gp_minimize,
                                    minimizer_kwargs=opt_options)
-                       
+
     # The actual run
     eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
                       disp=disp, return_all=True)
@@ -136,7 +135,7 @@ def smallest_bayes(H, qc,
     
 
     eig['expectation_vars'] = noise
-    
+
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
         return eig
@@ -144,7 +143,6 @@ def smallest_bayes(H, qc,
         eigval = eig['fun']
         optparam = eig['x']
         return eigval, optparam
-
 
 
 def smallest_dynamic(H, qc, initial_params,
@@ -176,7 +174,7 @@ def smallest_dynamic(H, qc, initial_params,
         samples=samp,
         qc=qc)
     # Tolerance is 2 std. deviations. Maybe change?
-    tol = 2*np.sqrt(var_start)
+    tol = 2 * np.sqrt(var_start)
 
     if tol < fatol:
         raise ValueError('fatol too large, already satisfied')
