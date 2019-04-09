@@ -11,8 +11,8 @@ bays_sample_sweep for every single one.
 # Imports
 from core import ansatz, matrix_to_op, lipkin_quasi_spin
 from meas.bayes_sweep import heatmap
-import matplotlib.pyplot as plt
 from os.path import join
+
 ansatzer = [ansatz.multi_particle, ansatz.one_particle_ucc, 
             ansatz.one_particle]
 convert_op = [matrix_to_op.multi_particle, matrix_to_op.one_particle,
