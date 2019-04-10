@@ -114,7 +114,7 @@ for j, sample, ansatz_name, max_para, k in itertools.product(range(1, 4),
     data_['facit'] = facit
     data_['samples'] = sample
 
-    metadata = {'info': 'Test av NelderMead Restart', 'j': j, 'matrix': matrix,
+    metadata = {'info': 'NelderMead Restart', 'j': j, 'matrix': matrix,
                 'ansatz': ansatz_name, 'initial_params': initial_params, 'H': H,
                 'len_H': len(H),
                 'paramaters': parameters}
