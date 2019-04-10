@@ -297,7 +297,7 @@ def test_parameters(ansatz_, convert_op):
     V = 1
     print('Ansatz: {}'.format(ansatz_.__name__))
     
-    for j in range(1,7):
+    for j in range(1,8):
         h_tupple = lipkin_quasi_spin.hamiltonian(j,V)
         for h in reversed(h_tupple):
             if h.shape[0] == 1: continue
@@ -337,17 +337,6 @@ if __name__ == '__main__':
     heatmap_from_data(dict_1)
     print(meta_1)
     '''
-    ansatz_ = ansatz.multi_particle
-    convert_op = matrix_to_op.multi_particle
-    test_parameters(ansatz_, convert_op)   
-
-    ansatz_ = ansatz.one_particle
-    convert_op = matrix_to_op.one_particle
-    test_parameters(ansatz_, convert_op)   
-    
-    ansatz_ = ansatz.one_particle_ucc
-    convert_op = matrix_to_op.one_particle
-    test_parameters(ansatz_, convert_op)   
     
 
 
