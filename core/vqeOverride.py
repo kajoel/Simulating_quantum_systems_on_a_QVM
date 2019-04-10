@@ -252,7 +252,6 @@ class VQE_override(VQE):
                 variance = 0.0
                 term_sum = sum(
                     np.abs(term.coefficient) for term in pauli_sum.terms)
-                print(term_sum)
                 for j, term in enumerate(pauli_sum.terms):
                     meas_basis_change = Program()
                     qubits_to_measure = []
