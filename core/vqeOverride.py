@@ -250,6 +250,9 @@ class VQE_override(VQE):
                 # each operator term
                 expectation = 0.0
                 variance = 0.0
+                term_sum = sum(
+                    np.abs(term.coefficient) for term in pauli_sum.terms)
+                print(term_sum)
                 for j, term in enumerate(pauli_sum.terms):
                     meas_basis_change = Program()
                     qubits_to_measure = []
@@ -269,7 +272,8 @@ class VQE_override(VQE):
                                 pyquil_prog + meas_basis_change,
                                 qubits_to_measure,
                                 qc,
-                                samples)
+                                int(round(samples * np.abs(
+                                    term.coefficient) / term_sum)))
 
                     expectation += term.coefficient * meas_outcome
                     variance += (np.abs(term.coefficient) ** 2) * meas_vars
