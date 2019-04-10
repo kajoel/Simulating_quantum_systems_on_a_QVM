@@ -201,7 +201,7 @@ def heatmap_from_data(data_):
 
     df = DataFrame(data_['para_error'], index=data_['sample_sweep'], 
                    columns=data_['func_eval'])
-
+    plt.figure()
     sns.heatmap(df)
 
 
@@ -300,7 +300,7 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
 # Main
 ################################################################################
 if __name__ == '__main__':
-    
+    '''
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
     h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
@@ -311,10 +311,17 @@ if __name__ == '__main__':
             measurments=2, plot_after_run=True)
     plt.show()
     '''
-    datatitle = join(ROOT_DIR, 'data', 'BayesHeatMap.pkl')
+    datatitle = join( 'heatmapsBayes', 'heatmap_multi_particlej1V1i0.pkl')
     dict_1,meta_1 = data.load(datatitle)
     heatmap_from_data(dict_1)
+    for key in dict_1: print(key)
+    print(meta_1)
+    datatitle = join( 'heatmapsBayes', 'heatmap_one_particle_uccj1V1i0.pkl')
+    dict_1,meta_1 = data.load(datatitle)
+    heatmap_from_data(dict_1)
+    print(meta_1)
+
     plt.show()
-    '''
+    
 
 
