@@ -66,7 +66,7 @@ ansatz_types = ['one_particle', 'one_particle_ucc', 'multi_particle',
                 'multi_particle_ucc']
 xatol = 1e-2
 tol_para = 1e-2
-max_iter = 50
+max_iter = 100
 increase_samples = 0
 
 max_params = range(3, 6)
