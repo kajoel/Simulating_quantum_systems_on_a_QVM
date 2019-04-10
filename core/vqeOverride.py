@@ -169,6 +169,7 @@ class VQE_override(VQE):
             results = OptResults()
             results.x = iteration_params[-1]
             results.fun = expectation_vals[-1]
+            results.fun_evals = fun_evals
         else:
             if hasattr(result, 'status'):
                 if result.status != 0:

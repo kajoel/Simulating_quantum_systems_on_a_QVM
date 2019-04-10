@@ -10,6 +10,7 @@ from core import init_params
 from core import matrix_to_op
 from core import callback
 
+
 def smallest(H, qc, initial_params,
              ansatz_=None,
              samples=None,
@@ -18,7 +19,7 @@ def smallest(H, qc, initial_params,
              disp=True,
              display_after_run=False,
              xatol=1e-2, fatol=1e-3,
-             return_all_data=False, callback = None):
+             return_all_data=False, callback=None):
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -48,9 +49,9 @@ def smallest(H, qc, initial_params,
                                                      'options': disp_options})
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
-    print('Initial parameter:', initial_params, '\n')
+    # print('Initial parameter:', initial_params, '\n')
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                      disp=disp, return_all=return_all_data, callback = callback)
+                      disp=disp, return_all=return_all_data, callback=callback)
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
@@ -62,16 +63,18 @@ def smallest(H, qc, initial_params,
 
 
 def smallest_restart(H, qc, initial_params,
-             ansatz_=None,
-             samples=None,
-             max_para = 5,
-             tol_para = 1e-4,
-             increase_samples = 0,
-             opt_algorithm='Nelder-Mead',
-             maxiter=10000,
-             display_after_run=False,
-             xatol=1e-2, fatol=1e-3,
-             return_all_data=False):
+                     ansatz_=None,
+                     samples=None,
+                     max_para=5,
+                     max_iter=10,
+                     tol_para=1e-4,
+                     increase_samples=0,
+                     opt_algorithm='Nelder-Mead',
+                     maxiter=10000,
+                     display_after_run=False,
+                     disp = False,
+                     disp_iter = False,
+                     xatol=1e-2, fatol=1e-3):
     '''
 
     @author: Sebastian, Carl
@@ -91,29 +94,29 @@ def smallest_restart(H, qc, initial_params,
     '''
 
     def same_parameter(params, *args, **kwargs):
-        if len(params) > max_para -1:
+        if len(params) > max_para - 1:
             bool_tmp = True
-            for x in range(2,max_para +1):
-                bool_tmp = bool_tmp and np.linalg.norm(params[-1]-params[-x])\
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
                            < tol_para
             if bool_tmp:
-                raise RestartError(params[-1])
-
+                # raise RestartError(params[-1])
+                raise vqeOverride.BreakError()
 
     if ansatz_ is None:
         ansatz_ = ansatz.multi_particle
 
     # All options to Nelder-Mead
 
-
-
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     fun_evals = []
-    for i in range(5):
-        print("iter: {}".format(i))
+    for i in range(max_iter):
+        if disp_iter:
+            print("\niter: {}".format(i))
+            print("samples: {}".format(samples))
+            print("fatol: {}".format(fatol))
 
-        print("samples: {}".format(samples))
         # Have to make new vqe every time, else the callback gets duplicated
         # each iter (bug?)
         disp_options = {'disp': display_after_run, 'xatol': xatol,
@@ -124,33 +127,38 @@ def smallest_restart(H, qc, initial_params,
                                        minimizer_kwargs={'method':
                                                              opt_algorithm,
                                                          'options': disp_options})
-        try:
-            result = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                          disp=True, return_all=True,
-                              callback=same_parameter)
-            if return_all_data:
-                return result
+        result = vqe.vqe_run(ansatz_, H, initial_params, samples=samples,
+                             qc=qc,
+                             disp=disp, return_all=True,
+                             callback=same_parameter)
+        params = result['iteration_params']
+        fun_evals.append(result['fun_evals'])
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                initial_params = params[-1]
+                samples += increase_samples
             else:
-                eigval = result['fun']
-                optparam = result['x']
-                return eigval, optparam
-        except RestartError as e:
-            initial_params = e.param
-            samples = samples + increase_samples
-            _, var = vqe.expectation(ansatz_(initial_params), H,
-                                     samples=samples, qc=qc)
-            fatol = 2 * np.sqrt(var)
+                result['fun_evals'] = fun_evals
+                return result
 
-    raise NelderMeadError('Fuck Nelder-Mead')
+    print('Did not finish after {} iterations'.format(max_iter))
+    result['fun_evals'] = fun_evals
+    return result
+
 
 class RestartError(Exception):
     def __init__(self, param, *args, **kwargs):
-        super().__init__(*args,**kwargs)
+        super().__init__(*args, **kwargs)
         self.param = param
 
 
 class NelderMeadError(Exception):
     pass
+
 
 def smallest_dynamic(H, qc, initial_params,
                      ansatz_=None,
@@ -181,7 +189,7 @@ def smallest_dynamic(H, qc, initial_params,
         samples=samp,
         qc=qc)
     # Tolerance is 2 std. deviations. Maybe change?
-    tol = 2*np.sqrt(var_start)
+    tol = 2 * np.sqrt(var_start)
 
     if tol < fatol:
         raise ValueError('fatol too large, already satisfied')
