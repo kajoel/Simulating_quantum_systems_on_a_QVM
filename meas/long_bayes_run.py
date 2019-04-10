@@ -25,7 +25,8 @@ for j in range(1,5):
     for i,h in enumerate(reversed(h_tupple)):
         if h.shape[0] == 1: continue
         samples_stop = 3000*(h.shape[0]-1)
-
+        if i==0: i=1
+        else: i=0
 
         for index,ansatz_ in enumerate(ansatzer):
             file_name = join('heatmapsBayes',
