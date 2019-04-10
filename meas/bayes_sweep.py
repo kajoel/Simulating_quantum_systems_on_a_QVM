@@ -321,6 +321,7 @@ if __name__ == '__main__':
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
     h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
+    
     '''
     heatmap(ansatz_, convert_op, h, save=True,
             sample_step=2, sample_start=100, sample_stop=2000, 
