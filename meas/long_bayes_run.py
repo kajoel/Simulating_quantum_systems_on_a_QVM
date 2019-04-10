@@ -30,7 +30,7 @@ for j in range(2,5):
                         heatmap(ansatz_, convert_op[index], h, save=True, 
                                 file_name=file_name,
                                 sample_step=19, sample_start=100, sample_stop=2000, 
-                                func_steps=10, func_start=10, func_stop=40, 
+                                func_steps=10, func_start=10, func_stop=60, 
                                 measurments=5, plot_after_run=False)
 
 
