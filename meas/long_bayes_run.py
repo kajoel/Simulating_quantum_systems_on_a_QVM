@@ -21,7 +21,7 @@ V = 1
 for j in range(2,5):
         print('Starting with j={}'.format(j))
         h_tupple = lipkin_quasi_spin.hamiltonian(j, V)
-        for i,h in enumerate(h_tupple):
+        for i,h in enumerate(reversed(h_tupple)):
                 if h.shape[0] == 1: continue
                 for index,ansatz_ in enumerate(ansatzer):
                         file_name = join('heatmapsBayes',

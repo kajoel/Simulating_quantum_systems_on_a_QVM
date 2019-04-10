@@ -86,7 +86,7 @@ def bayes_iteration_sweep(H,
 
     # Calculates a facit with sample=None
     facit= vqe_eig.smallest(H, qc, init_params.alternate(dim_h),ansatz_, 
-                            disp_run_info=False)
+                            disp_run_info=True)
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
@@ -144,14 +144,16 @@ def bayes_iteration_sweep(H,
 ################################################################################
 # Extra methods
 ################################################################################
-def n_qubits(convert_op, h):
+def create_qc(convert_op, h):
     if convert_op is matrix_to_op.one_particle:
-        return h.shape[0]
+        qubit = h.shape[0]
     elif convert_op is matrix_to_op.multi_particle:
-        return int.bit_length(h.shape[0])
+        qubit = int.bit_length(h.shape[0])
     else:
         print('Unknown ansatz')
         return
+    return get_qc('{}q-qvm'.format(qubit))
+    
 
 def plot_iteration_run(data, label=None):
     """Plot data from a run of the iteration-sweep above.
@@ -239,8 +241,8 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
             plot_after_run=False, measurments=1):
     ansatz_name = ansatz_.__name__
     ansatz_ = ansatz_(h.shape[0])
-    qubit = n_qubits(convert_op,h)
-    qc = get_qc('{}q-qvm'.format(qubit))
+    
+    qc = create_qc(convert_op,h)
     H = convert_op(h)
 
 
@@ -291,6 +293,21 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
 
     if plot_after_run: heatmap_from_data(save_dict)
 
+def test_parameters(ansatz_, convert_op):
+    V = 1
+    print('Ansatz: {}'.format(ansatz_.__name__))
+    
+    for j in range(1,7):
+        h_tupple = lipkin_quasi_spin.hamiltonian(j,V)
+        for h in reversed(h_tupple):
+            if h.shape[0] == 1: continue
+            dim_h = h.shape[0]
+            temp_ans = ansatz_(dim_h)
+            qc = create_qc(convert_op, h)
+            H = convert_op(h)
+            facit= vqe_eig.smallest(H, qc, init_params.alternate(dim_h),temp_ans, 
+                            disp_run_info=False)
+            print('Parameter (dim {}): {}'.format(dim_h,facit[1]))
 
 
 
@@ -300,17 +317,16 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
 # Main
 ################################################################################
 if __name__ == '__main__':
-    '''
+    
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
     h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
-    
+    '''
     heatmap(ansatz_, convert_op, h, save=True,
             sample_step=2, sample_start=100, sample_stop=2000, 
             func_steps=2, func_start=10, func_stop=100, 
             measurments=2, plot_after_run=True)
     plt.show()
-    '''
     datatitle = join( 'heatmapsBayes', 'heatmap_multi_particlej1V1i0.pkl')
     dict_1,meta_1 = data.load(datatitle)
     heatmap_from_data(dict_1)
@@ -320,8 +336,18 @@ if __name__ == '__main__':
     dict_1,meta_1 = data.load(datatitle)
     heatmap_from_data(dict_1)
     print(meta_1)
+    '''
+    ansatz_ = ansatz.multi_particle
+    convert_op = matrix_to_op.multi_particle
+    test_parameters(ansatz_, convert_op)   
 
-    plt.show()
+    ansatz_ = ansatz.one_particle
+    convert_op = matrix_to_op.one_particle
+    test_parameters(ansatz_, convert_op)   
+    
+    ansatz_ = ansatz.one_particle_ucc
+    convert_op = matrix_to_op.one_particle
+    test_parameters(ansatz_, convert_op)   
     
 
 
