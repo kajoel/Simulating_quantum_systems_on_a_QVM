@@ -24,13 +24,14 @@ for j in range(1,5):
     h_tupple = lipkin_quasi_spin.hamiltonian(j, V)
     for i,h in enumerate(reversed(h_tupple)):
         if h.shape[0] == 1: continue
+        samples_stop = 3000*(h.shape[0]-1)
+
         for index,ansatz_ in enumerate(ansatzer):
             file_name = join('heatmapsBayes',
-                             'heatmap_{}j{}V{}i{}'.format(ansatz_.__name__,j,V,i))
-
+                             'updatedSampleDef_{}j{}V{}i{}'.format(ansatz_.__name__,j,V,i))    
             heatmap(ansatz_, convert_op[index], h, save=True, 
                     file_name=file_name,
-                    sample_step=14, sample_start=100, sample_stop=5000, 
+                    sample_step=10, sample_start=100, sample_stop=samples_stop, 
                     func_steps=10, func_start=10, func_stop=60, 
                     measurments=5, plot_after_run=False)
 

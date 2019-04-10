@@ -86,7 +86,7 @@ def bayes_iteration_sweep(H,
 
     # Calculates a facit with sample=None
     facit= vqe_eig.smallest(H, qc, init_params.alternate(dim_h),ansatz_, 
-                            disp_run_info=True)
+                            disp_run_info=False)
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
@@ -269,7 +269,7 @@ def heatmap(ansatz_, convert_op, h, label = None, save = False,
         data_[index] = temp['para_error']
         variance_mesh[index] = temp['variance']
         all_data.append(temp['all_data'])
-        #print('Done with calculation: {}/{}'.format(index+1,len(samples_sweep)))
+        print('Done with calculation: {}/{}'.format(index+1,len(samples_sweep)))
 
     save_dict = {'para_error': data_, 'sample_sweep': samples_sweep,
                  'func_eval': func_eval, 'all_runs': all_data,
@@ -317,17 +317,18 @@ def test_parameters(ansatz_, convert_op):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    
+    '''
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
     h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
     
-    '''
+    
     heatmap(ansatz_, convert_op, h, save=True,
-            sample_step=2, sample_start=100, sample_stop=2000, 
-            func_steps=2, func_start=10, func_stop=100, 
-            measurments=2, plot_after_run=True)
+            sample_step=4, sample_start=100, sample_stop=2000, 
+            func_steps=4, func_start=10, func_stop=50, 
+            measurments=1, plot_after_run=True)
     plt.show()
+    '''
     datatitle = join( 'heatmapsBayes', 'heatmap_multi_particlej1V1i0.pkl')
     dict_1,meta_1 = data.load(datatitle)
     heatmap_from_data(dict_1)
@@ -337,7 +338,8 @@ if __name__ == '__main__':
     dict_1,meta_1 = data.load(datatitle)
     heatmap_from_data(dict_1)
     print(meta_1)
-    '''
+    
+    plt.show()
     
 
 
