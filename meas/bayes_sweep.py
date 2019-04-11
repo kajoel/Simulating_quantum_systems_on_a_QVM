@@ -359,7 +359,7 @@ if __name__ == '__main__':
     plot_mult_ansatz('updatedSampleDef', 'j1V1i0', 'heatmapsBayes', interval) 
     
     interval = (0.005,0.12)
-    plot_mult_ansatz('updatedSampleDef', 'j2V1i1', 'heatmapsBayes', interval) 
+    plot_mult_ansatz('updatedSampleDef', 'j2V1i1', '1_heatmapsBayes', interval) 
     plt.show()
     
 
