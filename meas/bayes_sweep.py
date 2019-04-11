@@ -197,14 +197,40 @@ def plot_iteration_run(data, label=None):
             plt.legend()
             i+=1
 
-def heatmap_from_data(data_):
+def heatmap_from_data(data_, titel=None, axs=None, interval=None):
     from pandas import DataFrame
     import seaborn as sns
+    if axs is None: 
+        plt.figure()
+        plt.title(titel)
+
+    if interval is not None:
+        vmin = interval[0]
+        vmax = interval[1]
+
+    if axs is not None: axs.set_title(titel)
 
     df = DataFrame(data_['para_error'], index=data_['sample_sweep'], 
                    columns=data_['func_eval'])
-    plt.figure()
-    sns.heatmap(df)
+    
+
+    sns.heatmap(df, ax=axs, square=True, vmin=vmin, vmax=vmax)
+
+def plot_mult_ansatz(file_name_long, matrix_name, directory = None, 
+                     interval = None):
+    fig, axs = plt.subplots(ncols=3)
+    ansatzer = ['multi_particle', 'one_particle', 'one_particle_ucc']
+
+    fig.suptitle(matrix_name)
+
+    for i, axes in enumerate(axs):
+        datatitle = join(directory, 
+                     str(file_name_long + '_' + ansatzer[i] + '_' + matrix_name + '.pkl'))
+        dict_1,_ = data.load(datatitle)
+        heatmap_from_data(dict_1, ansatzer[i], axes,
+                          interval)
+    
+
 
 
 
@@ -329,16 +355,11 @@ if __name__ == '__main__':
             measurments=1, plot_after_run=True)
     plt.show()
     '''
-    datatitle = join( 'heatmapsBayes', 'heatmap_multi_particlej1V1i0.pkl')
-    dict_1,meta_1 = data.load(datatitle)
-    heatmap_from_data(dict_1)
-    for key in dict_1: print(key)
-    print(meta_1)
-    datatitle = join( 'heatmapsBayes', 'heatmap_one_particle_uccj1V1i0.pkl')
-    dict_1,meta_1 = data.load(datatitle)
-    heatmap_from_data(dict_1)
-    print(meta_1)
+    interval = (0.005,0.12)
+    plot_mult_ansatz('updatedSampleDef', 'j1V1i0', 'heatmapsBayes', interval) 
     
+    interval = (0.005,0.12)
+    plot_mult_ansatz('updatedSampleDef', 'j2V1i1', 'heatmapsBayes', interval) 
     plt.show()
     
 
