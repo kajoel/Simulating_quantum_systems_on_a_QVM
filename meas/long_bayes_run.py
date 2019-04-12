@@ -19,7 +19,7 @@ convert_op = [matrix_to_op.multi_particle, matrix_to_op.one_particle,
               matrix_to_op.one_particle]
 V = 1
 
-for j in range(2,5):
+for j in range(3,5):
     print('Starting with j={}'.format(j))
     h_tupple = lipkin_quasi_spin.hamiltonian(j, V)
     for i,h in enumerate(reversed(h_tupple)):
@@ -28,10 +28,7 @@ for j in range(2,5):
         func_evals = 30*(h.shape[0]-1)
         if i==0: i=1
         else: i=0
-        print(i)
-        if j is 2 and i is 1: continue
         for index,ansatz_ in enumerate(ansatzer):
-            if index < 2 and i == 0 and j == 2: continue
             file_name = join('heatmapsBayes',
                              'run3_updatedSampleDef_{}_j{}V{}i{}'.format(ansatz_.__name__,j,V,i))    
             heatmap(ansatz_, convert_op[index], h, save=True, 
