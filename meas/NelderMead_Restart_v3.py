@@ -71,7 +71,7 @@ increase_samples = 0
 
 max_params = range(3, 6)
 samples = np.linspace(500, 10000, 20)
-base_dir = join(ROOT_DIR, 'data/NelderMead_Restart')
+base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v1')
 
 i = 1
 
