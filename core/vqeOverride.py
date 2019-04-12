@@ -339,10 +339,7 @@ def expectation_from_sampling(pyquil_program: Program,
     program += pyquil_program
     program += [MEASURE(qubit, r) for qubit, r in
                 zip(list(range(max(marked_qubits) + 1)), ro)]
-    if isinstance(samples,int):
-        program.wrap_in_numshots_loop(samples)
-    else:
-        program.wrap_in_numshots_loop(samples.value)
+    program.wrap_in_numshots_loop(samples)
     executable = qc.compile(program)
     bitstring_samples = qc.run(executable)
     bitstring_tuples = list(map(tuple, bitstring_samples))

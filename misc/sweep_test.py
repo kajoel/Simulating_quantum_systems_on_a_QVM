@@ -10,11 +10,10 @@ from core import init_params
 import matplotlib.pyplot as plt
 from core import vqeOverride
 from core.vqe_eig import smallest
-from pyquil import paulis
+from old.mutable_num import MutableNum
 from matplotlib import cm
 from pyquil.api import WavefunctionSimulator
 from mpl_toolkits.mplot3d import Axes3D
-from core.mutable_num import MutableNum
 from core.init_params import ones
 
 j = 1
