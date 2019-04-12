@@ -197,39 +197,68 @@ def plot_iteration_run(data, label=None):
             plt.legend()
             i+=1
 
-def heatmap_from_data(data_, titel=None, axs=None, interval=None):
+def heatmap_from_data(data_, titel=None, axs=None, interval=None, cbar=None):
     from pandas import DataFrame
     import seaborn as sns
     if axs is None: 
         plt.figure()
         plt.title(titel)
-
+    
     if interval is not None:
         vmin = interval[0]
         vmax = interval[1]
 
-    if axs is not None: axs.set_title(titel)
+    if axs is not None: 
+        axs.set_title(titel)
+
 
     df = DataFrame(data_['para_error'], index=data_['sample_sweep'], 
                    columns=data_['func_eval'])
-    
 
-    sns.heatmap(df, ax=axs, square=True, vmin=vmin, vmax=vmax)
+
+    sns.heatmap(df, ax=axs, square=True, vmin=vmin, vmax=vmax, 
+                cbar_kws={"orientation": "horizontal"})
+    if axs is not None: 
+        axs.set_title(titel)
+        axs.set_xlabel('Number of function evaluations in the interval')
+        axs.set_ylabel('Samples per function evaluation') 
+     
 
 def plot_mult_ansatz(file_name_long, matrix_name, directory = None, 
-                     interval = None):
+                     interval = None, title = None):
     fig, axs = plt.subplots(ncols=3)
     ansatzer = ['multi_particle', 'one_particle', 'one_particle_ucc']
-
-    fig.suptitle(matrix_name)
+    if title is None: fig.suptitle(matrix_name)
+    else: fig.suptitle(title)
+    
 
     for i, axes in enumerate(axs):
+        titel_name = ansatzer[i] + '_' + matrix_name
         datatitle = join(directory, 
                      str(file_name_long + '_' + ansatzer[i] + '_' + matrix_name + '.pkl'))
         dict_1,_ = data.load(datatitle)
-        heatmap_from_data(dict_1, ansatzer[i], axes,
-                          interval)
+        scatter_func_evals(dict_1, titel_name)
+        heatmap_from_data(dict_1, ansatzer[i], axes, interval)
     
+def scatter_func_evals(data_, titel=None):
+    
+    data_vec = np.zeros( (2,len(data_['sample_sweep']) * len(data_['func_eval'])))
+    data_index = []
+    for i,sample in enumerate(data_['sample_sweep']):
+        start = i*len(data_['func_eval'])
+        stop = start + len(data_['func_eval'])
+
+        data_vec[0,start:stop] = [sample*func_eval 
+                                  for func_eval in data_['func_eval']]
+        data_vec[1,start:stop] = [para for para in data_['para_error'][i]]
+        data_index[start:stop] = [(j,sample) for j in data_['func_eval']]
+    plt.figure()
+    plt.title(titel)
+    plt.scatter(data_vec[0], data_vec[1])
+    for i, txt in enumerate(data_index):
+        plt.annotate(txt, (data_vec[0,i], data_vec[1,i]))
+
+
 
 
 
@@ -355,11 +384,14 @@ if __name__ == '__main__':
             measurments=1, plot_after_run=True)
     plt.show()
     '''
-    interval = (0.005,0.12)
+    interval = (0.001,0.12)
     plot_mult_ansatz('updatedSampleDef', 'j1V1i0', 'heatmapsBayes', interval) 
     
     interval = (0.005,0.12)
-    plot_mult_ansatz('updatedSampleDef', 'j2V1i1', '1_heatmapsBayes', interval) 
+    plot_mult_ansatz('1_updatedSampleDef', 'j2V1i1', 'heatmapsBayes', interval) 
+    
+
+
     plt.show()
     
 

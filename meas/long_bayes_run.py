@@ -27,10 +27,12 @@ for j in range(2,5):
         samples_stop = 3000*(h.shape[0]-1)
         if i==0: i=1
         else: i=0
-
+        print(i)
+        if j is 2 and i is 1: continue
         for index,ansatz_ in enumerate(ansatzer):
+            if index < 2 and i == 0 and j == 2: continue
             file_name = join('heatmapsBayes',
-                             'updatedSampleDef_{}_j{}V{}i{}'.format(ansatz_.__name__,j,V,i))    
+                             'run3_updatedSampleDef_{}_j{}V{}i{}'.format(ansatz_.__name__,j,V,i))    
             heatmap(ansatz_, convert_op[index], h, save=True, 
                     file_name=file_name,
                     sample_step=10, sample_start=100, sample_stop=samples_stop, 
