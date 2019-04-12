@@ -10,26 +10,23 @@ from scipy.optimize import minimize
 from core import ansatz, vqeOverride
 from core import init_params
 from core import matrix_to_op
-
+from core import callback
 
 def smallest(H, qc, initial_params,
              ansatz_=None,
              samples=None,
              opt_algorithm='Nelder-Mead',
              maxiter=10000,
-             disp_run_info=True,
+             disp=True,
              display_after_run=False,
              xatol=1e-2, fatol=1e-3,
-             return_all_data=False,
-             # Varför har vi detta som in-argument? Används inte
-             convert_op=matrix_to_op.multi_particle,
-             print_option=True):
+             return_all_data=False, callback = None):
     """
     TODO: Fix this documentation. Below is not up to date.
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 
-    @author: Eric, Axel, Carl
+    @author: Eric, Axel, Carl, Sebastian
 
     :param H: PauliSum of hamiltonian
     :param qc: either qc or qvm object, depending on version
@@ -55,8 +52,7 @@ def smallest(H, qc, initial_params,
 
     #print('Initial parameter:', initial_params, '\n')
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                      disp=disp_run_info, return_all=True)
-                      
+                      disp=disp, return_all=return_all_data, callback = callback)
 
     # If option return_all_data is True we return a dict with data from all runs
     if return_all_data:
@@ -193,7 +189,7 @@ def smallest_dynamic(H, qc, initial_params,
     return smallest(H, qc, params, samples=samp, fatol=tol, ansatz_=ansatz_,
                     xatol=xatol, return_all_data=return_all_data,
                     maxiter=maxiter,
-                    disp_run_info=disp_run_info,
+                    disp=disp_run_info,
                     opt_algorithm=opt_algorithm,
                     display_after_run=display_after_run)
 
