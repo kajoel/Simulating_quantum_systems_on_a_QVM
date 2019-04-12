@@ -58,11 +58,11 @@ colors = ['k', 'b', 'r', 'g']
 for fig in range(3):
     plt.figure(fig)
     for ansatz in range(4):
-        plt.scatter(samples * fun_evals[ansatz][:, fig * 3],
+        plt.scatter(samples * len_H[ansatz][:, fig * 3],
                     fel[ansatz][:, fig * 3], color=colors[ansatz],
                     label=ansatz_types[ansatz])
     plt.title('Max values at same parameter: {}'.format(fig+3))
     plt.legend()
-    plt.xlim(0, 150000)
+    plt.xlim(0, 100000)
 
 plt.show()

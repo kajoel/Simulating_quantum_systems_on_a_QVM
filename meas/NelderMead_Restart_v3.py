@@ -59,65 +59,79 @@ def fatol_var(ansatz_, initial_params, H, samples, qc):
     return 2 * np.sqrt(var)
 
 
+def fatol_skattning(sample, H):
+    return sum(np.abs(term.coefficient) for term in H.terms) / np.sqrt(sample)
+
+
 ###############################################################################
 # Parameters
 V, matrix = 1, 0
 ansatz_types = ['one_particle', 'one_particle_ucc', 'multi_particle',
                 'multi_particle_ucc']
+
+ansatz_types = ['one_particle_ucc', 'multi_particle']
+
 xatol = 1e-2
 tol_para = 1e-2
-max_iter = 100
+max_iter = 20
 increase_samples = 0
 
-max_params = range(3, 6)
+max_params = range(5, 10)
 samples = np.linspace(500, 10000, 20)
-base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v1')
+base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v2')
+
+iters = 5
 
 i = 1
 
-for j, sample, ansatz_name, max_para, k in itertools.product(range(1, 4),
-                                                             samples,
-                                                             ansatz_types,
-                                                             max_params,
-                                                             range(1, 4)):
+for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
-    sample = int(sample)
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
     eig = eigs(j, V)[matrix][0]
-    samples = 2000
     H, qc, ansatz_, initial_params = ansatz_type(ansatz_name, h, dim)
-    facit = vqe_eig.smallest(H, qc, initial_params, ansatz_, disp=False)[1]
-    fatol = fatol_var(ansatz_, initial_params, H, sample, qc)
 
-    print('\nLoop: j = {}, ansatz_name = {}, samples = {}, '
-          'max_para = {}, k = {}, i = {}'.format(j, ansatz_name, sample,
-                                                 max_para, k, i))
+    samples = np.linspace(500, 10000 * len(H), 100)
 
-    result = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_, sample,
-                                      max_para=max_para,
-                                      max_iter=max_iter,
-                                      tol_para=tol_para,
-                                      increase_samples=increase_samples,
-                                      xatol=xatol,
-                                      fatol=fatol,
-                                      disp=False,
-                                      disp_iter=False)
+    for sample, max_para, iter in itertools.product(samples, max_params,
+                                                    range(1, iters)):
 
-    parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
-                  'max_para': max_para, 'max_iter': max_iter,
-                  'increase_samples': increase_samples}
+        sample = int(round(sample))
 
-    file = 'NelderMead_Restart_j={}_samples={}_i={}_k={}.pkl'.format(j, sample,
-                                                                     i, k)
-    data_ = result
-    data_['facit'] = facit
-    data_['samples'] = sample
+        facit = vqe_eig.smallest(H, qc, initial_params, ansatz_, disp=False)[1]
+        fatol = fatol_skattning(sample, H)
 
-    metadata = {'info': 'NelderMead Restart', 'j': j, 'matrix': matrix,
-                'ansatz': ansatz_name, 'initial_params': initial_params, 'H': H,
-                'len_H': len(H),
-                'paramaters': parameters}
+        data_ = {}
 
-    save_data(file, data_, metadata, base_dir)
-    if k == 3: i += 1
+        for iter in range(iters):
+            print('\nLoop: j = {}, ansatz_name = {}, samples = {}, \
+max_para = {}, fatol = {}, iteration = {}/{}'\
+            .format( j, ansatz_name, sample, max_para, round(fatol,3), iter + 1, iters))
+
+            result = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_,
+                                              sample,
+                                              max_para=max_para,
+                                              max_iter=max_iter,
+                                              tol_para=tol_para,
+                                              increase_samples=increase_samples,
+                                              xatol=xatol,
+                                              fatol=fatol,
+                                              disp=False,
+                                              disp_iter=False)
+
+            parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
+                          'max_para': max_para, 'max_iter': max_iter,
+                          'increase_samples': increase_samples}
+
+            result['facit'] = facit
+            result['samples'] = sample
+            data_[iter] = result
+
+        file = 'NelderMead_Restart_j={}_samples={}_maxpara={}.pkl' \
+            .format(j, sample, max_para)
+
+        metadata = {'info': 'NelderMead Restart', 'j': j, 'matrix': matrix,
+                    'ansatz': ansatz_name, 'initial_params': initial_params,
+                    'H': H, 'len_H': len(H), 'paramaters': parameters, }
+
+        save_data(file, data_, metadata, base_dir)
