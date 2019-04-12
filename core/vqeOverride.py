@@ -88,6 +88,7 @@ class VQE_override(VQE):
         iteration_params = []
         expectation_vals = []
         expectation_vars = []
+        fun_evals = 0
         self._current_expectation = None
         self._current_variance = None
 
@@ -114,11 +115,15 @@ class VQE_override(VQE):
                                                     qc)
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
+            nonlocal fun_evals
+            fun_evals +=1
+            #print(fun_evals)
 
             return mean_value
 
         def print_current_iter(iter_vars):
-            self._disp_fun("\tParameters: {} ".format(iter_vars))
+            self._disp_fun('\nFunction evaluations: {}'.format(fun_evals))
+            self._disp_fun("Parameters: {} ".format(iter_vars))
             if jacobian is not None:
                 grad = jacobian(iter_vars)
                 self._disp_fun(
@@ -126,7 +131,7 @@ class VQE_override(VQE):
                 self._disp_fun(
                     "\tGrad-L2-Norm: {} ".format(np.linalg.norm(grad)))
 
-            self._disp_fun("\tE => {}".format(self._current_expectation))
+            self._disp_fun("E => {}".format(self._current_expectation))
 
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
@@ -159,13 +164,13 @@ class VQE_override(VQE):
         args.extend(self.minimizer_args)
         if 'jac' in arguments:
             self.minimizer_kwargs['jac'] = jacobian
-
         try:
             result = self.minimizer(*args, **self.minimizer_kwargs)
         except BreakError:
             results = OptResults()
             results.x = iteration_params[-1]
             results.fun = expectation_vals[-1]
+            results.fun_evals = fun_evals
         else:
             if hasattr(result, 'status'):
                 if result.status != 0:
@@ -187,6 +192,7 @@ class VQE_override(VQE):
             results.iteration_params = iteration_params
             results.expectation_vals = expectation_vals
             results.expectation_vars = expectation_vars
+            results.fun_evals = fun_evals
         return results
 
     @staticmethod
@@ -361,3 +367,4 @@ class BreakError(Exception):
     Expectation that callback can raise to stop the minimizer dynamically.
     """
     pass
+
