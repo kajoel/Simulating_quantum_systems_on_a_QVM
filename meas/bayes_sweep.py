@@ -40,7 +40,7 @@ def bayes_iteration_sweep(H,
                           measurments_per_step=1,
                           save_after_run=False, 
                           plot_after_run=True,
-                          disp_data_during_run=False,
+                          disp_data_during_run=True,
                           disp_progress=False,
                           label = None,
                           ansatz_name=None, 
@@ -234,7 +234,6 @@ def plot_mult_ansatz(matrix_name,  directory = None, end_to_name = None,
     
 
     for i, axes in enumerate(axs):
-        if i == 1: continue
         file_name = str(ansatzer[i] + '_' + matrix_name)
         if end_to_name is not None: file_name = file_name + end_to_name
         datatitle = join(directory, file_name + '.pkl')
@@ -257,9 +256,10 @@ def scatter_func_evals(data_, titel=None):
     plt.figure()
     plt.title(titel)
     plt.scatter(data_vec[0], data_vec[1])
+    
     for i, txt in enumerate(data_index):
         plt.annotate(txt, (data_vec[0,i], data_vec[1,i]))
-
+    
 
 
 
@@ -280,14 +280,12 @@ def run_bayes_iteration_sweep(ansatz_, convert_op, h=None, j=1, V=1,
     ansatz_ = ansatz_(h.shape[0])
     if label is None: label = ans_name
     
-    qubit = n_qubits(convert_op,h)
-
-    qc = get_qc('{}q-qvm'.format(qubit))
+    qc = create_qc(convert_op, h)
     H = convert_op(h)
     
     return bayes_iteration_sweep(H, qc, ansatz_, h.shape[0], samples=samples,
                               start=start, stop=stop, steps=steps, 
-                              save_after_run=save, label=label, qubits=qubit,
+                              save_after_run=save, label=label,
                               ansatz_name=ans_name, file_name=file_name, 
                               measurments_per_step=measurments, plot_after_run=plot)
 
@@ -374,27 +372,43 @@ def test_parameters(ansatz_, convert_op):
 # Main
 ################################################################################
 if __name__ == '__main__':
+    interval = (0.001,0.12)
+    plot_mult_ansatz('j2V1i1', 'heatmapsBayes', interval=interval) 
+    
+    interval = (0.001,0.12)
+    plot_mult_ansatz('j1V1i0', 'heatmapsBayes', interval=interval) 
+
+
+    plt.show()
+
     '''
     ansatz_ = ansatz.multi_particle
     convert_op = matrix_to_op.multi_particle
-    h = lipkin_quasi_spin.hamiltonian(1, 1)[0]
-    
-    
+    V=1
+    h = lipkin_quasi_spin.hamiltonian(1,1)[0]
+    run_bayes_iteration_sweep(ansatz_,convert_op, h)
+
+  
+    for j in range(2,5):
+        print('Starting with j={}'.format(j))
+        h_tupple = lipkin_quasi_spin.hamiltonian(j, V)
+        for i,h in enumerate(reversed(h_tupple)):
+            H = convert_op(h)
+            qc = create_qc(convert_op,h)
+            dim = [(-1.0, 1.0) for i in range(h.shape[0]-1)]
+
+            eig = vqe_eig.smallest_bayes(H, qc, dim, ansatz_,samples=400, 
+                                         n_calls=15, disp=True)
+            print(eig)
+ 
     heatmap(ansatz_, convert_op, h, save=True,
             sample_step=4, sample_start=100, sample_stop=2000, 
             func_steps=4, func_start=10, func_stop=50, 
             measurments=1, plot_after_run=True)
     plt.show()
-    interval = (0.001,0.12)
-    plot_mult_ansatz('j2V1i1', 'heatmapsBayes', interval=interval) 
-    
-    interval = (0.005,0.12)
-    plot_mult_ansatz('j2V1i1', 'heatmapsBayes', '_run2', interval) 
-''' 
-    plot_mult_ansatz('j2V1i0', 'heatmapsBayes') 
+    '''
 
 
-    plt.show()
-    
+
 
 
