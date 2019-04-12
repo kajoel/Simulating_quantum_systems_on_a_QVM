@@ -207,6 +207,7 @@ def heatmap_from_data(data_, titel=None, axs=None, interval=None, cbar=None):
     if interval is not None:
         vmin = interval[0]
         vmax = interval[1]
+    else: vmin, vmax = None,None
 
     if axs is not None: 
         axs.set_title(titel)
@@ -224,7 +225,7 @@ def heatmap_from_data(data_, titel=None, axs=None, interval=None, cbar=None):
         axs.set_ylabel('Samples per function evaluation') 
      
 
-def plot_mult_ansatz(file_name_long, matrix_name, directory = None, 
+def plot_mult_ansatz(matrix_name,  directory = None, end_to_name = None,
                      interval = None, title = None):
     fig, axs = plt.subplots(ncols=3)
     ansatzer = ['multi_particle', 'one_particle', 'one_particle_ucc']
@@ -233,11 +234,12 @@ def plot_mult_ansatz(file_name_long, matrix_name, directory = None,
     
 
     for i, axes in enumerate(axs):
-        titel_name = ansatzer[i] + '_' + matrix_name
-        datatitle = join(directory, 
-                     str(file_name_long + '_' + ansatzer[i] + '_' + matrix_name + '.pkl'))
+        if i == 1: continue
+        file_name = str(ansatzer[i] + '_' + matrix_name)
+        if end_to_name is not None: file_name = file_name + end_to_name
+        datatitle = join(directory, file_name + '.pkl')
         dict_1,_ = data.load(datatitle)
-        scatter_func_evals(dict_1, titel_name)
+        scatter_func_evals(dict_1, file_name)
         heatmap_from_data(dict_1, ansatzer[i], axes, interval)
     
 def scatter_func_evals(data_, titel=None):
@@ -383,13 +385,13 @@ if __name__ == '__main__':
             func_steps=4, func_start=10, func_stop=50, 
             measurments=1, plot_after_run=True)
     plt.show()
-    '''
     interval = (0.001,0.12)
-    plot_mult_ansatz('updatedSampleDef', 'j1V1i0', 'heatmapsBayes', interval) 
+    plot_mult_ansatz('j2V1i1', 'heatmapsBayes', interval=interval) 
     
     interval = (0.005,0.12)
-    plot_mult_ansatz('1_updatedSampleDef', 'j2V1i1', 'heatmapsBayes', interval) 
-    
+    plot_mult_ansatz('j2V1i1', 'heatmapsBayes', '_run2', interval) 
+''' 
+    plot_mult_ansatz('j2V1i0', 'heatmapsBayes') 
 
 
     plt.show()

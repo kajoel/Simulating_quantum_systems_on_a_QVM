@@ -25,6 +25,7 @@ for j in range(2,5):
     for i,h in enumerate(reversed(h_tupple)):
         if h.shape[0] == 1: continue
         samples_stop = 3000*(h.shape[0]-1)
+        func_evals = 30*(h.shape[0]-1)
         if i==0: i=1
         else: i=0
         print(i)
@@ -36,8 +37,8 @@ for j in range(2,5):
             heatmap(ansatz_, convert_op[index], h, save=True, 
                     file_name=file_name,
                     sample_step=10, sample_start=100, sample_stop=samples_stop, 
-                    func_steps=5, func_start=10, func_stop=30,
-                    measurments=5, plot_after_run=False)
+                    func_steps=10, func_start=10, func_stop=func_evals,
+                    measurments=4, plot_after_run=False)
 
 
 
