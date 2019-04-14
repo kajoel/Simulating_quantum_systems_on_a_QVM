@@ -65,7 +65,7 @@ def sphere_to_ball(x: np.ndarray, pole: int = 0) -> np.ndarray:
     :param pole: Index of the pole axis.
     :return: Mapped vector in (n-1)-ball.
     """
-    if x[pole] >= 0:
+    if x[pole] <= 0:
         return sphere_to_plane(x, pole)/2
     else:
         y = -sphere_to_plane(-x, pole)/2
