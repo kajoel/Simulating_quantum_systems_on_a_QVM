@@ -84,7 +84,7 @@ iters = 5
 
 i = 1
 
-for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
+for j, ansatz_name in itertools.product(range(3, 6), ansatz_types):
 
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
