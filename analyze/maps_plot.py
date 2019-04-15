@@ -13,7 +13,7 @@ from core import maps
 
 def ball_cube_2d(map, mapi) -> plt.Figure:
     """
-    Plots map from ball to cube and its inverse.
+    Plots map from ball to cube and its inverse. (Colorful)
 
     :param map: Map from ball to cube.
     :param mapi: Map from cube to ball
@@ -105,6 +105,78 @@ def ball_cube_2d(map, mapi) -> plt.Figure:
     return fig
 
 
+def ball_cube_2d_2(map, mapi) -> plt.Figure:
+    """
+        Plots map from ball to cube and its inverse. (Not colorful)
+
+        :param map: Map from ball to cube.
+        :param mapi: Map from cube to ball
+        :return: Figure.
+        """
+    # Init plot object:
+    fig = plt.figure()
+    ax = np.array([[fig.add_subplot(2, 2, 1),
+                    fig.add_subplot(2, 2, 2)],
+                   [fig.add_subplot(2, 2, 3),
+                    fig.add_subplot(2, 2, 4)]])
+
+    # ### Ball to cube ###
+    grids = 17
+    r_line = np.linspace(0, 1, grids)
+    t_line = np.linspace(0, 2 * np.pi, grids)
+    r_ball, t_ball = np.meshgrid(r_line, t_line, indexing='ij')
+
+    # Map
+    x_cube_from_ball = np.zeros(r_ball.shape)
+    y_cube_from_ball = np.zeros(r_ball.shape)
+    for i, j in itertools.product(range(r_line.size), range(t_line.size)):
+        x_cube_from_ball[i, j], y_cube_from_ball[i, j] = map(
+            np.array(
+                [r_line[i] * np.cos(t_line[j]),
+                 r_line[i] * np.sin(t_line[j])])
+        )
+
+    # Plot
+    ax[0, 0].pcolormesh(r_ball * np.cos(t_ball), r_ball * np.sin(t_ball),
+                        np.ones(r_ball.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[0, 1].pcolormesh(x_cube_from_ball, y_cube_from_ball,
+                        np.ones(r_ball.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[0, 0].axis('equal')
+    ax[0, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
+    ax[0, 1].axis('equal')
+    ax[0, 1].axis(1.1 * np.array([-1, 1, -1, 1]))
+
+    # ### Cube to ball ###
+    grids = 17
+    x_line = np.linspace(-1, 1, grids)
+    y_line = np.linspace(-1, 1, grids)
+    x_cube, y_cube = np.meshgrid(x_line, y_line, indexing='ij')
+
+    # Map
+    x_ball_from_cube = np.zeros(r_ball.shape)
+    y_ball_from_cube = np.zeros(r_ball.shape)
+    for i, j in itertools.product(range(x_line.size), range(y_line.size)):
+        x_ball_from_cube[i, j], y_ball_from_cube[i, j] = mapi(
+            np.array([x_cube[i, j], y_cube[i, j]])
+        )
+
+    # Plot
+    ax[1, 0].pcolormesh(x_cube, y_cube,
+                        np.ones(x_cube.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[1, 1].pcolormesh(x_ball_from_cube, y_ball_from_cube,
+                        np.ones(r_ball.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[1, 0].axis('equal')
+    ax[1, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
+    ax[1, 1].axis('equal')
+    ax[1, 1].axis(1.1 * np.array([-1, 1, -1, 1]))
+
+    return fig
+
+
 def sphere_ball(map, mapi) -> plt.Figure:
     """
     Plots map from (3d) sphere to (2d) ball and its inverse.
@@ -121,14 +193,17 @@ def sphere_ball(map, mapi) -> plt.Figure:
                     fig.add_subplot(2, 2, 4, projection='3d')]])
 
     # ### Sphere to ball ###
-    num_grid = 9
-    n = 8 * (num_grid - 1) + 1
-    grid_idx = np.linspace(0, n - 1, num_grid, dtype=int)
-    t_line = np.linspace(1e-2, np.pi, n)
-    p_line = np.linspace(0, 2 * np.pi, n)
+    grids = 16 + 1
+    # num_grid = 9
+    # m = 8
+    # n = m * (num_grid - 1) + 1
+    # grid_idx = np.linspace(0, n - 1, num_grid, dtype=int)
+    # grid_2d = np.ix_(grid_idx, grid_idx)  # TODO: idea for grid on surface
+    t_line = np.linspace(1e-2, np.pi, grids)  # TODO: change grids to n
+    p_line = np.linspace(0, 2 * np.pi, grids)  # change grids to n
     t_sphere, p_sphere = np.meshgrid(t_line, p_line, indexing='ij')
-    color = (np.pi-t_sphere)
-    color = color/np.max(color)+0.2
+    # color = (np.pi-t_sphere)  # Color map for surface
+    # color = color/np.max(color)+0.2
 
     # Map
     x_ball_from_sphere = np.zeros(t_sphere.shape)
@@ -142,54 +217,214 @@ def sphere_ball(map, mapi) -> plt.Figure:
         )
 
     # Plot
-    style_t = ['--', '-', '-', '-']
-    style_p = [':', '--', '-.', '-']
-    cmap = cm.ScalarMappable(cmap='viridis')
-    cmap.set_array(color)
-    cmap.autoscale()
-    ax[0, 0].plot_surface(np.sin(t_sphere) * np.cos(p_sphere),
-                          np.sin(t_sphere) * np.sin(p_sphere),
-                          np.cos(t_sphere),
-                          linewidth=0, rcount=1000, ccount=1000,
-                          edgecolor='none', antialiased=False,
-                          facecolors=cmap.to_rgba(color))
-    ax[0, 1].pcolormesh(x_ball_from_sphere, y_ball_from_sphere, color,
-                        cmap='viridis')
-    for k, p_idx in enumerate(grid_idx):
-        # TODO: seems to be a display bug when using both surf and plot
-        # the lines don't show
-        # ax[0, 0].plot(1.1 * np.sin(t_sphere[p_idx, :])
-        #              * np.cos(p_sphere[p_idx, :]),
-        #              1.1 * np.sin(t_sphere[p_idx, :])
-        #              * np.sin(p_sphere[p_idx, :]),
-        #              1.1 * np.cos(t_sphere[p_idx, :]),
-        #              color='r', linewidth=1, linestyle=style_p[divmult(k)])
-        ax[0, 1].plot(x_ball_from_sphere[p_idx, :],
-                      y_ball_from_sphere[p_idx, :],
-                      color='r', linewidth=1, linestyle=style_p[divmult(k)])
-    for k, t_idx in enumerate(grid_idx):
-        # TODO: seems to be a display bug when using both surf and plot
-        # the lines don't show
-        # ax[0, 0].plot(1.1 * np.sin(t_sphere[:, t_idx])
-        #              * np.cos(p_sphere[:, t_idx]),
-        #              1.1 * np.sin(t_sphere[:, t_idx])
-        #              * np.sin(p_sphere[:, t_idx]),
-        #              1.1 * np.cos(t_sphere[:, t_idx]),
-        #              color='r', linewidth=1, linestyle=style_t[divmult(k)])
-        ax[0, 1].plot(x_ball_from_sphere[:, t_idx],
-                      y_ball_from_sphere[:, t_idx],
-                      color='r', linewidth=1, linestyle=style_t[divmult(k)])
-    ax[0, 0].axis('equal')  # TODO: seems to be a bug in this, see:
-    # https://stackoverflow.com/questions/13685386/matplotlib-equal-unit
-    # -length-with-equal-aspect-ratio-z-axis-is-not-equal-to
-    ax[0, 0].set_xlim3d(-1.1, 1.1)
-    ax[0, 0].set_ylim3d(-1.1, 1.1)
-    ax[0, 0].set_zlim3d(-1.1, 1.1)
-    # ax[0, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
+    # style_t = ['--', '-', '-', '-']  # Gridstyles
+    # style_p = [':', '--', '-.', '-']
+    # cmap = cm.ScalarMappable(cmap='viridis') # Colomap
+    # cmap.set_array(color)
+    # cmap.autoscale()
+    # Surface plot
+    # ax[0, 0].plot_surface(np.sin(t_sphere) * np.cos(p_sphere),
+    #                       np.sin(t_sphere) * np.sin(p_sphere),
+    #                       np.cos(t_sphere),
+    #                       linewidth=10, rcount=1000, ccount=1000,
+    #                       edgecolor=edge_color,
+    #                       antialiased=False,
+    #                       facecolors=cmap.to_rgba(color))
+    # Heatmap corresponding to surface plot:
+    # ax[0, 1].pcolormesh(x_ball_from_sphere, y_ball_from_sphere, color,
+    #                     cmap='viridis')
+    # Grid plot:
+    ax[0, 0].plot_wireframe(np.sin(t_sphere) * np.cos(p_sphere),
+                            np.sin(t_sphere) * np.sin(p_sphere),
+                            np.cos(t_sphere))
+    ax[0, 1].pcolormesh(x_ball_from_sphere, y_ball_from_sphere,
+                        np.ones(t_sphere.shape), cmap=cm.binary,
+                        edgecolors='C0')
+
+    ax[0, 0].set_aspect('equal')
     ax[0, 1].axis('equal')
     ax[0, 1].axis(1.1 * np.array([-1, 1, -1, 1]))
 
     # ### Ball to sphere ###
+    grids = 16 + 1
+    r_line = np.linspace(0, 1-1e-2, grids)    # TODO: change grids to n
+    t_line = np.linspace(0, 2 * np.pi, grids)  # change grids to n
+    r_ball, t_ball = np.meshgrid(r_line, t_line, indexing='ij')
+
+    # Map
+    x_sphere_from_ball = np.zeros(r_ball.shape)
+    y_sphere_from_ball = np.zeros(r_ball.shape)
+    z_sphere_from_ball = np.zeros(r_ball.shape)
+    for i, j in itertools.product(range(r_line.size), range(t_line.size)):
+        x_sphere_from_ball[i, j], \
+            y_sphere_from_ball[i, j], \
+            z_sphere_from_ball[i, j] = mapi(
+                np.array([r_line[i] * np.cos(t_line[j]),
+                          r_line[i] * np.sin(t_line[j])])
+            )
+
+    # Plot
+    ax[1, 0].pcolormesh(r_ball * np.cos(t_ball), r_ball * np.sin(t_ball),
+                        np.ones(r_ball.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[1, 1].plot_wireframe(x_sphere_from_ball,
+                            y_sphere_from_ball,
+                            z_sphere_from_ball)
+    ax[1, 1].set_aspect('equal')
+    ax[1, 0].axis('equal')
+    ax[1, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
+
+    return fig
+
+
+def sphere_cube(map, mapi) -> plt.Figure:
+    """
+    Plots map from (3d) sphere to (2d) cube and its inverse.
+
+    :param map: Map from sphere to cube.
+    :param mapi: Map from cube to sphere.
+    :return: Figure.
+    """
+    # Init plot object:
+    fig = plt.figure()
+    ax = np.array([[fig.add_subplot(2, 2, 1, projection='3d'),
+                    fig.add_subplot(2, 2, 2)],
+                   [fig.add_subplot(2, 2, 3),
+                    fig.add_subplot(2, 2, 4, projection='3d')]])
+
+    # ### Sphere to cube ###
+    grids = 16 + 1
+    t_line = np.linspace(1e-2, np.pi, grids)
+    p_line = np.linspace(0, 2 * np.pi, grids)
+    t_sphere, p_sphere = np.meshgrid(t_line, p_line, indexing='ij')
+
+    # Map
+    x_cube_from_sphere = np.zeros(t_sphere.shape)
+    y_cube_from_sphere = np.zeros(t_sphere.shape)
+    for i, j in itertools.product(range(t_line.size), range(p_line.size)):
+        x_cube_from_sphere[i, j], y_cube_from_sphere[i, j] = map(
+            np.array(
+                [np.sin(t_line[i]) * np.cos(p_line[j]),
+                 np.sin(t_line[i]) * np.sin(p_line[j]),
+                 np.cos(t_line[i])])
+        )
+
+    # Plot
+    ax[0, 0].plot_wireframe(np.sin(t_sphere) * np.cos(p_sphere),
+                            np.sin(t_sphere) * np.sin(p_sphere),
+                            np.cos(t_sphere))
+    ax[0, 1].pcolormesh(x_cube_from_sphere, y_cube_from_sphere,
+                        np.ones(t_sphere.shape), cmap=cm.binary,
+                        edgecolors='C0')
+
+    ax[0, 0].set_aspect('equal')
+    ax[0, 1].axis('equal')
+    ax[0, 1].axis(1.1 * np.array([-1, 1, -1, 1]))
+
+    # ### Cube to sphere ###
+    grids = 16 + 1
+    x_line = np.linspace(-1, 1, grids)  # +- 1e-2 if error
+    y_line = np.linspace(-1, 1, grids)  # +- 1e-2 if error
+    x_cube, y_cube = np.meshgrid(x_line, y_line, indexing='ij')
+
+    # Map
+    x_sphere_from_cube = np.zeros(x_cube.shape)
+    y_sphere_from_cube = np.zeros(x_cube.shape)
+    z_sphere_from_cube = np.zeros(x_cube.shape)
+    for i, j in itertools.product(range(x_line.size), range(y_line.size)):
+        x_sphere_from_cube[i, j], \
+            y_sphere_from_cube[i, j], \
+            z_sphere_from_cube[i, j] = mapi(
+                np.array([x_line[i], y_line[j]])
+            )
+
+    # Plot
+    ax[1, 0].pcolormesh(x_cube, y_cube,
+                        np.ones(x_cube.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[1, 1].plot_wireframe(x_sphere_from_cube,
+                            y_sphere_from_cube,
+                            z_sphere_from_cube)
+    ax[1, 1].set_aspect('equal')
+    ax[1, 0].axis('equal')
+    ax[1, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
+
+    return fig
+
+
+def sphere_plane(map, mapi) -> plt.Figure:
+    """
+    Plots map from (3d) sphere to (2d) plane and its inverse.
+
+    :param map: Map from sphere to plane.
+    :param mapi: Map from plane to sphere.
+    :return: Figure.
+    """
+    # Init plot object:
+    fig = plt.figure()
+    ax = np.array([[fig.add_subplot(2, 2, 1, projection='3d'),
+                    fig.add_subplot(2, 2, 2)],
+                   [fig.add_subplot(2, 2, 3),
+                    fig.add_subplot(2, 2, 4, projection='3d')]])
+
+    # ### Sphere to plane ###
+    grids = 16 + 1
+    t_line = np.linspace(1e-2, np.pi, grids)
+    p_line = np.linspace(0, 2 * np.pi, grids)
+    t_sphere, p_sphere = np.meshgrid(t_line, p_line, indexing='ij')
+
+    # Map
+    x_plane_from_sphere = np.zeros(t_sphere.shape)
+    y_plane_from_sphere = np.zeros(t_sphere.shape)
+    for i, j in itertools.product(range(t_line.size), range(p_line.size)):
+        x_plane_from_sphere[i, j], y_plane_from_sphere[i, j] = map(
+            np.array(
+                [np.sin(t_line[i]) * np.cos(p_line[j]),
+                 np.sin(t_line[i]) * np.sin(p_line[j]),
+                 np.cos(t_line[i])])
+        )
+
+    # Plot
+    ax[0, 0].plot_wireframe(np.sin(t_sphere) * np.cos(p_sphere),
+                            np.sin(t_sphere) * np.sin(p_sphere),
+                            np.cos(t_sphere))
+    ax[0, 1].pcolormesh(x_plane_from_sphere, y_plane_from_sphere,
+                        np.ones(t_sphere.shape), cmap=cm.binary,
+                        edgecolors='C0')
+
+    ax[0, 0].set_aspect('equal')
+    ax[0, 1].axis('equal')
+    ax[0, 1].axis(1.1 * np.array([-5, 5, -5, 5]))
+
+    # ### Plane to sphere ###
+    grids = 16 + 1
+    r_line = np.linspace(0, 1, int(grids/2))
+    r_line = np.concatenate((r_line, np.logspace(0, 1, int(grids/2))))
+    t_line = np.linspace(0, 2 * np.pi, grids)
+    r_plane, t_plane = np.meshgrid(r_line, t_line, indexing='ij')
+
+    # Map
+    x_sphere_from_plane = np.zeros(r_plane.shape)
+    y_sphere_from_plane = np.zeros(r_plane.shape)
+    z_sphere_from_plane = np.zeros(r_plane.shape)
+    for i, j in itertools.product(range(r_line.size), range(t_line.size)):
+        x_sphere_from_plane[i, j], \
+            y_sphere_from_plane[i, j], \
+            z_sphere_from_plane[i, j] = mapi(
+            np.array([r_line[i] * np.cos(t_line[j]),
+                      r_line[i] * np.sin(t_line[j])])
+            )
+
+    # Plot
+    ax[1, 0].pcolormesh(r_plane * np.cos(t_plane), r_plane * np.sin(t_plane),
+                        np.ones(r_plane.shape), cmap=cm.binary,
+                        edgecolors='C0')
+    ax[1, 1].plot_wireframe(x_sphere_from_plane,
+                            y_sphere_from_plane,
+                            z_sphere_from_plane)
+    ax[1, 1].set_aspect('equal')
+    ax[1, 0].axis('equal')
+    ax[1, 0].axis(1.1 * np.array([-1, 1, -1, 1]))
 
     return fig
 
@@ -217,10 +452,26 @@ def divmult(n: int, m: int = 2) -> int:
 
 
 def _main_1():
-    fig_1 = ball_cube_2d(maps.ball_to_cube_linear, maps.cube_to_ball_linear)
-    fig_1.suptitle('Linear stretch')
+    fig_1 = ball_cube_2d_2(maps.ball_to_cube_linear, maps.cube_to_ball_linear)
+    fig_1.suptitle('2D ball to cube (linear)')
+
+    fig_2 = sphere_ball(lambda x: maps.sphere_to_ball(x, pole=2),
+                        lambda x: maps.ball_to_sphere(x, pole=2))
+    fig_2.suptitle('3D sphere to 2D ball')
+
+    fig_3 = sphere_cube(lambda x: maps.ball_to_cube_linear(
+                                    maps.sphere_to_ball(x, pole=2)),
+                        lambda x: maps.ball_to_sphere(
+                                    maps.cube_to_ball_linear(x), pole=2))
+    fig_3.suptitle('3D sphere to 2D cube')
+
+    fig_4 = sphere_plane(lambda x: maps.sphere_to_plane(x, pole=2),
+                         lambda x: maps.plane_to_sphere(x, pole=2))
+    fig_4.suptitle('3D sphere to 2D plane')
 
 
 if __name__ == '__main__':
-    fig = sphere_ball(lambda x: maps.sphere_to_ball(x, pole=2),
-                      lambda x: maps.ball_to_sphere(x, pole=2))
+    _main_1()
+    plt.show()
+
+
