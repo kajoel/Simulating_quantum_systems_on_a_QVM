@@ -50,6 +50,13 @@ def multi_particle(dim: int):
     return wrap
 
 
+def mp_test(dim: int):
+
+    def wrap(theta: np.ndarray):
+        return create_arbitrary_state(theta)
+
+    return wrap
+
 def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz preserving particle number.
