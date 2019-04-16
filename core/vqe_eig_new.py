@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 from core import ansatz
 from core import init_params
 from core import matrix_to_op
-from core import vqeOverride
+from core import vqe_override
 
 
 def smallest(H, qc, initial_params, vqe,
@@ -112,7 +112,7 @@ def smallest_restart(H, qc, initial_params, vqe,
                            < tol_para
             if bool_tmp:
                 # raise RestartError(params[-1])
-                raise vqeOverride.BreakError()
+                raise vqe_override.BreakError()
 
     if ansatz_ is None:
         ansatz_ = ansatz.multi_particle
