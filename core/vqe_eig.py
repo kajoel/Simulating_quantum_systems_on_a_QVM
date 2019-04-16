@@ -20,10 +20,7 @@ def smallest(H, qc, initial_params, vqe,
              disp_run_info=True,
              display_after_run=False,
              xatol=1e-2, fatol=1e-3,
-             return_all_data=False,
-             # Varför har vi detta som in-argument? Används inte
-             convert_op=matrix_to_op.multi_particle,
-             print_option=True):
+             return_all_data=False, callback=None, vqe = None):
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -54,13 +51,19 @@ def smallest(H, qc, initial_params, vqe,
         ansatz_ = ansatz.multi_particle
 
     # All options to Nelder-Mead
-    disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
-                    'maxiter': maxiter}
+    if vqe == None:
+        disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
+                        'maxiter': maxiter}
 
     # vqe = vqeOverride.VQE_override(minimizer=minimize,
     #                               minimizer_kwargs={'method':
     #                                                     'Nelder-Mead',
     #                                                 'options': disp_options})
+        vqe = vqeOverride.VQE_override(minimizer=minimize,
+                                       minimizer_kwargs={'method':
+                                                             opt_algorithm,
+                                                         'options': disp_options})
+
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
@@ -69,10 +72,99 @@ def smallest(H, qc, initial_params, vqe,
     return eig
 
 
+def smallest_restart(H, qc, initial_params,
+                     ansatz_=None,
+                     samples=None,
+                     max_para=5,
+                     max_iter=10,
+                     tol_para=1e-4,
+                     increase_samples=0,
+                     disp_iter=False, vqe=None):
+    """
+    @author: Sebastian, Carl
+
+    :param H:
+    :param qc:
+    :param initial_params:
+    :param ansatz_:
+    :param samples:
+    :param max_para:
+    :param max_iter:
+    :param tol_para:
+    :param increase_samples:
+    :param disp_iter:
+    :param vqe:
+    :return:
+    """
+
+    def same_parameter(params, *args, **kwargs):
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                # raise RestartError(params[-1])
+                raise vqeOverride.BreakError()
+
+    if ansatz_ is None:
+        ansatz_ = ansatz.multi_particle
+
+    # If disp_run_info is True we will print every step of the Nelder-Mead
+
+    fun_evals = []
+    for i in range(max_iter):
+        if disp_iter:
+            print("\niter: {}".format(i))
+            print("samples: {}".format(samples))
+
+        # Have to make new vqe every time, else the callback gets duplicated
+        # each iter (bug?)
+        result = vqe.vqe_run(ansatz_, H, initial_params, samples=samples,
+                             qc=qc,
+                             disp=True, return_all=True,
+                             callback=same_parameter)
+        params = result['iteration_params']
+        fun_evals.append(result['fun_evals'])
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                initial_params = params[-1]
+                samples += increase_samples
+            else:
+                result['fun_evals'] = fun_evals
+                return result
+
+    print('Did not finish after {} iterations'.format(max_iter))
+    result['fun_evals'] = fun_evals
+    return result
+
+
+class RestartError(Exception):
+    def __init__(self, param, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.param = param
+
+
+class NelderMeadError(Exception):
+    pass
+
+
 def smallest_bayes(H, qc,
                    dimension,
                    ansatz_,
                    samples=None,
+                   disp=True,
+                   acq_func="gp_hedge",
+                   n_calls=30,
+                   n_random_starts=5,
+                   random_state=123,
+                   x0=None):
+                   samples=None,
+                   return_all_data=False,
                    disp=True,
                    acq_func="gp_hedge",
                    n_calls=30,

@@ -136,18 +136,20 @@ class VQE_override(VQE):
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
 
-        def callback(iter_vars):
-            disp(iter_vars, self._current_expectation, self._current_variance)
-            if return_all:
-                iteration_params.append(iter_vars)
-                expectation_vals.append(self._current_expectation)
-                expectation_vars.append(self._current_variance)
 
         if disp is True and 'callback' in arguments:
             self.minimizer_kwargs['callback'] = print_current_iter
 
-        if (callable(disp)) and 'callback' in arguments:
-            self.minimizer_kwargs['callback'] = callback
+        def wrap_callbacks(iter_vars, *args, **kwargs):
+            # save values
+            iteration_params.append(iter_vars)
+            expectation_vals.append(self._current_expectation)
+            expectation_vars.append(self._current_variance)
+            # call VQE's callback
+            callback(iteration_params, expectation_vals, expectation_vars)
+            # display
+            if disp is True:
+                print_current_iter(iter_vars)
 
         args = [objective_function, initial_params]
         args.extend(self.minimizer_args)
