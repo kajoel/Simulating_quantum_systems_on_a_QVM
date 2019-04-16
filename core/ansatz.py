@@ -15,16 +15,17 @@ from pyquil.gates import X
 from typing import Callable, List, Union
 
 
-def one_particle(dim: int):
+def one_particle(h: np.ndarray):
     """
     Creates a function(theta) that creates a program to set up an arbitrary
     one-particle-state.
 
     @author: Joel, Carl
 
-    :param dim: The dimension of the spanned space.
+    :param h: The hamiltonian matrix.
     :return: function(theta) -> pyquil program setting up the state.
     """
+    dim = h.shape[0]
 
     def wrap(theta: np.ndarray) -> Program:
         """
@@ -42,16 +43,17 @@ def one_particle(dim: int):
     return wrap
 
 
-def multi_particle(dim: int):
+def multi_particle(h: np.ndarray):
     """
     Creates a function(theta) that creates a program to set up an arbitrary
     state.
 
     @author: Joel
 
-    :param dim: The dimension of the spanned space.
+    :param h: The hamiltonian matrix.
     :return: function(theta) -> pyquil program setting up the state.
     """
+    dim = h.shape[0]
 
     def wrap(theta: np.ndarray):
         """
@@ -66,30 +68,44 @@ def multi_particle(dim: int):
     return wrap
 
 
-def multi_particle_stereographic(dim, pole=0):
+def multi_particle_stereographic(h: np.ndarray):
+    """
+    Multi particle ansatz using a stereographic projection for dimensionality
+    reduction.
+
+    @author = Joel
+
+    :param h: The hamiltonian matrix.
+    :return: function(theta) -> pyquil program setting up the state.
+    """
+    pole = int(np.argmax(np.diag(h)))
 
     def wrap(theta):
+        """
+        Creates arbitrary state using stereographic projection.
+
+        :param theta: Vector representing the state.
+        :return: PyQuil program setting up the state.
+        """
         return create_arbitrary_state(maps.plane_to_sphere(theta, pole))
 
     return wrap
 
 
-
-
-def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
+def one_particle_ucc(h, reference=1, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz preserving particle number.
 
     @author: Joel, Carl
 
-    :param int dim: dimension of the space = num_qubits
+    :param np.ndarray h: The hamiltonian matrix.
     :param int reference: the binary number corresponding to the reference
         state (which must be a Fock-state).
     :param int trotter_order: trotter order in suzuki_trotter
     :param int trotter_steps: trotter steps in suzuki_trotter
     :return: function(theta) which returns the ansatz Program
     """
-    # TODO: should this function also return the expected length of theta?
+    dim = h.shape[0]
 
     terms = []
     for occupied in range(dim):
@@ -124,7 +140,7 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
+def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
     states). This is basically an implementation of create_arbitrary_state
@@ -148,7 +164,7 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
 
     @author: Joel
 
-    :param int dim: dimension of the space = num_qubits**2
+    :param np.ndarray h: The hamiltonian matrix.
     :param reference: integer representation of reference state
     :param trotter_order: Trotter order in trotterization
     :param trotter_steps: Trotter steps in trotterization
@@ -156,7 +172,8 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
         the coefficient in front of the term prod_k X_k^bit(i,k) where
         bit(i, k) is the k'th bit of i in binary, in the exponent.
     """
-    # TODO: should this function also return the expected length of theta?
+    dim = h.shape[0]
+
     terms = []
     for state in range(dim):
         if state != reference:
@@ -196,6 +213,9 @@ def multi_particle_ucc(dim, reference=0, trotter_order=1, trotter_steps=1):
         return prog
 
     return wrap
+
+
+# ################## ANSATZ RELATED FUNCTIONS ##################
 
 
 def trotterize(terms, trotter_order, trotter_steps) -> List[
