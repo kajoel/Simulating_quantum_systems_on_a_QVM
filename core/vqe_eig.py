@@ -168,7 +168,7 @@ def smallest_bayes(H, qc,
                    disp = True,
                    acq_func = "gp_hedge",      
                    n_calls = 30,          
-                   n_random_starts= 5,         
+                   n_random_starts= 2,         
                    random_state = 123,
                    x0 = None ):
 
@@ -222,10 +222,9 @@ def smallest_bayes(H, qc,
     # The actual run
     eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
                       disp=disp, return_all=True)
-    
+
     eig['fun'],_ = vqe.expectation(ansatz_(eig['x']), H,
                                         samples=samples,qc=qc)
-    
 
     eig['expectation_vars'] = noise
 
