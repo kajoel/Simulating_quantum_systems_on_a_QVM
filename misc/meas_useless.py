@@ -4,6 +4,10 @@ run_parallel_comparison)
 """
 ###############################################################################
 # Imports
+import sys
+import os
+from os.path import join, dirname
+sys.path.append(join(dirname(__file__), '..'))
 from core.lipkin_quasi_spin import hamiltonian, eigs
 from grove.pyvqe.vqe import VQE
 import numpy as np
@@ -17,7 +21,6 @@ from core import vqeOverride
 from core import data
 import itertools
 from constants import ROOT_DIR
-from os.path import join
 
 
 ###############################################################################
@@ -91,10 +94,9 @@ for j, ansatz_name in itertools.product(range(1, 2), ansatz_types):
     eig = eigs(j, V)[matrix][0]
     H, qc, ansatz_, initial_params = ansatz_type(ansatz_name, h, dim)
 
-    samples = np.linspace(500, 10000 * len(H), 100)
+    samples = np.array([500])
 
-    for sample, max_para, iter in itertools.product(samples, max_params,
-                                                    range(1, iters)):
+    for sample, max_para in itertools.product(samples, max_params):
 
         sample = int(round(sample))
 
@@ -135,4 +137,3 @@ max_para = {}, fatol = {}, iteration = {}/{}'\
                     'H': H, 'len_H': len(H), 'paramaters': parameters, }
 
         #save_data(file, data_, metadata, base_dir)
-        print('hej')

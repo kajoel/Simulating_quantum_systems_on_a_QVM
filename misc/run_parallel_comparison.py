@@ -13,10 +13,10 @@ from time import perf_counter
 from constants import ROOT_DIR
 
 # Path to the script to run
-script_path = join(ROOT_DIR, 'misc', 'wait_script.py')
+script_path = join(ROOT_DIR, 'misc', 'meas_useless.py')
 
 directory = 'parallel_test'  # directory to save to
-file = 'parallel_test_results_1'  # file to save to
+file = 'parallel_test_results_2'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file)
