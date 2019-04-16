@@ -308,17 +308,20 @@ def run_NM_sample_sweep(ansatz_, convert_op, h=None, j=1, V=1, matrix_num=0,
 
 
 def plot_from_data():
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1One100-6000.pkl')
-    dict_1,meta_1 = data.load(datatitle)
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1OneUCC100-6000.pkl')
-    dict_2,meta_2 = data.load(datatitle)
-    datatitle = join(ROOT_DIR, 'data', 'SampleErrorj1i0v1Multi100-6000.pkl')
-    dict_3,meta_3 = data.load(datatitle)
+    datatitle = join('over_night_run', 'OverNightRun3.pkl')
+    dict_1, meta = data.load(datatitle)
     
+    plot_run(dict_1, label=meta['ansatz'])
+    datatitle = join('over_night_run', 'OverNightRun4.pkl')
+    dict_1, meta = data.load(datatitle)
+    
+    plot_run(dict_1, label=meta['ansatz'])
+    datatitle = join('over_night_run', 'OverNightRun5.pkl')
+    dict_1, meta = data.load(datatitle)
+    
+    plot_run(dict_1, label=meta['ansatz'])
 
-    plot_run(dict_1, meta=meta_1, label='One patricle')
-    plot_run(dict_2, meta=meta_2, label='One patricle UCC')
-    plot_run(dict_3, meta=meta_3, label='Multi patricle')
+    
 
 
 def multiple_ansatzer(j=1, V=1, matrix_num=0):
@@ -343,8 +346,7 @@ def multiple_runs_and_save(h, count):
                 ansatz.multi_particle]
     
     for index, ansatz_ in enumerate(ansatzer):
-        file_name = join(ROOT_DIR, 'data', 'over_night_run',
-                         'OverNightRun{}'.format(count))
+        file_name = join('over_night_run', 'OverNightRun{}'.format(count))
         convert_op = matrix_to_op.one_particle
 
         if index == 2: convert_op = matrix_to_op.multi_particle
@@ -366,10 +368,6 @@ def print_H():
 # Main
 ################################################################################
 if __name__ == '__main__':
-    ansatz.multi_particle
-    convert_op = matrix_to_op.multi_particle
-    #run_NM_sample_sweep(ansatz.multi_particle, convert_op)
     plot_from_data()
-    #multiple_ansatzer()
     plt.show()
 

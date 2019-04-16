@@ -11,13 +11,14 @@ from scipy.optimize import minimize
 from core import ansatz, vqeOverride
 from core import init_params
 from core import matrix_to_op
+from core import callback
 
 
 def smallest(H, qc, initial_params, vqe,
              ansatz_=None,
              samples=None,
              maxiter=10000,
-             disp_run_info=True,
+             disp=True,
              display_after_run=False,
              xatol=1e-2, fatol=1e-3,
              return_all_data=False, callback=None, vqe = None):
@@ -26,7 +27,7 @@ def smallest(H, qc, initial_params, vqe,
 
     Finds the smallest eigenvalue and corresponding -vector of H using VQE.
 
-    @author: Eric, Axel, Carl
+    @author: Eric, Axel, Carl, Sebastian
 
     :param H: PauliSum of hamiltonian
     :param qc: quantumcomputer object
@@ -67,7 +68,7 @@ def smallest(H, qc, initial_params, vqe,
     # If disp_run_info is True we will print every step of the Nelder-Mead
 
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                      disp=disp_run_info, return_all=True)
+                      disp=disp, return_all=True)
 
     return eig
 
@@ -228,6 +229,8 @@ def smallest_bayes(H, qc,
     eig['expectation_vars'] = noise
 
     return eig
+
+
 
 
 def smallest_dynamic(H, qc, initial_params,

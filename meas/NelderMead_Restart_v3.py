@@ -84,7 +84,6 @@ iters = 5
 
 i = 1
 
-
 for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
     h = hamiltonian(j, V)[matrix]
@@ -94,7 +93,8 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
     samples = np.linspace(500, 10000 * len(H), 100)
 
-    for sample, max_para in itertools.product(samples, max_params):
+    for sample, max_para, iter in itertools.product(samples, max_params,
+                                                    range(1, iters)):
 
         sample = int(round(sample))
 
@@ -103,19 +103,10 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
         data_ = {}
 
-        disp_options = {'disp': False, 'xatol': xatol,
-                        'fatol': fatol,
-                        'maxiter': 10000, 'return_all': True}
-        vqe = vqeOverride.VQE_override(minimizer=minimize,
-                                       minimizer_kwargs={'method':
-                                                             'Nelder-Mead',
-                                                         'options': disp_options})
-
         for iter in range(iters):
             print('\nLoop: j = {}, ansatz_name = {}, samples = {}, \
-max_para = {}, fatol = {}, iteration = {}/{}' \
-                  .format(j, ansatz_name, sample, max_para, round(fatol, 3),
-                          iter + 1, iters))
+max_para = {}, fatol = {}, iteration = {}/{}'\
+            .format( j, ansatz_name, sample, max_para, round(fatol,3), iter + 1, iters))
 
             result = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_,
                                               sample,
@@ -123,8 +114,10 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
                                               max_iter=max_iter,
                                               tol_para=tol_para,
                                               increase_samples=increase_samples,
+                                              xatol=xatol,
+                                              fatol=fatol,
                                               disp=False,
-                                              disp_iter=True, vqe=vqe)
+                                              disp_iter=False)
 
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,
@@ -134,8 +127,8 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
             result['samples'] = sample
             data_[iter] = result
 
-        file = 'NelderMead_Restart_j={}_samples={}_ansatz={}_maxpara={}.pkl' \
-            .format(j, sample, ansatz_name, max_para)
+        file = 'NelderMead_Restart_j={}_samples={}_maxpara={}.pkl' \
+            .format(j, sample, max_para)
 
         metadata = {'info': 'NelderMead Restart', 'j': j, 'matrix': matrix,
                     'ansatz': ansatz_name, 'initial_params': initial_params,

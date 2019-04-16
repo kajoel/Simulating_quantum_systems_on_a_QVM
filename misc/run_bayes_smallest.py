@@ -14,29 +14,26 @@ def run_bayes_opt():
     j,V = 2,1
 
     h = lipkin_quasi_spin.hamiltonian(j,V)[1]
-    print(h)
-    print(lipkin_quasi_spin.eigs(j,V))
     qubits = h.shape[0]
     qc = get_qc('{}q-qvm'.format(qubits))
     ansatz_ = ansatz.multi_particle(h.shape[0])
     H = matrix_to_op.multi_particle(h)
-    dimension = [(-1.0, 1.0) for i in range(h.shape[0]-1)]
+    dimension = [(-20.0, 20.0) for i in range(h.shape[0]-1)]
     print(dimension)
+    samples = 1000
 
 
-
-    eig_val = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=100, 
-                           n_random_starts=4, n_calls=20, return_all_data=True)
+    eig_val = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=samples, 
+                           n_random_starts=5, n_calls=10, return_all_data=True, 
+                           disp=False)
     
 
-    initial_p = init_params.alternate(h.shape[0])
-    vqe_eig.smallest(H, qc, initial_p, ansatz_, return_all_data=True)
     print(eig_val['fun'])
+    print(eig_val['x'])
+    
+    print(lipkin_quasi_spin.eigs(j,V))
 
-    for key in eig_val: print(key)
-    print(eig_val['expectation_vals'])
-    print(eig_val['expectation_vars'])
-    print(len(eig_val['iteration_params']))
+
 
     
 
