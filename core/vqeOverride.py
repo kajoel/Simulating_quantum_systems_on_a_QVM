@@ -29,7 +29,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False, callback=None):
+                return_all=False, callback=None, attempts=1):
         """
         functional minimization loop.
 
@@ -164,27 +164,37 @@ class VQE_override(VQE):
         args.extend(self.minimizer_args)
         if 'jac' in arguments:
             self.minimizer_kwargs['jac'] = jacobian
-        try:
-            result = self.minimizer(*args, **self.minimizer_kwargs)
-        except BreakError:
-            results = OptResults()
-            results.x = iteration_params[-1]
-            results.fun = expectation_vals[-1]
-            results.fun_evals = fun_evals
-        else:
-            if hasattr(result, 'status'):
-                if result.status != 0:
-                    self._disp_fun(
-                        "Classical optimization exited with an error index: %i"
-                        % result.status)
 
-            results = OptResults()
-            if hasattr(result, 'x'):
-                results.x = result.x
-                results.fun = result.fun
-            else:
-                results.x = result
+        for attempt_dummy in range(attempts):
+            break_ = True
+            try:
+                result = self.minimizer(*args, **self.minimizer_kwargs)
+            except BreakError:
+                results = OptResults()
+                results.x = iteration_params[-1]
                 results.fun = expectation_vals[-1]
+                results.fun_evals = fun_evals
+            except RestartError as e:
+                break_ = False
+                args[1] = iteration_params[-1]
+                if e.samples is not None:
+                    samples = e.samples
+            else:
+                if hasattr(result, 'status'):
+                    if result.status != 0:
+                        self._disp_fun(
+                            "Classical optimization exited with an error index: %i"
+                            % result.status)
+
+                results = OptResults()
+                if hasattr(result, 'x'):
+                    results.x = result.x
+                    results.fun = result.fun
+                else:
+                    results.x = result
+                    results.fun = expectation_vals[-1]
+            if break_:
+                break
 
         if return_all:
             # iteration_params.append(result['x'][0])
@@ -365,3 +375,13 @@ class BreakError(Exception):
     """
     pass
 
+
+class RestartError(Exception):
+    """
+    Expectation that callback can raise to restart the minimizer dynamically.
+
+    Assumes that the optimizer takes a single vector as initial_params.
+    """
+    def __init__(self, samples=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.samples = samples
