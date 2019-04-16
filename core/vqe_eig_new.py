@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 from core import ansatz
 from core import init_params
 from core import matrix_to_op
+from core import vqeOverride
 
 
 def smallest(H, qc, initial_params, vqe,
@@ -73,6 +74,91 @@ def smallest_bayes(H, qc,
                                     samples=samples, qc=qc)
 
     return eig
+
+
+def smallest_restart(H, qc, initial_params, vqe,
+                     ansatz_=None,
+                     samples=None,
+                     max_para=7,
+                     max_iter=10,
+                     tol_para=1e-4,
+                     increase_samples=0,
+                     maxiter=10000,
+                     display_after_run=False,
+                     disp = False,
+                     disp_iter = False):
+    """
+    @author: Sebastian, Carl
+
+    :param H:
+    :param qc:
+    :param initial_params:
+    :param ansatz_:
+    :param samples:
+    :param opt_algorithm:
+    :param maxiter:
+    :param display_after_run:
+    :param xatol:
+    :param fatol:
+    :param return_all_data:
+    :return:
+    """
+
+    def same_parameter(params, *args, **kwargs):
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                # raise RestartError(params[-1])
+                raise vqeOverride.BreakError()
+
+    if ansatz_ is None:
+        ansatz_ = ansatz.multi_particle
+
+    # If disp_run_info is True we will print every step of the Nelder-Mead
+
+    fun_evals = []
+    for i in range(max_iter):
+        if disp_iter:
+            print("\niter: {}".format(i))
+            print("samples: {}".format(samples))
+            # print("fatol: {}".format(fatol))
+
+        # Have to make new vqe every time, else the callback gets duplicated
+        # each iter (bug?)
+        result = vqe.vqe_run(ansatz_, H, initial_params, samples=samples,
+                             qc=qc,
+                             disp=disp, return_all=True,
+                             callback=same_parameter)
+        params = result['iteration_params']
+        fun_evals.append(result['fun_evals'])
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                initial_params = params[-1]
+                samples += increase_samples
+            else:
+                result['fun_evals'] = fun_evals
+                return result
+
+    print('Did not finish after {} iterations'.format(max_iter))
+    result['fun_evals'] = fun_evals
+    return result
+
+
+class RestartError(Exception):
+    def __init__(self, param, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.param = param
+
+
+class NelderMeadError(Exception):
+    pass
 
 
 def negative(h, qc, ansatz_, vqe, parameters, samples,
