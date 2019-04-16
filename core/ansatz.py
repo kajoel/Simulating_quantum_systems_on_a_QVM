@@ -3,6 +3,7 @@ Created on Mon Mar  4 10:50:49 2019
 """
 
 # Imports
+from core import maps
 import numpy as np
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
@@ -63,6 +64,16 @@ def multi_particle(dim: int):
         return create_arbitrary_state(theta)
 
     return wrap
+
+
+def multi_particle_stereographic(dim, pole=0):
+
+    def wrap(theta):
+        return create_arbitrary_state(maps.plane_to_sphere(theta, pole))
+
+    return wrap
+
+
 
 
 def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
