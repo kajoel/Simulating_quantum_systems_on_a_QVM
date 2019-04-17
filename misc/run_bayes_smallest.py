@@ -9,6 +9,7 @@ Created on Fri April 5 11:06 2019
 from core import init_params,matrix_to_op,ansatz,lipkin_quasi_spin, data, vqe_eig
 from pyquil import get_qc
 import matplotlib.pyplot as plt
+import numpy as np
 
 def run_bayes_opt():
     j,V = 2,1
@@ -22,21 +23,12 @@ def run_bayes_opt():
     print(dimension)
     samples = 1000
 
-
-    eig_val = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=samples, 
+    
+    temp =  [vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=samples, 
                            n_random_starts=5, n_calls=10, return_all_data=True, 
-                           disp=False)
-    
-
-    print(eig_val['fun'])
-    print(eig_val['x'])
-    
-    print(lipkin_quasi_spin.eigs(j,V))
-
-
-
-    
+                           disp=False)['x'] for i in range(10)]
+    print(np.mean(temp))
 
 
 if __name__ == '__main__':
-    run_bayes_opt()
+    [run_bayes_opt() for i in range(5)]
