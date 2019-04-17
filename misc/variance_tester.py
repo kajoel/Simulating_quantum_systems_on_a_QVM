@@ -1,7 +1,7 @@
 from core.lipkin_quasi_spin import hamiltonian, eigs
 # from grove.pyvqe.vqe import VQE
 # from grove.pyvqe.vqe import expectation_from_sampling
-from core import vqeOverride
+from core import vqe_override
 import numpy as np
 from pyquil import get_qc
 from scipy.optimize import minimize
@@ -21,17 +21,17 @@ print(eigvals)
 qc = get_qc('3q-qvm')
 H = matrix_to_op.multi_particle(h)
 print(H)
-vqe = vqeOverride.VQE_override(minimizer=minimize,
-                               minimizer_kwargs={'method': 'Nelder-Mead'})
+vqe = vqe_override.VQE_override(minimizer=minimize,
+                                minimizer_kwargs={'method': 'Nelder-Mead'})
 
 state = ansatz.multi_particle(init_params.alternate(h.shape[0]))
 
 total_exp = []
 total_var = []
 for i in range(10):
-    min_eig_exp, vars_ = vqeOverride.expectation_from_sampling(state, [0],
-                                                               samples=10000,
-                                                               qc=qc)
+    min_eig_exp, vars_ = vqe_override.expectation_from_sampling(state, [0],
+                                                                samples=10000,
+                                                                qc=qc)
     total_exp.append(min_eig_exp)
     total_var.append(vars_)
 
