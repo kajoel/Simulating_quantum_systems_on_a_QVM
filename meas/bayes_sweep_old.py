@@ -30,7 +30,9 @@ from core import ansatz, matrix_to_op, lipkin_quasi_spin
 from pyquil import get_qc
 from constants import ROOT_DIR
 from os.path import join
-    
+
+
+
 def bayes_iteration_sweep(H, 
                           qc, 
                           ansatz_, 
