@@ -11,7 +11,7 @@ import time
 from core import ansatz
 from core import init_params
 from scipy.optimize import minimize
-
+from core import callback as cb
 import grove
 import pyquil
 
@@ -44,12 +44,15 @@ vqe = vqe_override.VQE_override(minimizer=minimize,
                                                   'options': disp_options})
 start = time.time()
 energies = vqe_eig.smallest(H, qc, initial_params, vqe,
-                                ansatz_=ansatz_,
-                                samples=None)['fun']
+                            ansatz_=ansatz_,
+                            samples=200, disp=True,
+                            callback=cb.restart_on_same_param(5, 1e-3,
+                                                              disp=True),
+                            attempts=5)['fun']
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies.tolist()])
 # pprint.pprint([round(x, 3) for x in sorted(energies)])
-pprint.pprint(energies)
+pprint.pprint("energy: " + str(energies))
 print('time: \n:', end - start)
 
 '''
