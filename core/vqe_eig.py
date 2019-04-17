@@ -28,47 +28,12 @@ def smallest(H, qc, initial_params, vqe,
     :return: depending on return_all_data, either dict or only eigvect and param
                 value
     """
-    if ansatz_ is None:
-        # Default
-        ansatz_ = ansatz.multi_particle
 
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       disp=disp_run_info, return_all=True)
 
     eig['fun'], _ = vqe.expectation(ansatz_(eig['x']), H,
                                     samples=samples, qc=qc)
-    return eig
-
-
-def smallest_bayes(H, qc,
-                   dimension,
-                   vqe, ansatz_,
-                   samples=None,
-                   disp_run_info=True):
-    """
-    Finds the smallest eigenvalue using a Bayesian optimization algoritm.
-    @author: Axel, Eric
-
-    TODO: Go into VQEOverride and look at what you can return, because now
-    we are not getting the data from the Bayesian Optimization returned, only
-    the exp_val, parameter and variance.
-
-    :param H: PauliSum of hamiltonian
-    :param qc: either qc or qvm object, depending on version
-    :param dimension: A list of tuples, with the intervals for the parameters
-    :param ansatz_: ansatz function
-    :param samples: Number of samples on the qc
-    :param disp_run_info: Displays all data during the run. (It is ALOT)
-
-    :return: list of energies or all data from all opttimization runs.
-    """
-
-    eig = vqe.vqe_run(ansatz_, H, dimension, samples=samples, qc=qc,
-                      disp=disp_run_info, return_all=True)
-
-    eig['fun'], _ = vqe.expectation(ansatz_(eig['x']), H,
-                                    samples=samples, qc=qc)
-
     return eig
 
 
