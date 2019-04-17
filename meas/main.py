@@ -3,7 +3,7 @@ Created on Fri Mar  8 16:12:38 2019
 
 @author: kajoel
 """
-from core import vqe_eig_new, vqe_override, matrix_to_op
+from core import vqe_eig, vqe_override, matrix_to_op
 from core import lipkin_quasi_spin
 import pprint
 from pyquil import get_qc
@@ -43,7 +43,7 @@ vqe = vqe_override.VQE_override(minimizer=minimize,
                                                       opt_algorithm,
                                                   'options': disp_options})
 start = time.time()
-energies = vqe_eig_new.smallest(H, qc, initial_params, vqe,
+energies = vqe_eig.smallest(H, qc, initial_params, vqe,
                                 ansatz_=ansatz_,
                                 samples=None)['fun']
 end = time.time()
