@@ -84,7 +84,7 @@ iters = 5
 
 i = 1
 
-for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
+for j, ansatz_name in itertools.product(range(3, 6), ansatz_types):
 
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
@@ -93,8 +93,7 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
     samples = np.linspace(500, 10000 * len(H), 100)
 
-    for sample, max_para, iter in itertools.product(samples, max_params,
-                                                    range(1, iters)):
+    for sample, max_para in itertools.product(samples, max_params):
 
         sample = int(round(sample))
 
@@ -136,8 +135,8 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
             result['samples'] = sample
             data_[iter] = result
 
-        file = 'NelderMead_Restart_j={}_samples={}_maxpara={}.pkl' \
-            .format(j, sample, max_para)
+        file = 'NelderMead_Restart_j={}_samples={}_ansatz={}_maxpara={}.pkl' \
+            .format(j, sample, ansatz_name, max_para)
 
         metadata = {'info': 'NelderMead Restart', 'j': j, 'matrix': matrix,
                     'ansatz': ansatz_name, 'initial_params': initial_params,
