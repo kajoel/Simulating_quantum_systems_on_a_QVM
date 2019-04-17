@@ -78,7 +78,7 @@ def bayes_iteration_sweep(h,
     # Calculates a facit with sample=None
     '''
     vqe = create_vqe.default_nelder_mead()
-    facit = vqe_eig(H, qc, vqe, init_params.alternate(dim_h),ansatz_, 
+    facit = vqe_eig(H, qc, vqe, init_params.alternate(h.shape[0]),ansatz_, 
                             disp_run_info=False)
     '''
 
