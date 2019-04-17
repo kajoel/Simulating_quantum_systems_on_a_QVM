@@ -13,6 +13,8 @@ from forestopenfermion import qubitop_to_pyquilpauli
 from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
 from typing import Callable, List, Union
+from pyquil import get_qc
+
 
 
 def one_particle(h: np.ndarray):
@@ -213,6 +215,15 @@ def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
         return prog
 
     return wrap
+
+# ################## ANSATZ RELATED QC:s #######################
+
+def one_particle_qc(h: np.ndarray):
+    return get_qc('{}q-qvm'.format(h.shape[0]))
+
+
+def multi_particle_qc(h: np.ndarray):
+    return get_qc('{}q-qvm'.format(int.bit_length(h.shape[0])))
 
 
 # ################## ANSATZ RELATED FUNCTIONS ##################
