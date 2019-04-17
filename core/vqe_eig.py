@@ -8,7 +8,7 @@ from core import vqe_override
 def smallest(H, qc, initial_params, vqe,
              ansatz_,
              samples=None,
-             disp_run_info=True):
+             disp=True):
     """
     TODO: Fix this documentation. Below is not up to date.
 
@@ -22,7 +22,7 @@ def smallest(H, qc, initial_params, vqe,
     :param vqe: Quantum variational eigensolver object
     :param ansatz_: ansatz function
     :param samples: number of samples on the qc
-    :param disp_run_info: displays run info from vqe_run
+    :param disp: displays run info from vqe_run
 
 
     :return: depending on return_all_data, either dict or only eigvect and param
@@ -34,7 +34,7 @@ def smallest(H, qc, initial_params, vqe,
                                             / np.sqrt(samples)
 
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
-                      disp=disp_run_info, return_all=True)
+                      disp=disp, return_all=True)
 
     eig['fun'], _ = vqe.expectation(ansatz_(eig['x']), H,
                                     samples=samples, qc=qc)
@@ -85,7 +85,7 @@ def negative(h, qc, ansatz_, vqe, parameters, samples,
         else:
             eig = smallest(H, qc, ansatz_=ansatz_, vqe=vqe, samples=samples,
                            initial_params=parameters,
-                           disp_run_info=disp_run_info)
+                           disp=disp_run_info)
         if eig['fun'] >= 0:
             if num_eigvals != h.shape[0]:
                 print('Warning: Unable to find '

@@ -88,9 +88,9 @@ def bayes_iteration_sweep(h,
         temp_data=np.zeros( (3, measurments_per_step) )
         for j in range(measurments_per_step):
     
-            run_data = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, 
-                                        samples,  
-                                        disp_run_info=disp_data_during_run)
+            run_data = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_,
+                                        samples,
+                                        disp=disp_data_during_run)
     
             temp_data[0,j] = run_data['fun']
             temp_data[1,j] = np.linalg.norm(run_data['x']-facit[1])
