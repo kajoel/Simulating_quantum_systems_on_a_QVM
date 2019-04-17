@@ -231,7 +231,7 @@ def run_bayes_iteration_sweep(j, samples, V=1, i=0, multi = True, ucc = False):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    for samples in range(500,2501,500):
+    for samples in range(1000,2501,500):
         run_bayes_iteration_sweep(1, samples)
-        plt.show()
+    plt.show()
 
