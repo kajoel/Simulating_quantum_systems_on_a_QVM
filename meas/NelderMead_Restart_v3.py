@@ -8,9 +8,9 @@ from pyquil import get_qc
 from scipy.optimize import minimize
 from core import ansatz
 from core import matrix_to_op
-from core import vqe_eig
+from core import vqe_eig_new
 from core import init_params
-from core import vqeOverride
+from core import vqe_override
 from core import data
 import itertools
 from constants import ROOT_DIR
@@ -27,33 +27,33 @@ def ansatz_type(ansatz_name, h, dim):
     if ansatz_name == 'one_particle':
         qc = get_qc(str(h.shape[0]) + 'q-qvm')
         H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle(dim)
+        ansatz_ = ansatz.one_particle(h)
         initial_params = init_params.alternate(dim)
 
     elif ansatz_name == 'one_particle_ucc':
         qc = get_qc(str(h.shape[0]) + 'q-qvm')
         H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle_ucc(dim)
+        ansatz_ = ansatz.one_particle_ucc(h)
         initial_params = init_params.ucc(dim)
 
     elif ansatz_name == 'multi_particle':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
         H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle(dim)
+        ansatz_ = ansatz.multi_particle(h)
         initial_params = init_params.alternate(dim)
 
     elif ansatz_name == 'multi_particle_ucc':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
         H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle_ucc(dim)
+        ansatz_ = ansatz.multi_particle_ucc(h)
         initial_params = init_params.ucc(dim)
 
     return H, qc, ansatz_, initial_params
 
 
 def fatol_var(ansatz_, initial_params, H, samples, qc):
-    vqe = vqeOverride.VQE_override(minimizer=minimize,
-                                   minimizer_kwargs={'method': 'NelderMead'})
+    vqe = vqe_override.VQE_override(minimizer=minimize,
+                                    minimizer_kwargs={'method': 'Nelder-Mead'})
 
     _, var = vqe.expectation(ansatz_(initial_params), H, samples=samples, qc=qc)
     return 2 * np.sqrt(var)
@@ -98,26 +98,35 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
         sample = int(round(sample))
 
-        facit = vqe_eig.smallest(H, qc, initial_params, ansatz_, disp=False)[1]
         fatol = fatol_skattning(sample, H)
 
         data_ = {}
 
+        disp_options = {'disp': False, 'xatol': xatol,
+                        'fatol': fatol,
+                        'maxiter': max_iter}
+
+        vqe = vqe_override.VQE_override(minimizer=minimize,
+                                        minimizer_kwargs={'method':
+                                                              'Nelder-Mead',
+                                                          'options': disp_options})
+        facit = vqe_eig_new.smallest(H, qc, initial_params, vqe, ansatz_,
+                                     disp_run_info=True)['fun']
         for iter in range(iters):
             print('\nLoop: j = {}, ansatz_name = {}, samples = {}, \
-max_para = {}, fatol = {}, iteration = {}/{}'\
-            .format( j, ansatz_name, sample, max_para, round(fatol,3), iter + 1, iters))
+max_para = {}, fatol = {}, iteration = {}/{}' \
+                  .format(j, ansatz_name, sample, max_para, round(fatol, 3),
+                          iter + 1, iters))
 
-            result = vqe_eig.smallest_restart(H, qc, initial_params, ansatz_,
-                                              sample,
-                                              max_para=max_para,
-                                              max_iter=max_iter,
-                                              tol_para=tol_para,
-                                              increase_samples=increase_samples,
-                                              xatol=xatol,
-                                              fatol=fatol,
-                                              disp=False,
-                                              disp_iter=False)
+            result = vqe_eig_new.smallest_restart(H, qc, initial_params, vqe,
+                                                  ansatz_,
+                                                  sample,
+                                                  max_para=max_para,
+                                                  max_iter=max_iter,
+                                                  tol_para=tol_para,
+                                                  increase_samples=increase_samples,
+                                                  disp=True,
+                                                  disp_iter=True)
 
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,

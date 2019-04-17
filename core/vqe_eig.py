@@ -8,7 +8,7 @@ from skopt import gp_minimize
 
 # Imports for VQE
 from scipy.optimize import minimize
-from core import ansatz, vqeOverride
+from core import ansatz, vqe_override
 from core import init_params
 from core import matrix_to_op
 from core import callback
@@ -106,7 +106,7 @@ def smallest_restart(H, qc, initial_params,
                            < tol_para
             if bool_tmp:
                 # raise RestartError(params[-1])
-                raise vqeOverride.BreakError()
+                raise vqe_override.BreakError()
 
     if ansatz_ is None:
         ansatz_ = ansatz.multi_particle
@@ -163,15 +163,8 @@ def smallest_bayes(H, qc,
                    n_calls=30,
                    n_random_starts=5,
                    random_state=123,
-                   x0=None):
-                   samples=None,
-                   return_all_data=False,
-                   disp=True,
-                   acq_func="gp_hedge",
-                   n_calls=30,
-                   n_random_starts=5,
-                   random_state=123,
-                   x0=None):
+                   x0=None,
+                   return_all_data=False):
     """
     Finds the smallest eigenvalue using a Bayesian optimization algoritm.     
     @author: Axel

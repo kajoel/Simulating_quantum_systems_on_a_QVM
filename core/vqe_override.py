@@ -1,7 +1,5 @@
 """
 @author: Sebastian (fast självklart 99% rigetti, jag bara modifierade den)
-"""
-"""
 Updated vqe_expectation och expectation from sampling,
 @author Eric utöver Rigetti
 

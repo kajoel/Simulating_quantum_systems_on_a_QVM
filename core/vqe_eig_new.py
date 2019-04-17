@@ -1,16 +1,12 @@
 import numpy as np
-from skopt import gp_minimize
-
 # Imports for VQE
-from scipy.optimize import minimize
 from core import ansatz
-from core import init_params
 from core import matrix_to_op
 from core import vqe_override
 
 
 def smallest(H, qc, initial_params, vqe,
-             ansatz_=None,
+             ansatz_,
              samples=None,
              disp_run_info=True):
     """
@@ -77,7 +73,7 @@ def smallest_bayes(H, qc,
 
 
 def smallest_restart(H, qc, initial_params, vqe,
-                     ansatz_=None,
+                     ansatz_,
                      samples=None,
                      max_para=7,
                      max_iter=10,
