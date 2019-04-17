@@ -156,15 +156,15 @@ class VQE_override(VQE):
         if 'jac' in arguments:
             self.minimizer_kwargs['jac'] = jacobian
 
+        results = OptResults()
+        results.status = 0
         for attempt_dummy in range(attempts):
             break_ = True
             try:
                 result = self.minimizer(*args, **self.minimizer_kwargs)
             except BreakError:
-                results = OptResults()
                 results.x = iteration_params[-1]
                 results.fun = expectation_vals[-1]
-                results.fun_evals = fun_evals
             except RestartError as e:
                 break_ = False
                 args[1] = iteration_params[-1]
@@ -177,7 +177,6 @@ class VQE_override(VQE):
                             "Classical optimization exited with an error index: %i"
                             % result.status)
 
-                results = OptResults()
                 if hasattr(result, 'x'):
                     results.x = result.x
                     results.fun = result.fun
@@ -186,6 +185,13 @@ class VQE_override(VQE):
                     results.fun = expectation_vals[-1]
             if break_:
                 break
+        else:
+            results.x = iteration_params[-1]
+            results.fun = expectation_vals[-1]
+            results.status = 1
+            if disp:
+                print("Restarts exceeded maximum of %i attempts and run was "
+                      "terminated." % attempts)
 
         if return_all:
             # iteration_params.append(result['x'][0])

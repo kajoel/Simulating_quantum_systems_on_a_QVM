@@ -28,7 +28,7 @@ def merge_callbacks(*args):
     return callback
 
 
-def restart_on_same_param(max_para, tol_para):
+def restart_on_same_param(max_para, tol_para, disp = False):
     '''
     @author: Sebastian
     :param max_para:
@@ -43,6 +43,7 @@ def restart_on_same_param(max_para, tol_para):
                 bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
                            < tol_para
             if bool_tmp:
+                if disp: print("Restarting")
                 raise RestartError
 
     return same_parameter
