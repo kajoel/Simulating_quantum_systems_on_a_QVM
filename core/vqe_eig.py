@@ -13,8 +13,7 @@ from core import matrix_to_op
 from core import callback
 
 
-def smallest(H, qc, initial_params,
-             ansatz_=None,
+def smallest(H, qc, initial_params, ansatz_,
              samples=None,
              opt_algorithm='Nelder-Mead',
              maxiter=10000,
@@ -38,9 +37,7 @@ def smallest(H, qc, initial_params,
     :return: list of energies
     """
 
-    if ansatz_ is None:
-        ansatz_ = ansatz.multi_particle
-
+    
     # All options to Nelder-Mead
     disp_options = {'disp': display_after_run, 'xatol': xatol, 'fatol': fatol,
                     'maxiter': maxiter}
@@ -170,7 +167,7 @@ def smallest_bayes(H, qc,
                    n_calls = 30,          
                    n_random_starts= 2,         
                    random_state = 123,
-                   x0 = None ):
+                   n_jobs = 1 ):
 
     """
     Finds the smallest eigenvalue using a Bayesian optimization algoritm.     
@@ -203,7 +200,8 @@ def smallest_bayes(H, qc,
     opt_options = {'acq_func': acq_func,
                    'n_calls': n_calls,
                    'n_random_starts': n_random_starts,
-                   'random_state': random_state}
+                   'random_state': random_state, 
+                   'n_jobs': n_jobs}
 
     vqe = vqeOverride.VQE_override(minimizer=gp_minimize,
                                    minimizer_kwargs=opt_options)
