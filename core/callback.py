@@ -5,7 +5,7 @@ future compatibility.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from core.vqeOverride import BreakError
+from core.vqe_override import BreakError
 
 
 def merge_callbacks(*args):
