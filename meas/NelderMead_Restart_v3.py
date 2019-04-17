@@ -8,7 +8,7 @@ from pyquil import get_qc
 from scipy.optimize import minimize
 from core import ansatz
 from core import matrix_to_op
-from core import vqe_eig_new
+from core import vqe_eig
 from core import init_params
 from core import vqe_override
 from core import data
@@ -109,7 +109,7 @@ for j, ansatz_name in itertools.product(range(3, 6), ansatz_types):
                                         minimizer_kwargs={'method':
                                                               'Nelder-Mead',
                                                           'options': disp_options})
-        facit = vqe_eig_new.smallest(H, qc, initial_params, vqe, ansatz_,
+        facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
                                      disp_run_info=True)['fun']
         for iter in range(iters):
             print('\nLoop: j = {}, ansatz_name = {}, samples = {}, \
@@ -117,7 +117,7 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
                   .format(j, ansatz_name, sample, max_para, round(fatol, 3),
                           iter + 1, iters))
 
-            result = vqe_eig_new.smallest_restart(H, qc, initial_params, vqe,
+            result = vqe_eig.smallest_restart(H, qc, initial_params, vqe,
                                                   ansatz_,
                                                   sample,
                                                   max_para=max_para,
