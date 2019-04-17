@@ -114,8 +114,8 @@ class VQE_override(VQE):
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
             nonlocal fun_evals
-            fun_evals +=1
-            #print(fun_evals)
+            fun_evals += 1
+            # print(fun_evals)
 
             return mean_value
 
@@ -133,7 +133,6 @@ class VQE_override(VQE):
 
         # using self.minimizer
         arguments = funcsigs.signature(self.minimizer).parameters.keys()
-
 
         if callback is None:
             def callback(*args, **kwargs): pass
@@ -356,8 +355,8 @@ def expectation_from_sampling(pyquil_program: Program,
             exp_list.append(count)
         else:
             exp_list.append(-1 * count)
-    expectation = np.sum(exp_list) * (1/samples)
-    variance = (1 - expectation ** 2) * (1/samples)
+    expectation = np.sum(exp_list) * (1 / samples)
+    variance = (1 - expectation ** 2) * (1 / samples)
     return expectation, variance
 
 
@@ -374,6 +373,7 @@ class RestartError(Exception):
 
     Assumes that the optimizer takes a single vector as initial_params.
     """
+
     def __init__(self, samples=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.samples = samples
