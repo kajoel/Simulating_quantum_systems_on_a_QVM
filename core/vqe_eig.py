@@ -28,6 +28,10 @@ def smallest(H, qc, initial_params, vqe,
     :return: depending on return_all_data, either dict or only eigvect and param
                 value
     """
+    if samples is not None and vqe.minimizer.__name__ == 'gp_minimize':
+        vqe.minimizer_kwargs['noise'] = sum(np.abs(term.coefficient) 
+                                            for term in H.terms) \
+                                            / np.sqrt(samples)
 
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       disp=disp_run_info, return_all=True)

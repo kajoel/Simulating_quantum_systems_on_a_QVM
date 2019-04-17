@@ -8,7 +8,7 @@ Created on Ons 17 April 10:48 2019
 
 
 # Imports for the module
-from core import data, vqeOverride, vqe_eig, init_params, create_vqe
+from core import data, vqe_override, vqe_eig, init_params, create_vqe
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,7 +33,7 @@ def bayes_iteration_sweep(h,
                           measurments_per_step=3,
                           save_after_run=False, 
                           plot_after_run=True,
-                          disp_data_during_run=False,
+                          disp_data_during_run=True,
                           label = None,
                           ansatz_name=None, 
                           qubits = None,
@@ -76,28 +76,22 @@ def bayes_iteration_sweep(h,
     data_ = np.zeros( (5, len(num_evals)) )
     run_data = []
     # Calculates a facit with sample=None
-    '''
+    
     vqe = create_vqe.default_nelder_mead()
-    facit = vqe_eig(H, qc, vqe, init_params.alternate(h.shape[0]),ansatz_, 
-                            disp_run_info=False)
-    '''
-
-    facit= vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]),ansatz_)
+    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe, 
+                             ansatz_)
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
-        '''
-        vqe = create_vqe.default_bayes()
-
-        '''
-
+        vqe = create_vqe.default_bayes(n_calls=num_func_eval)
+        
         temp_data=np.zeros( (3, measurments_per_step) )
         for j in range(measurments_per_step):
-
-            run_data = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, 
-                                              samples, return_all_data=True, 
-                                              n_calls= num_func_eval, 
-                                              disp=disp_data_during_run)
+    
+            run_data = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, 
+                                        samples,  
+                                        disp_run_info=disp_data_during_run)
+    
             temp_data[0,j] = run_data['fun']
             temp_data[1,j] = np.linalg.norm(run_data['x']-facit[1])
             temp_data[2,j] = run_data['expectation_vars']

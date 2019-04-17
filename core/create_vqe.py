@@ -1,4 +1,4 @@
-from core import vqeOverride
+from core import vqe_override
 from scipy.optimize import minimize
 from skopt import gp_minimize
 
@@ -16,7 +16,7 @@ def default_nelder_mead(xatol=1e-2, fatol=1e-2, return_all = False, maxiter =
     disp_options = {'disp': False, 'xatol': xatol, 'fatol': fatol,
                     'maxiter': maxiter, 'return_all': return_all}
 
-    return vqeOverride.VQE_override(minimizer=minimize,
+    return vqe_override.VQE_override(minimizer=minimize,
                                    minimizer_kwargs={'method': 'Nelder-Mead',
                                                      'options': disp_options})
 
@@ -44,8 +44,11 @@ def default_bayes(acq_func = "gp_hedge",
                    'random_state': random_state, 
                    'n_jobs': n_jobs}
 
-    return vqeOverride.VQE_override(minimizer=gp_minimize,
+    return vqe_override.VQE_override(minimizer=gp_minimize,
                                     minimizer_kwargs=opt_options)
+    
+if __name__ == '__main__':
+    default_bayes()
     
 
 
