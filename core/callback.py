@@ -5,7 +5,9 @@ future compatibility.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from core.vqe_override import BreakError
+
+from core import vqe_override
+from core.vqe_override import BreakError, RestartError
 
 
 def merge_callbacks(*args):
@@ -26,7 +28,33 @@ def merge_callbacks(*args):
     return callback
 
 
+def restart_on_same_param(max_para, tol_para):
+    '''
+    @author: Sebastian
+    :param max_para:
+    :param tol_para:
+    :return: callback function which can be passed to VQE.
+    '''
+
+    def same_parameter(params, *args, **kwargs):
+        if len(params) > max_para - 1:
+            bool_tmp = True
+            for x in range(2, max_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                           < tol_para
+            if bool_tmp:
+                raise RestartError
+
+    return same_parameter
+
+
 def scatter(**kwargs):
+    '''
+    @author: Sebastian
+    :param kwargs:
+    :return: callback function which can be passed to VQE.
+    '''
+
     def callback(x, y, *_, **__):
         plt.clf()
         plt.scatter(x, y, **kwargs)
@@ -44,7 +72,7 @@ def stop_dynamically(xatol, fatol):
 
     :param xatol:
     :param fatol:
-    :return:
+    :return: callback function which can be passed to VQE.
     """
 
     def callback(params, exps, *_, **__):
@@ -76,7 +104,7 @@ def is_on_same_parameter():
     @author = Sebastian
 
     Demonstrates that Nelder-Mead does get stuck on the exact same parameter
-    :return:
+    :return: callback function which can be passed to VQE.
     '''
 
     def callback(params, *_, **__):
@@ -93,7 +121,7 @@ def stop_if_stuck_x_times(x, tol=0):
     @author = Sebastian
 
     :param x:
-    :return:
+    :return: callback function which can be passed to VQE.
     '''
 
     def callback(params, *args, **kwargs):
@@ -107,3 +135,23 @@ def stop_if_stuck_x_times(x, tol=0):
                 raise BreakError
 
     return callback
+
+
+def trigger_only_every_x_iter(x, callback):
+    '''
+
+    @author: Sebastian
+
+    :param x: nums of iters to wait before calling callback
+    :param callback:
+    :return: callback function which can be passed to VQE.
+    '''
+    n = 0
+
+    def callback2(*args, **kwargs):
+        nonlocal n
+        n = (n + 1) % x
+        if n == 0:
+            callback(*args, **kwargs)
+
+    return callback2

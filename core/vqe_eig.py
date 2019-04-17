@@ -44,8 +44,6 @@ def smallest_restart(H, qc, initial_params, vqe,
                      max_iter=10,
                      tol_para=1e-4,
                      increase_samples=0,
-                     maxiter=10000,
-                     display_after_run=False,
                      disp = False,
                      disp_iter = False):
     """
