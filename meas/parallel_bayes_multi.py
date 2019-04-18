@@ -42,103 +42,37 @@ vqe_nm = create_vqe.default_nelder_mead()
 
 if case == 0:
     h = lipkin_quasi_spin.hamiltonian(1,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 1:
     h = lipkin_quasi_spin.hamiltonian(2,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 2:
     h = lipkin_quasi_spin.hamiltonian(2,1)[1]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 3:
     h = lipkin_quasi_spin.hamiltonian(3,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 4:
     h = lipkin_quasi_spin.hamiltonian(3,1)[1]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 5:
     h = lipkin_quasi_spin.hamiltonian(4,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 6:
     h = lipkin_quasi_spin.hamiltonian(4,1)[1]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 7:
     h = lipkin_quasi_spin.hamiltonian(5,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 8:
     h = lipkin_quasi_spin.hamiltonian(5,1)[1]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 9:
     h = lipkin_quasi_spin.hamiltonian(6,1)[0]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 elif case == 10:
     h = lipkin_quasi_spin.hamiltonian(6,1)[1]
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
-    temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
-    H = convvert_op(h)
-
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    
 else:
     raise ValueError('The case-defining input is to large.')
 
@@ -160,7 +94,7 @@ except FileNotFoundError:
             'qc_measurments': [],
             'result': []}
     metadata = {'description': 'Sweep over func evals with Bayesian optimizer. \
-                Cases are iterations over the value of j. Starting from ',
+                Cases are iterations over the value of j, from 1 to 6.',
                 'ansatz': ansatz.multi_particle.__name__, 
                 'minimizer': 'Bayesian Optimizer',
                 'time': [],  # Save times for analysis (modify if you wish)
@@ -170,10 +104,19 @@ except FileNotFoundError:
 # TODO: the function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
 def simulate(n_calls, samples):
+    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
+    temp_ansatz = ansatz_(h)
+    qc = ansatz.multi_particle_qc(h)
+    H = convvert_op(h)
+
+    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
+                             temp_ansatz, disp=False)
+    
     vqe = create_vqe.default_bayes(n_calls=n_calls)
+    
     result = np.zeros(3)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
-                              samples=samples, disp=False)
+                                samples=samples, disp=False)
     result[0] = np.linalg.norm(run_data['x']-facit['x'])
     result[1] = np.mean(run_data['expectation_vars'])
     result[2] = n_calls*samples
@@ -192,7 +135,7 @@ def input_iterate(case):
     num_para = h.shape[0] -1
 
     for n_calls in range(10, 30 + num_para*15, 5 + 5*(num_para-1)):
-        for samples in range(100, 2000*num_para, 250*num_para):
+        for samples in range(100, 250 + 2000*num_para, 250*num_para):
             inputs.append( (n_calls, samples) )
 
     return  inputs
