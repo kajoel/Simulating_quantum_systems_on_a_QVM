@@ -1,8 +1,8 @@
 """
-Recipe for long runs. This makes sure to save often and keeps the data in a
-single file.
+Long run of bayesin optimization that uses parallel computations. Uses the 
+multi_particle ansatz.
 
-@author = Joel
+@author: Recipe: Joel, filled in TODO: Axel
 """
 from core.data import save, load
 from os.path import join
@@ -17,8 +17,6 @@ from core import ansatz, vqe_eig, vqe_override, matrix_to_op, create_vqe, \
 import numpy as np
 
 
-# TODO: When writing a meas script, change (only) the parts marked by TODOs.
-
 if len(sys.argv) <= 1:
     case = 0
 else:
@@ -31,7 +29,7 @@ else:
 # Number of times each simulation is run, can be redefined in case below
 num_sim = 5
 
-# TODO: Set upp a few different cases that defines the run.
+#  Set upp a few different cases that defines the run.
 #  0 should be a light test case. These cases could have different minimizers,
 #  ansätze, etc.. (These are relatively constant; if you wan't to loop over a
 #  parameter, use input_iterate below instead.)
@@ -76,7 +74,7 @@ elif case == 10:
 else:
     raise ValueError('The case-defining input is to large.')
 
-# TODO: select directory and file to save to (the case is appended to the file).
+# Select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
 file = 'bayes_parallel_multi_particle'  # file to save to
 
@@ -87,7 +85,7 @@ try:
     # Try to load the file (will raise FileNotFoundError if not existing)
     data, metadata = load(path)
 except FileNotFoundError:
-    # TODO: Initialize data and metadata. Write description and add more
+    # Initialize data and metadata. Write description and add more
     #  metadata fields.
     data = {'para_error': [],
             'variance': [],
@@ -96,12 +94,12 @@ except FileNotFoundError:
     metadata = {'description': 'Sweep over func evals with Bayesian optimizer. \
                 Cases are iterations over the value of j, from 1 to 6.',
                 'ansatz': ansatz.multi_particle.__name__, 
-                'minimizer': 'Bayesian Optimizer',
+                'minimizer': 'Bayesian Optimizer', 'num_sim': num_sim,
                 'time': [],  # Save times for analysis (modify if you wish)
                 'count': 0}  # IMPORTANT! Don't touch!
 
 
-# TODO: the function that runs smallest. The inputs to this function is
+# The function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
 def simulate(n_calls, samples):
     dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
@@ -124,7 +122,7 @@ def simulate(n_calls, samples):
     return result
 
 
-# TODO: input parameters to iterate over, should yield tuples.
+# Input parameters to iterate over, should yield tuples.
 def input_iterate(case):
     # With the example simulate (above) this iterate is equivalent to
     # for x in range(1):
