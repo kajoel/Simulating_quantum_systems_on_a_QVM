@@ -29,7 +29,7 @@ else:
         warnings.warn('Could not parse input parameters. Using case=0')
 
 # Number of times each simulation is run, can be redefined in case below
-num_sim = 3
+num_sim = 5
 
 # TODO: Set upp a few different cases that defines the run.
 #  0 should be a light test case. These cases could have different minimizers,
@@ -144,7 +144,7 @@ else:
 
 # TODO: select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_run_one_particle'  # file to save to
+file = 'bayes_parallel_one_particle_ucc'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
@@ -170,14 +170,15 @@ except FileNotFoundError:
 # TODO: the function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
 def simulate(n_calls, samples):
+    print('Simulating start')
     vqe = create_vqe.default_bayes(n_calls=n_calls)
     result = np.zeros(3)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
-                              samples=samples, disp=False)
+                                samples=samples, disp=True)
     result[0] = np.linalg.norm(run_data['x']-facit['x'])
     result[1] = np.mean(run_data['expectation_vars'])
     result[2] = n_calls*samples
-
+    print('Simulating done')
     return result
 
 

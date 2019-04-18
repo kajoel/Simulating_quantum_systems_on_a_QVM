@@ -29,7 +29,7 @@ else:
         warnings.warn('Could not parse input parameters. Using case=0')
 
 # Number of times each simulation is run, can be redefined in case below
-num_sim = 3
+num_sim = 5
 
 # TODO: Set upp a few different cases that defines the run.
 #  0 should be a light test case. These cases could have different minimizers,
@@ -144,7 +144,7 @@ else:
 
 # TODO: select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_run_multi_particle'  # file to save to
+file = 'bayes_parallel_multi_particle'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
