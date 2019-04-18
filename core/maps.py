@@ -7,6 +7,12 @@ optimizes on K^N and Bayesian optimization is done on [a1, b1]x...x[aN, bN].
 """
 import numpy as np
 
+# TODO: uncomment or delete
+# Be aware that warnings for 1/0 or 0/0 won't be issued.
+# np.seterr(divide='ignore', invalid='ignore')
+
+MAX_NORM_LIMIT = 5000  # np.linalg.norm is unstable for larger norm-orders.
+
 
 def sphere_to_plane(x: np.ndarray, pole: int = 0) -> np.ndarray:
     """
@@ -118,17 +124,58 @@ def cube_to_ball_linear(x: np.ndarray) -> np.ndarray:
         return np.max(np.abs(x)) * x / x_norm
 
 
-def ball_to_cube_quadratic():
-    pass
+def ball_to_cube_norm(x: np.ndarray, k: float = 1.):
+    """
+    Stretching from ball to cube by mapping spheres of radius r (in 2-norm) to
+    a sphere with radius r^(2/p(r)) in p(r)-norm.
+
+    p(r) = k/((1 - r) * (1 + 2(k-1)r))
+
+    Note that p -> inf when r-> 1 (which is necessary to get a cube).
+
+    @author = Joel
+
+    :param x: Vector in ball.
+    :param k: Se p(r) above.
+    :return: Vector in cube.
+    """
+    r2 = np.linalg.norm(x, ord=2)
+    if r2 == 0:
+        return np.zeros(x.shape)
+    else:
+        p = np.true_divide(k, ((1 - r2) * (1 - 2*(k-1)*r2)))
+        if p > MAX_NORM_LIMIT:
+            p = np.inf
+        rp = np.linalg.norm(x, ord=p)
+
+        return_ = r2*x/rp
+        if any(np.abs(return_) == np.inf):
+            raise ValueError('wtf')
+
+        if any(np.isnan(return_)):
+            raise ValueError('wtf2')
+
+        return r2*x/rp
 
 
-def cube_to_ball_quadratic():
-    pass
+def cube_to_ball_norm(x: np.ndarray, k: float = 1.):
+    """
+    Kind of difficult to describe...
+
+    :param x: Vector in cube.
+    :param k: Float defining the transformation.
+    :return: Vector in ball.
+    """
+    r2 = np.linalg.norm(x, ord=2)
+    r_inf = np.linalg.norm(x, ord=np.inf)
+    if r_inf == 0:
+        return np.zeros(x.shape)
+    else:
+        p = 2*np.true_divide(k, ((1 - r_inf) * (1 - 2*(k-1)*r_inf)))
+        if p > MAX_NORM_LIMIT:
+            p = np.inf
+        rp = np.linalg.norm(x, ord=p)
+
+        return rp*x/r2
 
 
-def cube_to_ball_ellipsis():
-    pass
-
-
-def ball_to_cube_ellipsis():
-    pass

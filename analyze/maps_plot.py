@@ -471,7 +471,9 @@ def _main_1():
 
 
 if __name__ == '__main__':
-    _main_1()
-    plt.show()
+    # _main_1()
+    ball_cube_2d_2(lambda x: maps.ball_to_cube_norm(x, k=1),
+                   lambda x: maps.cube_to_ball_norm(x, k=1))
+    # plt.show()
 
 
