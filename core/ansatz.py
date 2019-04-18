@@ -16,7 +16,6 @@ from typing import Callable, List, Union
 from pyquil import get_qc
 
 
-
 def one_particle(h: np.ndarray):
     """
     Creates a function(theta) that creates a program to set up an arbitrary
@@ -216,13 +215,17 @@ def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
 
     return wrap
 
+
 # ################## ANSATZ RELATED QC:s #######################
 
+
 def one_particle_qc(h: np.ndarray):
+    # TODO: doc
     return get_qc('{}q-qvm'.format(h.shape[0]))
 
 
 def multi_particle_qc(h: np.ndarray):
+    # TODO: doc
     return get_qc('{}q-qvm'.format(int.bit_length(h.shape[0])))
 
 
