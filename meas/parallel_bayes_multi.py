@@ -34,7 +34,7 @@ num_sim = 5
 #  ansätze, etc.. (These are relatively constant; if you wan't to loop over a
 #  parameter, use input_iterate below instead.)
 
-ansatz_ = ansatz.multi_particle
+ansatz_ = ansatz.multi_particle_stereographic
 convert_op = matrix_to_op.multi_particle
 
 if case == 0:
@@ -108,8 +108,8 @@ def simulate(n_calls, samples):
     H = convert_op(h)
 
     vqe_nm = create_vqe.default_nelder_mead()
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
-                             temp_ansatz, disp=False)
+    facit = vqe_eig.smallest(H, qc, init_params.alternate_stereographic(h),
+                             vqe_nm, temp_ansatz, disp=False)
     
     vqe = create_vqe.default_bayes(n_calls=n_calls)
     
