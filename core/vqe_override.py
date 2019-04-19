@@ -272,11 +272,15 @@ class VQE_override(VQE):
                 expectation = np.sum(result_overlaps)
                 return expectation.real, 0.0
             else:
-                if not isinstance(samples, int):
-                    raise TypeError("samples variable must be an integer")
-                if samples <= 0:
+                # if not isinstance(samples, int):
+                #     raise TypeError("samples variable must be an integer")
+                if isinstance(samples, int):
+                    coeffs = np.array(
+                        [term.coefficient for term in pauli_sum.terms])
+                    samples = calc_samples(samples, coeffs)
+                if samples.sum() <= 0:
                     raise ValueError(
-                        "samples variable must be a positive integer")
+                        "total samples must be a positive integer")
 
                 # normal execution via fake sampling
                 # stores the sum of contributions to the energy from
