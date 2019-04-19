@@ -14,7 +14,7 @@ from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
 from typing import Callable, List, Union
 from pyquil import get_qc
-
+import warnings
 
 def one_particle(h: np.ndarray):
     """
@@ -55,6 +55,11 @@ def multi_particle(h: np.ndarray):
     :return: function(theta) -> pyquil program setting up the state.
     """
     dim = h.shape[0]
+
+    warnings.warn('\nThis function (ansatz.multi_particle) is deprecated '
+                  'in favor of\nmulti_particle_stereographic. Make sure to '
+                  'switch to appropriate\ninit_params as well, e.g. '
+                  'alternate_stereographic.')
 
     def wrap(theta: np.ndarray):
         """
