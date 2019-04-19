@@ -7,10 +7,6 @@ optimizes on K^N and Bayesian optimization is done on [a1, b1]x...x[aN, bN].
 """
 import numpy as np
 
-# TODO: uncomment or delete
-# Be aware that warnings for 1/0 or 0/0 won't be issued.
-# np.seterr(divide='ignore', invalid='ignore')
-
 MAX_NORM_LIMIT = 5000  # np.linalg.norm is unstable for larger norm-orders.
 
 
@@ -26,6 +22,7 @@ def sphere_to_plane(x: np.ndarray, pole: int = 0) -> np.ndarray:
     :param pole: Index of the pole axis.
     :return: Mapped vector in (n-1)-plane (K^(n-1)).
     """
+    x = np.array(x, copy=False)
     # Pole vector:
     r = np.zeros(x.shape[0])
     r[pole] = 1
@@ -46,6 +43,7 @@ def plane_to_sphere(x: np.ndarray, pole: int = 0) -> np.ndarray:
     :param pole: Index of the pole axis.
     :return: Mapped vector on n-sphere.
     """
+    x = np.array(x, copy=False)
     # Pole vector:
     r = np.zeros(x.shape[0]+1)
     r[pole] = 1
@@ -147,13 +145,6 @@ def ball_to_cube_norm(x: np.ndarray, k: float = 1.):
         if p > MAX_NORM_LIMIT:
             p = np.inf
         rp = np.linalg.norm(x, ord=p)
-
-        return_ = r2*x/rp
-        if any(np.abs(return_) == np.inf):
-            raise ValueError('wtf')
-
-        if any(np.isnan(return_)):
-            raise ValueError('wtf2')
 
         return r2*x/rp
 

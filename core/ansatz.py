@@ -5,6 +5,7 @@ Created on Mon Mar  4 10:50:49 2019
 # Imports
 from core import maps
 import numpy as np
+from scipy import sparse
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner, \
@@ -84,7 +85,7 @@ def multi_particle_stereographic(h: np.ndarray):
     :param h: The hamiltonian matrix.
     :return: function(theta) -> pyquil program setting up the state.
     """
-    pole = int(np.argmax(np.diag(h)))
+    pole = int(np.argmax(h.diagonal()))
 
     def wrap(theta):
         """

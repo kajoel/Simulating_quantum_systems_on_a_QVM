@@ -34,7 +34,7 @@ def alternate_stereographic(h):
     """
     state = np.array([(-1) ** i for i in range(h.shape[0])]) \
         / np.sqrt(h.shape[0])
-    pole = int(np.argmax(np.diag(h)))
+    pole = int(np.argmax(h.diagonal()))
     return maps.sphere_to_plane(state, pole=pole)
 
 
