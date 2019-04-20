@@ -100,21 +100,20 @@ except FileNotFoundError:
 def simulate(n_calls, samples):
     dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
     temp_ansatz = ansatz_(h)
-    qc = ansatz.multi_particle_qc(h)
+    qc = ansatz.one_particle_qc(h)
     H = convert_op(h)
 
     vqe_nm = create_vqe.default_nelder_mead()
-    facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe_nm, 
+    facit = vqe_eig.smallest(H, qc, init_params.ucc(h.shape[0]), vqe_nm,
                              temp_ansatz, disp=False)
    
     vqe = create_vqe.default_bayes(n_calls=n_calls)
     
-    result = np.zeros(3)
+    result = np.zeros(2)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
                                 samples=samples, disp=False)
     result[0] = np.linalg.norm(run_data['x']-facit['x'])
     result[1] = np.mean(run_data['expectation_vars'])
-    result[2] = n_calls*samples
 
     return result
 
@@ -165,7 +164,7 @@ with Pool(num_workers, maxtasksperchild=1) as p:
             stop_time = perf_counter()  # TODO: remove if you don't want time
 
             # TODO: add the results to the data object
-            
+
             data['para_error'].extend(result[i][0] for i in range(len(result)))
             data['variance'].extend(result[i][1] for i in range(len(result)))
             data['n_calls'].extend([inputs[0]] * num_sim)
@@ -175,5 +174,5 @@ with Pool(num_workers, maxtasksperchild=1) as p:
             # Update metadata['count'] and save file:
             metadata['count'] = count
             # TODO: remove (the line below) if you don't want time (time in s)
-            metadata['time'].append(stop_time-start_time)
+            metadata['time'].append(stop_time - start_time)
             save(path, data, metadata)

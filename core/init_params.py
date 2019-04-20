@@ -61,7 +61,7 @@ def ucc(size):
     :return: array of ones of proper length
     :rtype: np.ndarray
     """
-    return np.array([(-1) ** (i) for i in range(size - 1)]) / np.sqrt(size)
+    return np.array([(-1) ** i for i in range(size - 1)]) / np.sqrt(size)
 
 
 def zeros(size):
