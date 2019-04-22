@@ -54,15 +54,40 @@ for sample, k in itertools.product(samples, range(1, 4)):
 
 
 colors = ['k', 'b', 'r', 'g']
+fontsize = 10
+
+fel_mean = [np.zeros([20,3]) for i in range(4)]
+
+for ansatz in range(4):
+    for i, row in enumerate(fel[ansatz]):
+        fel_mean[ansatz][i, 0] = np.mean(row[0:2])
+        fel_mean[ansatz][i, 1] = np.mean(row[3:5])
+        fel_mean[ansatz][i, 2] = np.mean(row[6:8])
+
+
+fun_evals_mean = [np.zeros([20,3]) for i in range(4)]
+
+for ansatz in range(4):
+    for i, row in enumerate(fun_evals[ansatz]):
+        fun_evals_mean[ansatz][i, 0] = np.mean(row[0:2])
+        fun_evals_mean[ansatz][i, 1] = np.mean(row[3:5])
+        fun_evals_mean[ansatz][i, 2] = np.mean(row[6:8])
 
 for fig in range(3):
     plt.figure(fig)
     for ansatz in range(4):
-        plt.scatter(samples * len_H[ansatz][:, fig * 3],
-                    fel[ansatz][:, fig * 3], color=colors[ansatz],
+        plt.scatter(samples * len_H[ansatz][:, fig * 3] * fun_evals_mean[ansatz][:, fig],
+                    fel_mean[ansatz][:, fig], color=colors[ansatz],
                     label=ansatz_types[ansatz])
-    plt.title('Max values at same parameter: {}'.format(fig+3))
+
+    plt.title('j = 1, Size of matrix = 2, Max values at same parameter: {}\
+    \n(Mean of 3 measurements)'.format(fig+3), fontsize=fontsize)
+    plt.xlabel('Antal mätning', fontsize=fontsize)
+    plt.ylabel('Parameterfel', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize-2)
+    plt.yticks(fontsize=fontsize-2)
+    plt.ticklabel_format(useOffset=False, style='plain')
     plt.legend()
-    plt.xlim(0, 100000)
+    #plt.xlim(0, 100000)
 
 plt.show()

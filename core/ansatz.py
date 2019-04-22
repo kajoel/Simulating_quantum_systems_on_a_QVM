@@ -12,6 +12,9 @@ from forestopenfermion import qubitop_to_pyquilpauli
 from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
 from typing import Callable, List, Union
+from core import matrix_to_op
+from core import init_params
+from pyquil.api import get_qc
 
 
 def one_particle(dim: int):
@@ -283,3 +286,47 @@ def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
         return prog
 
     return wrap
+
+
+def ansatz_type(ansatz_name, h, dim, initial_params=None):
+    """
+    @author: Carl
+
+    :param ansatz_name:
+    :param h:
+    :param dim:
+    :param initial_params:
+    :return:
+    """
+    if ansatz_name == 'one_particle':
+        qc = get_qc(str(h.shape[0]) + 'q-qvm')
+        H = matrix_to_op.one_particle(h)
+        ansatz_ = one_particle(dim)
+        if init_params == None:
+            initial_params = init_params.alternate(dim)
+
+    elif ansatz_name == 'one_particle_ucc':
+        qc = get_qc(str(h.shape[0]) + 'q-qvm')
+        H = matrix_to_op.one_particle(h)
+        ansatz_ = one_particle_ucc(dim)
+        if init_params == None:
+            initial_params = init_params.ucc(dim)
+
+    elif ansatz_name == 'multi_particle':
+        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
+        H = matrix_to_op.multi_particle(h)
+        ansatz_ = multi_particle(dim)
+        if init_params == None:
+            initial_params = init_params.alternate(dim)
+
+    elif ansatz_name == 'multi_particle_ucc':
+        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
+        H = matrix_to_op.multi_particle(h)
+        ansatz_ = multi_particle_ucc(dim)
+        if init_params == None:
+            initial_params = init_params.ucc(dim)
+
+    else:
+        H, qc, ansatz_ = None, None, None
+
+    return H, qc, ansatz_, initial_params
