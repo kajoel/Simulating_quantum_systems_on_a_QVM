@@ -1,5 +1,4 @@
 """
-
 @author = Sebastian, Carl
 """
 import numpy as np
@@ -8,6 +7,7 @@ from pyquil import get_qc
 from core import matrix_to_op, ansatz, init_params, create_vqe, vqe_eig
 from core.data import save, load
 from os.path import join
+from constants import ROOT_DIR
 import os
 import sys
 from multiprocessing import Pool
@@ -17,6 +17,13 @@ from time import perf_counter
 from core import callback as cb
 
 from core.lipkin_quasi_spin import hamiltonian, eigs
+
+###################### FUNCTIONS ######################
+
+def fatol_skattning(sample, H):
+    return sum(np.abs(term.coefficient) for term in H.terms) / np.sqrt(sample)
+
+######################################################
 
 if len(sys.argv) <= 1:
     case = 0
@@ -31,39 +38,6 @@ else:
 # Number of times each simulation is run, can be redefined in case below
 num_sim = 10
 
-
-def fatol_skattning(sample, H):
-    return sum(np.abs(term.coefficient) for term in H.terms) / np.sqrt(sample)
-
-
-def ansatz_type(ansatz_name, h, dim):
-    if ansatz_name == 'one_particle':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle(h)
-        initial_params = init_params.alternate(dim)
-
-    elif ansatz_name == 'one_particle_ucc':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle_ucc(h)
-        initial_params = init_params.ucc(dim)
-
-    elif ansatz_name == 'multi_particle':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle(h)
-        initial_params = init_params.alternate(dim)
-
-    elif ansatz_name == 'multi_particle_ucc':
-        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle_ucc(h)
-        initial_params = init_params.ucc(dim)
-
-    return H, qc, ansatz_, initial_params
-
-
 if case == 0:
     ansatz_name = 'multi_particle'
 elif case == 1:
@@ -75,12 +49,13 @@ elif case == 3:
 else:
     raise ValueError('The case-defining input is to large.')
 
-# TODO: select directory and file to save to (the case is appended to the file).
-directory = 'NelderMead_Restart_parallel'  # directory to save to
-file = 'ansest_test_1_jskljasd'  # file to save to
+
+directory = 'NM_Restart_Parallel'  # directory to save to
+file = 'NM_Restart_test'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
+
 
 try:
     # Try to load the file (will raise FileNotFoundError if not existing)
@@ -104,22 +79,21 @@ samples = 2000
 max_para = 5
 
 
-# TODO: the function tha = t runs smallest. The inputs to this function is
+# TODO: the function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
+
 def simulate(j):
     print("j = %i" % j)
     h = hamiltonian(j, V)[matrix]
+    print(h.todense())
     dim = h.shape[0]
-    H, qc, ansatz_, initial_params = ansatz_type(ansatz_name, h, dim)
+    H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h, dim)
     vqe = create_vqe.default_nelder_mead()
-    result = vqe_eig.smallest(H, qc, initial_params, vqe,
-                              ansatz_,
-                              samples,
-                              disp=True,
-                              callback=cb.restart_on_same_param(max_para,
-                                                                tol_para,
-                                                                True))
-    return result
+    callback = cb.restart_on_same_param(max_para, tol_para, True)
+    exp_val = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_, samples,
+                              disp=True, callback=callback)
+
+    return exp_val
 
 
 # TODO: input parameters to iterate over, should yield tuples.
@@ -129,7 +103,7 @@ def input_iterate(case):
     #     for y in range(2):
     #         for z in [1, 10]:
     #             result = simulate(x, y, z)
-    return itertools.product([0.5, 1])
+    return itertools.product([1, 2])
 
 
 # Wrap simulate to unpack the arguments from iterate

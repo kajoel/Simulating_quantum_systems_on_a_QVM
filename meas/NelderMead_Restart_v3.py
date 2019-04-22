@@ -15,40 +15,14 @@ from core import data
 import itertools
 from constants import ROOT_DIR
 from os.path import join
+from core import callback as cb
+from core import create_vqe
 
 
 ###############################################################################
 # Functions
 def save_data(file, data_, metadata, base_dir):
     data.save(file, data_, metadata, base_dir)
-
-
-def ansatz_type(ansatz_name, h, dim):
-    if ansatz_name == 'one_particle':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle(h)
-        initial_params = init_params.alternate(dim)
-
-    elif ansatz_name == 'one_particle_ucc':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = ansatz.one_particle_ucc(h)
-        initial_params = init_params.ucc(dim)
-
-    elif ansatz_name == 'multi_particle':
-        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle(h)
-        initial_params = init_params.alternate(dim)
-
-    elif ansatz_name == 'multi_particle_ucc':
-        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = ansatz.multi_particle_ucc(h)
-        initial_params = init_params.ucc(dim)
-
-    return H, qc, ansatz_, initial_params
 
 
 def fatol_var(ansatz_, initial_params, H, samples, qc):
@@ -82,14 +56,12 @@ base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v2')
 
 iters = 5
 
-i = 1
-
-for j, ansatz_name in itertools.product(range(3, 6), ansatz_types):
+for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
     eig = eigs(j, V)[matrix][0]
-    H, qc, ansatz_, initial_params = ansatz_type(ansatz_name, h, dim)
+    H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h, dim)
 
     samples = np.linspace(500, 10000 * len(H), 100)
 
@@ -109,23 +81,20 @@ for j, ansatz_name in itertools.product(range(3, 6), ansatz_types):
                                         minimizer_kwargs={'method':
                                                               'Nelder-Mead',
                                                           'options': disp_options})
-        facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
-                                     disp_run_info=True)['fun']
+
         for iter in range(iters):
             print('\nLoop: j = {}, ansatz_name = {}, samples = {}, \
 max_para = {}, fatol = {}, iteration = {}/{}' \
                   .format(j, ansatz_name, sample, max_para, round(fatol, 3),
                           iter + 1, iters))
 
-            result = vqe_eig.smallest_restart(H, qc, initial_params, vqe,
-                                                  ansatz_,
-                                                  sample,
-                                                  max_para=max_para,
-                                                  max_iter=max_iter,
-                                                  tol_para=tol_para,
-                                                  increase_samples=increase_samples,
-                                                  disp=True,
-                                                  disp_iter=True)
+            vqe = create_vqe.default_nelder_mead()
+            callback = cb.restart_on_same_param(max_para, tol_para, True)
+
+            facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_)['fun']
+
+            result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
+                                       samples, disp=True, callback=callback)
 
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,
