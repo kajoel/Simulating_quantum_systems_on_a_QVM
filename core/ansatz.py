@@ -5,6 +5,7 @@ Created on Mon Mar  4 10:50:49 2019
 # Imports
 from core import maps
 import numpy as np
+from scipy import sparse
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner, \
@@ -16,8 +17,7 @@ from typing import Callable, List, Union
 from pyquil import get_qc
 from core import matrix_to_op
 from core import init_params
-
-
+import warnings
 
 def one_particle(h: np.ndarray):
     """
@@ -59,6 +59,11 @@ def multi_particle(h: np.ndarray):
     """
     dim = h.shape[0]
 
+    warnings.warn('\nThis function (ansatz.multi_particle) is deprecated '
+                  'in favor of\nmulti_particle_stereographic. Make sure to '
+                  'switch to appropriate\ninit_params as well, e.g. '
+                  'alternate_stereographic.')
+
     def wrap(theta: np.ndarray):
         """
         Creates arbitrary state.
@@ -82,7 +87,7 @@ def multi_particle_stereographic(h: np.ndarray):
     :param h: The hamiltonian matrix.
     :return: function(theta) -> pyquil program setting up the state.
     """
-    pole = int(np.argmax(np.diag(h)))
+    pole = int(np.argmax(h.diagonal()))
 
     def wrap(theta):
         """
@@ -218,13 +223,17 @@ def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
 
     return wrap
 
+
 # ################## ANSATZ RELATED QC:s #######################
 
+
 def one_particle_qc(h: np.ndarray):
+    # TODO: doc
     return get_qc('{}q-qvm'.format(h.shape[0]))
 
 
 def multi_particle_qc(h: np.ndarray):
+    # TODO: doc
     return get_qc('{}q-qvm'.format(int.bit_length(h.shape[0])))
 
 

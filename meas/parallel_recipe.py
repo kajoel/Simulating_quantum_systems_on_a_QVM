@@ -12,6 +12,7 @@ from multiprocessing import Pool
 import itertools
 import warnings
 from time import perf_counter
+import numpy as np
 
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
@@ -54,10 +55,11 @@ try:
 except FileNotFoundError:
     # TODO: Initialize data and metadata. Write description and add more
     #  metadata fields.
-    data = {'x': [],
-            'y': [],
-            'z': [],
-            'result': []}
+    data = {'j': [],
+            'i': [],
+            'samples': [],
+            'x': [],
+            'fun': []}
     metadata = {'description': 'my description',
                 'time': [],  # Save times for analysis (modify if you wish)
                 'count': 0}  # IMPORTANT! Don't touch!
@@ -65,23 +67,33 @@ except FileNotFoundError:
 
 # TODO: the function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
-def simulate(x, y, z):
-    return x+y+z
+def simulate(j, i, samples):
+    # TODO: create VQE-object here! (not multiprocess safe)
+    result = {'x': j+i+samples, 'fun': j*i*samples}
+    return result
 
 
 # TODO: input parameters to iterate over, should yield tuples.
 def input_iterate(case):
     # With the example simulate (above) this iterate is equivalent to
-    # for x in range(1):
-    #     for y in range(2):
-    #         for z in range([1, 10]):
-    #             result = simulate(x, y, z)
-    return itertools.product(range(1), range(2), [1, 10])
+    # for j in range(3):
+    #     for i in range(2):
+    #         for samples in [1, 10]:
+    #             result = simulate(j, i, samples)
+
+    # Another example:
+    # inputs = []
+    # for j in range(3):
+    #     for i in range(j):  # range of i depending of j
+    #         for samples in [1, 10]:
+    #             inputs.append((j, i, samples))
+    # return  inputs
+    return itertools.product(range(3), range(2), [1, 10])
 
 
 # Wrap simulate to unpack the arguments from iterate
 def wrap(x):
-    simulate(*x)
+    return simulate(*x)
 
 
 # Wrapper to run multiple simulations with same inputs.
@@ -93,7 +105,7 @@ def run(num, x):
 count = 0  # keep track of what's been done
 num_workers = min(num_sim, os.cpu_count())
 with Pool(num_workers, maxtasksperchild=1) as p:
-    for x in input_iterate(case):
+    for inputs in input_iterate(case):
         count += 1
         if count > metadata['count']:
             # In this case the relevant simulation has not already been saved
@@ -104,14 +116,16 @@ with Pool(num_workers, maxtasksperchild=1) as p:
             # returns. If simulate returns e.g. x, y the elements in the list
             # are tuples (x, y).
             start_time = perf_counter()  # TODO: remove if you don't want time
-            result = p.map(wrap, run(num_sim, x))
+            results = p.map(wrap, run(num_sim, inputs))
             stop_time = perf_counter()  # TODO: remove if you don't want time
 
-            # TODO: add the results to the data object
-            data['x'].append(x[0])
-            data['y'].append(x[1])
-            data['z'].append(x[2])
-            data['result'].append(result)
+            # TODO: add the results to the data object (might want to save
+            #  both mean and variance or possibly even every data point)
+            data['j'].append(inputs[0])
+            data['i'].append(inputs[1])
+            data['samples'].append(inputs[2])
+            data['x'].append(np.array([result['x'] for result in results]))
+            data['fun'].append(np.array([result['fun'] for result in results]))
 
             # Update metadata['count'] and save file:
             metadata['count'] = count

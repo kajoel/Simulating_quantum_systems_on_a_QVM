@@ -65,6 +65,7 @@ def eigs(j, V, e=1):
         # calculated using sum(eigs) = trace(H).
         if H[i].shape[0] > 1:
             eigvals[i][0:-1] = eigsh(H[i], H[i].shape[0] - 1)[0]
+            
             eigvals[i][-1] = np.sum(H[i].diagonal()) \
                              - np.sum(eigvals[i][0:-1])
         else:

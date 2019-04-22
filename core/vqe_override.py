@@ -21,7 +21,11 @@ from pyquil.paulis import PauliTerm, PauliSum
 
 class VQE_override(VQE):
 
-    def __init__(self, minimizer, minimizer_args=[], minimizer_kwargs={}):
+    def __init__(self, minimizer, minimizer_args=None, minimizer_kwargs=None):
+        if minimizer_args is None:
+            minimizer_args = []
+        if minimizer_kwargs is None:
+            minimizer_kwargs = {}
         super().__init__(minimizer, minimizer_args, minimizer_kwargs)
 
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
@@ -98,6 +102,9 @@ class VQE_override(VQE):
         else:
             self.qc = qc
 
+        coeffs = np.array([term.coefficient for term in hamiltonian.terms])
+        sample_list = calc_samples(samples, coeffs)
+
         def objective_function(params):
 
             """
@@ -109,7 +116,8 @@ class VQE_override(VQE):
             """
             pyquil_prog = variational_state_evolve(params)
             mean_value, tmp_vars = self.expectation(pyquil_prog,
-                                                    hamiltonian, samples,
+                                                    hamiltonian,
+                                                    sample_list,
                                                     qc)
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
@@ -169,7 +177,7 @@ class VQE_override(VQE):
                 break_ = False
                 args[1] = iteration_params[-1]
                 if e.samples is not None:
-                    samples = e.samples
+                    sample_list = calc_samples(e.samples, coeffs)
             else:
                 if hasattr(result, 'status'):
                     if result.status != 0:
@@ -205,7 +213,7 @@ class VQE_override(VQE):
     @staticmethod
     def expectation(pyquil_prog: Program,
                     pauli_sum: Union[PauliSum, PauliTerm, np.ndarray],
-                    samples: int,
+                    samples,
                     qc: QuantumComputer) -> tuple:
         """
         Compute the expectation value of pauli_sum over the distribution
@@ -216,15 +224,15 @@ class VQE_override(VQE):
         :param pauli_sum: PauliSum representing the operator of which to calculate the expectation
             value or a numpy matrix representing the Hamiltonian tensored up to the appropriate
             size.
-        :param samples: The number of samples used to calculate the expectation value. If samples
+        :param np.ndarray samples: The number of samples used to calculate the
+            expectation value. If samples
             is None then the expectation value is calculated by calculating <psi|O|psi>. Error
-            models will not work if samples is None.
+            models will not work if samples is None. Should be a list with
+            one element per term in pauli_sum.
         :param qc: The QuantumComputer object.
 
         :return: A float representing the expectation value of pauli_sum given the distribution
             generated from quil_prog.
-
-        @author: Eric
         """
         if isinstance(pauli_sum, np.ndarray):
             # debug mode by passing an array
@@ -264,19 +272,21 @@ class VQE_override(VQE):
                 expectation = np.sum(result_overlaps)
                 return expectation.real, 0.0
             else:
-                if not isinstance(samples, int):
-                    raise TypeError("samples variable must be an integer")
-                if samples <= 0:
+                # if not isinstance(samples, int):
+                #     raise TypeError("samples variable must be an integer")
+                if isinstance(samples, int):
+                    coeffs = np.array(
+                        [term.coefficient for term in pauli_sum.terms])
+                    samples = calc_samples(samples, coeffs)
+                if samples.sum() <= 0:
                     raise ValueError(
-                        "samples variable must be a positive integer")
+                        "total samples must be a positive integer")
 
                 # normal execution via fake sampling
                 # stores the sum of contributions to the energy from
                 # each operator term
                 expectation = 0.0
                 variance = 0.0
-                term_sum = sum(
-                    np.abs(term.coefficient) for term in pauli_sum.terms)
                 for j, term in enumerate(pauli_sum.terms):
                     meas_basis_change = Program()
                     qubits_to_measure = []
@@ -296,13 +306,56 @@ class VQE_override(VQE):
                                 pyquil_prog + meas_basis_change,
                                 qubits_to_measure,
                                 qc,
-                                int(round(samples * np.abs(
-                                    term.coefficient) / term_sum)))
+                                int(samples[j]))
 
                     expectation += term.coefficient * meas_outcome
                     variance += (np.abs(term.coefficient) ** 2) * meas_vars
 
                 return expectation.real, variance.real
+
+
+def calc_samples(samples, coeffs):
+    """
+    Calculate how many samples to use for each term.
+
+    :param int samples: Total number of samples.
+    :param np.ndarray coeffs: Coefficients of hamiltonian (PauliSum).
+    :return: Array of samples (one element per term).
+    :rtype: np.ndarray
+    """
+    if samples is None:
+        return None
+    if coeffs.size > samples:
+        raise ValueError('At least one sample per term is required.')
+    # Optimal samples to minimize variance without knowing expectation values.
+    sample_list = samples * np.abs(coeffs) / np.sum(np.abs(coeffs))
+    # Make sure to not get 0 samples since that will cause problems with
+    # variance estimator.
+    sample_list[sample_list < 1] = 1
+    # Get fractional parts
+    sample_fracs = sample_list % 1.
+    # How many element to round up to get sum(sample_list) = samples
+    num_up = int(round(sample_fracs.sum() - sample_list.sum() + samples))
+
+    # num_up > 0
+    if num_up > 0:
+        # Indices sorted by fractional part
+        order = np.argsort(sample_fracs)
+        # Round
+        sample_list[order[-num_up:]] = np.ceil(sample_list[order[-num_up:]])
+        sample_list[order[:-num_up]] = np.floor(sample_list[order[:-num_up]])
+        return sample_list
+
+    # num_up <= 0
+    np.floor(sample_list, out=sample_list)
+    if num_up == 0:
+        return sample_list
+
+    # num_up < 0
+    candidates = np.arange(sample_list.size)[sample_list > 1]
+    order = np.argsort(sample_fracs[candidates])
+    sample_list[candidates[order][:-num_up]] -= 1
+    return sample_list
 
 
 def parity_even_p(state, marked_qubits):

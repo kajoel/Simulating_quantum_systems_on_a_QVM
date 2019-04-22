@@ -29,7 +29,7 @@ def bayes_iteration_sweep(h,
                           convert_op,
                           intervall = 5,
                           samples = None,
-                          start = 15, stop = 45, steps = 10, 
+                          start = 10, stop = 45, steps = 10, 
                           measurments_per_step=3,
                           save_after_run=False, 
                           plot_after_run=True,
@@ -79,7 +79,7 @@ def bayes_iteration_sweep(h,
     
     vqe = create_vqe.default_nelder_mead()
     facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe, 
-                             ansatz_)
+                             ansatz_, disp=False)
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
@@ -92,9 +92,10 @@ def bayes_iteration_sweep(h,
                                         samples,
                                         disp=disp_data_during_run)
     
+            for key in run_data: print(key)
             temp_data[0,j] = run_data['fun']
-            temp_data[1,j] = np.linalg.norm(run_data['x']-facit[1])
-            temp_data[2,j] = run_data['expectation_vars']
+            temp_data[1,j] = np.linalg.norm(run_data['x']-facit['x'])
+            temp_data[2,j] = np.mean(run_data['expectation_vars'])
 
         all_data.append(temp_data)
         data_[0,i] = np.mean(temp_data[0])
@@ -160,9 +161,9 @@ def plot_iteration_run(data, label=None):
     for key in data:
         if key == 'exp_val':
             plt.figure(i)
-            plt.hlines(data['facit'][0], start, stop, colors='r', 
+            plt.hlines(data['facit']['fun'], start, stop, colors='r', 
                        linestyles='dashed', 
-                       label='True eig: {}'.format(round(data['facit'][0],4)))
+                       label='True eig:{}'.format(round(data['facit']['fun'],4)))
     
             plt.errorbar(data_x,data[key],data['variance'], 
                          fmt='o', label=label, capsize=5, color = color)
@@ -185,31 +186,33 @@ def plot_iteration_run(data, label=None):
 ################################################################################
 # Tests of the methods / Measurments made with the module
 ################################################################################
-def run_bayes_iteration_sweep(j, samples, V=1, i=0, multi = True, ucc = False):
+def run_bayes_iteration_sweep(j, samples, V=1, i=0, multi = True, num_meas = 1):
     h = lipkin_quasi_spin.hamiltonian(j,V)[i]
-
-    
+    start = 10
+    stop = 30 + (h.shape[0]-1)*15
+    step = 5 + 5*(h.shape[0]-1)
     
     if multi is True:
         ansatz_ = ansatz.multi_particle
         qc = ansatz.multi_particle_qc(h)
-        file_name = join('bayes_total_evals',
-                     'BayesSweep_Samples{}_{}_j{}V{}i{}'.format(samples,ansatz_.__name__,j,V,i))
-        ansatz_=ansatz_(h)    
         convert_op = matrix_to_op.multi_particle
-        bayes_iteration_sweep(h, qc, ansatz_, convert_op, samples=samples,
-                              label='Multi', 
-                              save_after_run=True, file_name=file_name)
-    if ucc is True:
+    else:
         ansatz_ = ansatz.one_particle_ucc
-        file_name = join('bayes_total_evals',
-                     'BayesSweep_Samples{}_{}_j{}V{}i{}'.format(samples,ansatz_.__name__,j,V,i))
-        ansatz_=ansatz_(h)    
-        qc = ansatz.one_particle_qc
+        qc = ansatz.one_particle_qc  
         convert_op = matrix_to_op.one_particle
-        bayes_iteration_sweep(h, qc, ansatz_, convert_op, samples=samples,
-                              label='One_UCC', 
-                              save_after_run=True, file_name=file_name)
+    
+    
+    ansatz_name = ansatz_.__name__
+    file_name = join('bayes_total_evals',
+                     'BayesSweep_MeasPerValue{}Samples{}_{}_j{}V{}i{}'.format(
+                     num_meas, samples, ansatz_name, j, V, i))
+    ansatz_ = ansatz_(h)    
+
+    bayes_iteration_sweep(h, qc, ansatz_, convert_op, samples=samples,
+                          label='Multi', ansatz_name=ansatz_name,
+                          save_after_run=True, file_name=file_name, 
+                          measurments_per_step=num_meas, 
+                          start=start, stop=stop, steps=step)
     
     
 
@@ -225,7 +228,7 @@ def run_bayes_iteration_sweep(j, samples, V=1, i=0, multi = True, ucc = False):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    for samples in range(1000,2501,500):
-        run_bayes_iteration_sweep(1, samples)
+    samples = 3
+    run_bayes_iteration_sweep(1, samples)
     plt.show()
 
