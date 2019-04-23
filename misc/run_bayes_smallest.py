@@ -9,37 +9,31 @@ Created on Fri April 5 11:06 2019
 from core import init_params,matrix_to_op,ansatz,lipkin_quasi_spin, data, vqe_eig
 from pyquil import get_qc
 import matplotlib.pyplot as plt
+import numpy as np
+import time
 
-def run_bayes_opt():
+def run_bayes_opt(n_jobs=1):
     j,V = 2,1
 
     h = lipkin_quasi_spin.hamiltonian(j,V)[1]
-    print(h)
-    print(lipkin_quasi_spin.eigs(j,V))
     qubits = h.shape[0]
     qc = get_qc('{}q-qvm'.format(qubits))
-    ansatz_ = ansatz.multi_particle(h.shape[0])
+    ansatz_ = ansatz.multi_particle(h)
     H = matrix_to_op.multi_particle(h)
-    dimension = [(-1.0, 1.0) for i in range(h.shape[0]-1)]
-    print(dimension)
+    dimension = [(-20.0, 20.0) for i in range(h.shape[0]-1)]
+    samples = 2000
 
+    t1 = time.time()
+    temp =  vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=samples, 
+                           n_random_starts=5, n_calls=30, return_all_data=True, 
+                           disp=False, n_jobs=n_jobs)['x']
+    t2 = time.time()
 
-
-    eig_val = vqe_eig.smallest_bayes(H, qc, dimension, ansatz_, samples=100, 
-                           n_random_starts=4, n_calls=20, return_all_data=True)
-    
-
-    initial_p = init_params.alternate(h.shape[0])
-    vqe_eig.smallest(H, qc, initial_p, ansatz_, return_all_data=True)
-    print(eig_val['fun'])
-
-    for key in eig_val: print(key)
-    print(eig_val['expectation_vals'])
-    print(eig_val['expectation_vars'])
-    print(len(eig_val['iteration_params']))
-
-    
+    print(temp)
+    print('Eloped time for {} jobs: {}'.format(n_jobs, t2-t1))
+    print('Number of evaluations on qc:{}'.format(samples*30))
 
 
 if __name__ == '__main__':
-    run_bayes_opt()
+    for jobs in range(1,2):
+        run_bayes_opt(jobs)

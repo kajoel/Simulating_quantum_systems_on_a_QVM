@@ -3,28 +3,42 @@ Created on Mon Mar  4 10:50:49 2019
 """
 
 # Imports
+from core import maps
 import numpy as np
+from scipy import sparse
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
-from openfermion import FermionOperator, QubitOperator, jordan_wigner
+from openfermion import FermionOperator, QubitOperator, jordan_wigner, \
+    hermitian_conjugated
 from forestopenfermion import qubitop_to_pyquilpauli
-from pyquil.paulis import PauliSum, exponential_map, suzuki_trotter
+from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
-from typing import Callable, List
+from typing import Callable, List, Union
+from pyquil import get_qc
+from core import matrix_to_op
+from core import init_params
+import warnings
 
-
-def one_particle(dim: int):
+def one_particle(h: np.ndarray):
     """
-    Creates a program to set up an arbitrary one-particle-state.
+    Creates a function(theta) that creates a program to set up an arbitrary
+    one-particle-state.
 
     @author: Joel, Carl
 
-    :param theta: Vector representing the state.
-    :return: PyQuil program setting up the state.
+    :param h: The hamiltonian matrix.
+    :return: function(theta) -> pyquil program setting up the state.
     """
+    dim = h.shape[0]
 
-    def wrap(theta: np.ndarray):
-        vector = np.zeros(2 ** (dim))
+    def wrap(theta: np.ndarray) -> Program:
+        """
+        Creates arbitrary one-particle state.
+
+        :param theta: Coefficients in superposition.
+        :return: Pyquil program setting up the state.
+        """
+        vector = np.zeros(2 ** dim)
         vector[1] = 1 / np.sqrt(dim)
         vector[[2 ** (i + 1) for i in range(dim - 1)]] = theta
         vector *= 1 / np.linalg.norm(vector)
@@ -33,37 +47,74 @@ def one_particle(dim: int):
     return wrap
 
 
-def multi_particle(dim: int):
+def multi_particle(h: np.ndarray):
     """
-    Creates a program to set up an arbitrary state.
+    Creates a function(theta) that creates a program to set up an arbitrary
+    state.
 
     @author: Joel
 
-    :param theta: Vector representing the state.
-    :return: PyQuil program setting up the state.
+    :param h: The hamiltonian matrix.
+    :return: function(theta) -> pyquil program setting up the state.
     """
+    dim = h.shape[0]
+
+    warnings.warn('\nThis function (ansatz.multi_particle) is deprecated '
+                  'in favor of\nmulti_particle_stereographic. Make sure to '
+                  'switch to appropriate\ninit_params as well, e.g. '
+                  'alternate_stereographic.')
 
     def wrap(theta: np.ndarray):
+        """
+        Creates arbitrary state.
+
+        :param theta: Vector representing the state.
+        :return: PyQuil program setting up the state.
+        """
         theta = np.concatenate((np.array([1]) / np.sqrt(dim), theta), axis=0)
         return create_arbitrary_state(theta)
 
     return wrap
 
 
-def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
+def multi_particle_stereographic(h: np.ndarray):
+    """
+    Multi particle ansatz using a stereographic projection for dimensionality
+    reduction.
+
+    @author = Joel
+
+    :param h: The hamiltonian matrix.
+    :return: function(theta) -> pyquil program setting up the state.
+    """
+    pole = int(np.argmax(h.diagonal()))
+
+    def wrap(theta):
+        """
+        Creates arbitrary state using stereographic projection.
+
+        :param theta: Vector representing the state.
+        :return: PyQuil program setting up the state.
+        """
+        return create_arbitrary_state(maps.plane_to_sphere(theta, pole))
+
+    return wrap
+
+
+def one_particle_ucc(h, reference=1, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz preserving particle number.
 
     @author: Joel, Carl
 
-    :param int dim: dimension of the space = num_qubits
+    :param np.ndarray h: The hamiltonian matrix.
     :param int reference: the binary number corresponding to the reference
         state (which must be a Fock-state).
     :param int trotter_order: trotter order in suzuki_trotter
     :param int trotter_steps: trotter steps in suzuki_trotter
     :return: function(theta) which returns the ansatz Program
     """
-    # TODO: should this function also return the expected length of theta?
+    dim = h.shape[0]
 
     terms = []
     for occupied in range(dim):
@@ -72,8 +123,9 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
                 if not reference & (1 << unoccupied):
                     term = FermionOperator(((unoccupied, 1), (occupied, 0))) \
                            - FermionOperator(((occupied, 1), (unoccupied, 0)))
-                    term = qubitop_to_pyquilpauli(jordan_wigner(term))
-                    terms.append(term)
+                    terms.append(
+                        qubitop_to_pyquilpauli(jordan_wigner(term))
+                    )
 
     exp_maps = trotterize(terms, trotter_order, trotter_steps)
 
@@ -97,36 +149,7 @@ def one_particle_ucc(dim, reference=1, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-def trotterize(terms, trotter_order, trotter_steps) -> List[
-    List[Callable[[float], Program]]]:
-    """
-    Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
-    Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
-    but you get the idea).
-
-    @author = Joel, Carl
-
-    :param List[PauliSum] terms: PauliSums of length 2
-    :param int trotter_order: trotter order in suzuki_trotter
-    :param int trotter_steps: trotter steps in suzuki_trotter
-    :return: list of lists of functions(theta) that returns Programs
-    """
-    # TODO: better docstring
-    exp_maps = []
-    order_slices = suzuki_trotter(trotter_order, trotter_steps)
-    for term in terms:
-        tmp = []
-        assert len(term) == 2, "Term has not length two!"
-        for coeff, operator in order_slices:
-            if operator == 0:
-                tmp.append(exponential_map(-1j * coeff * term[0]))
-            else:
-                tmp.append(exponential_map(-1j * coeff * term[1]))
-        exp_maps.append(tmp)
-    return exp_maps
-
-
-def multi_particle_ucc(dim):
+def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
     """
     UCC-style ansatz that doesn't preserve anything (i.e. uses all basis
     states). This is basically an implementation of create_arbitrary_state
@@ -150,25 +173,135 @@ def multi_particle_ucc(dim):
 
     @author: Joel
 
-    :param int dim: dimension of the space = num_qubits**2
+    :param np.ndarray h: The hamiltonian matrix.
+    :param reference: integer representation of reference state
+    :param trotter_order: Trotter order in trotterization
+    :param trotter_steps: Trotter steps in trotterization
     :return: function(theta) which returns the ansatz Program. -1j*theta[i] is
         the coefficient in front of the term prod_k X_k^bit(i,k) where
         bit(i, k) is the k'th bit of i in binary, in the exponent.
     """
-    # TODO: should this function also return the expected length of theta?
+    dim = h.shape[0]
+
     terms = []
     for state in range(dim):
-        term = QubitOperator(())
-        for qubit in range(int.bit_length(state)):
-            if state & (1 << qubit):
-                term *= QubitOperator((qubit, 'X'))
-        term = qubitop_to_pyquilpauli(term)
-        assert len(term) == 1, "Term has not length one!"
-        terms.append(term[0])
-    return exponential_map_commuting_pauli_terms(terms)
+        if state != reference:
+            term = QubitOperator(())
+            for qubit in range(int.bit_length(state)):
+                if (state ^ reference) & (1 << qubit):
+                    # lower/raise qubit
+                    term *= QubitOperator((qubit, "X"), 1 / 2) \
+                            + QubitOperator((qubit, "Y"), 1j * (int(
+                                reference & (1 << qubit) != 0) - 1 / 2))
+                else:
+                    # check that qubit has correct value (same as i and j)
+                    term *= QubitOperator((), 1 / 2) \
+                            + QubitOperator((qubit, "Z"), 1 / 2 - int(
+                                reference & (1 << qubit) != 0))
+            terms.append(
+                qubitop_to_pyquilpauli(term - hermitian_conjugated(term))
+            )
+
+    exp_maps = trotterize(terms, trotter_order, trotter_steps)
+
+    def wrap(theta):
+        """
+        Returns the ansatz Program.
+
+        :param np.ndarray theta: parameters
+        :return: the Program
+        :rtype: pyquil.Program
+        """
+        prog = Program()
+        for qubit in range(int.bit_length(reference)):
+            if reference & (1 << qubit):
+                prog += X(qubit)
+        for idx, exp_map in enumerate(exp_maps):
+            for exp in exp_map:
+                prog += exp(theta[idx])
+        return prog
+
+    return wrap
 
 
-def exponential_map_commuting_pauli_terms(terms):
+# ################## ANSATZ RELATED QC:s #######################
+
+
+def one_particle_qc(h: np.ndarray):
+    # TODO: doc
+    return get_qc('{}q-qvm'.format(h.shape[0]))
+
+
+def multi_particle_qc(h: np.ndarray):
+    # TODO: doc
+    return get_qc('{}q-qvm'.format(int.bit_length(h.shape[0])))
+
+
+# ################## ANSATZ RELATED FUNCTIONS ##################
+
+
+def trotterize(terms, trotter_order, trotter_steps) -> List[
+        List[Callable[[float], Program]]]:
+    """
+    Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
+    Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
+    but you get the idea).
+
+    @author = Joel, Carl
+
+    :param List[PauliSum] terms: PauliSums
+    :param int trotter_order: trotter order in suzuki_trotter
+    :param int trotter_steps: trotter steps in suzuki_trotter
+    :return: list of lists of functions(theta) that returns Programs
+    """
+    # TODO: better docstring
+    exp_maps = []
+    old_len = None
+    order_slices = None
+    for term in terms:
+        if len(term) != old_len:
+            order_slices = suzuki_trotter_karlsson(len(term), trotter_order,
+                                                   trotter_steps)
+        tmp = []
+        for coeff, operator in order_slices:
+            tmp.append(exponential_map(-1j * coeff * term[operator]))
+        exp_maps.append(tmp)
+    return exp_maps
+
+
+def suzuki_trotter_karlsson(num_op, trotter_order, trotter_steps):
+    """
+    Generalization of the suzuki_trotter decomposition in the case
+    trotter_order=1 to be able to handle exp(A+B+C). To make the approximation
+    the following limit is used:
+    exp(sum_i A_i) = lim_{n \to inf} [prod_i (1 + exp(A_i)/n) ]^n
+
+    exp(sum_i A_i) is approximated as exp(w1 i1) exp(w2 i2)...
+
+    @author = Joel
+
+    :param int num_op: number of A_i's in exp(sum_i A_i)
+    :param int trotter_order: order of decomposition
+    :param int trotter_steps: steps of decomposition, n from above
+    :return: List of tuples (wk, ik) corresponding to the coefficient and
+        operator.
+    """
+
+    if num_op == 1:
+        order_slices = [(1, 0)]
+    elif num_op == 2:
+        order_slices = suzuki_trotter(trotter_order, trotter_steps)
+    else:
+        if trotter_order != 1:
+            raise ValueError('suzuki_trotter_karlsson decomposition currently'
+                             'requires num_op=2 or trotter_order=1.')
+        order_slices = trotter_steps * [(1 / trotter_steps, i)
+                                        for i in range(num_op)]
+    return order_slices
+
+
+def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
+                                                       PauliSum]):
     """
     Returns a function f(theta) which, given theta, returns the Program
     corresponding to exp(-1j sum_i theta[i]*term[i]) =
@@ -178,7 +311,8 @@ def exponential_map_commuting_pauli_terms(terms):
 
     @author = Joel
 
-    :param list of pyquil.paulis.PauliTerm terms: a list of pauli terms
+    :param  terms:
+        a list of pauli terms
     :return: a function that takes a vector parameter and returns a Program.
     """
 
@@ -186,7 +320,7 @@ def exponential_map_commuting_pauli_terms(terms):
         terms = terms.terms
     exp_map = []
     for term in terms:
-        exp_map.append(exponential_map(-1j * term))
+        exp_map.append(exponential_map(term))
 
     def wrap(theta):
         """
@@ -202,3 +336,49 @@ def exponential_map_commuting_pauli_terms(terms):
         return prog
 
     return wrap
+
+
+def create(ansatz_name, h, initial_params=None):
+    """
+    @author: Carl
+
+    :param ansatz_name:
+    :param h:
+    :param dim:
+    :param initial_params:
+    :return:
+    """
+    dim = h.shape[0]
+
+    if ansatz_name == 'one_particle':
+        qc = get_qc(str(h.shape[0]) + 'q-qvm')
+        H = matrix_to_op.one_particle(h)
+        ansatz_ = one_particle(h)
+        if initial_params == None:
+            initial_params = init_params.alternate(dim)
+
+    elif ansatz_name == 'one_particle_ucc':
+        qc = get_qc(str(h.shape[0]) + 'q-qvm')
+        H = matrix_to_op.one_particle(h)
+        ansatz_ = one_particle_ucc(h)
+        if initial_params == None:
+            initial_params = init_params.ucc(dim)
+
+    elif ansatz_name == 'multi_particle':
+        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
+        H = matrix_to_op.multi_particle(h)
+        ansatz_ = multi_particle_stereographic(h)
+        if initial_params == None:
+            initial_params = init_params.alternate_stereographic(h)
+
+    elif ansatz_name == 'multi_particle_ucc':
+        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
+        H = matrix_to_op.multi_particle(h)
+        ansatz_ = multi_particle_ucc(h)
+        if initial_params == None:
+            initial_params = init_params.ucc(dim)
+
+    else:
+        H, qc, ansatz_ = None, None, None
+
+    return H, qc, ansatz_, initial_params

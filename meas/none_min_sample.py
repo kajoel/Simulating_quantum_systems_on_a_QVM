@@ -84,7 +84,7 @@ print('fatol set to: ', fatol)
 H = matrix_to_op_(h)
 min_eig, opt_param = vqe_eig.smallest(H, qc=qc,
                                       initial_params=init_params.alternate(
-                                          h.shape[0]), disp_run_info=True,
+                                          h.shape[0]), disp=True,
                                       fatol=fatol, samples=samples)
 min_eig_exp = vqe.expectation(ansatz.multi_particle(opt_param), H,
                               samples=samples,
