@@ -6,6 +6,7 @@ Created on 2019-03-22
 """
 
 import pickle
+from warnings import warn
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askopenfilenames, \
     asksaveasfilename
@@ -17,11 +18,18 @@ from pwd import getpwuid
 from constants import ROOT_DIR
 from traceback import format_exc
 
+
 USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
+HIGHEST_PROTOCOL = 2
 
 
 def save(file=None, data=None, metadata=None,
-         base_dir=join(ROOT_DIR, 'data'), force_extension=True):
+         base_dir=join(ROOT_DIR, 'data'),
+         force_extension=True,
+         failsafe=True,
+         protocol=None,
+         extract=False,
+         disp=True):
     """
     Save data and metadata to a file. Always set the first field of metadata
     as metadata={'description': info} (followed by other fields). Datetime of
@@ -38,9 +46,15 @@ def save(file=None, data=None, metadata=None,
     :param string file: file to save to
     :param string base_dir: prepended to file
     :param bool force_extension: if True save will add the extension '.pkl' if
-        the file variable is missing extension.
+        the file variable is missing extension
     :param data: data to save
     :param dictionary  metadata: metadata describing the data
+    :param bool failsafe: determines whether to use failsafe save or not
+    :param protocol: Protocol to use when saving. None (which results in
+        HIGHEST_PROTOCOL) is recommended.
+    :param bool extract: determines whether to append or extend data to file (
+        for protocol>1)
+    :param bool disp: if True display metadata after saving
     :return: None
     """
     # UI get file if is None and create directory if not existing.
@@ -60,6 +74,15 @@ def save(file=None, data=None, metadata=None,
         if not splitext(file)[1] and force_extension:
             file = file + '.pkl'
 
+    if protocol is None:
+        protocol = HIGHEST_PROTOCOL
+
+    if not isinstance(protocol, int) or protocol < 1\
+            or protocol > HIGHEST_PROTOCOL:
+        warn(f"Unsupported protocol ({protocol}). Using protocol"
+             f"{HIGHEST_PROTOCOL} instead.")
+        protocol = HIGHEST_PROTOCOL
+
     # Add some fields automatically to metadata
     if metadata is None:
         metadata = {}  # to not get mutable default value
@@ -74,16 +97,73 @@ def save(file=None, data=None, metadata=None,
         data = {'data': data}
 
     # Save
-    _failsafe_save(file, data, metadata)
+    if failsafe:
+        success = _failsafe_save(file, data, metadata, protocol, extract)
+    else:
+        quick_save(file, data, metadata, protocol, extract)
+        success = True
 
     # Display
-    try:
-        _display_internal(file, data, metadata)
-    except:
-        print('\033[93m' + 'The following error occurred while trying to '
-                           'display metadata from the saved file:'
-              + '\033[0m\n')
-        print('\033[91m' + format_exc() + '\033[0m')
+    if success and disp:
+        try:
+            _display_internal(file, metadata)
+        except:
+            print('\033[93m' + 'The following error occurred while trying to '
+                               'display metadata from the saved file:'
+                  + '\033[0m\n')
+            print('\033[91m' + format_exc() + '\033[0m')
+
+    # Return file, data and metadata
+    return file, data, metadata
+
+
+def quick_save(file, data, metadata, protocol, *args):
+    """
+    This function should primarily be used after using save one time when
+    saving to the same file multiple times. This function will not add fields
+    to metadata and is not failsafe (keep metadata and file returned by save).
+
+    @author = Joel
+
+    :param string file: file to save to
+    :param data: data to save
+    :param dictionary  metadata: metadata describing the data
+    :param int protocol: protocol
+    :return:
+    """
+    if protocol == 1:
+        _save_1(file, data, metadata, *args)
+    elif protocol == 2:
+        _save_2(file, data, metadata, *args)
+    else:
+        raise ValueError(f'Unsupported protocol ({protocol}).')
+
+
+def append(file, data):
+    """
+    Append data to file. Make sure that the original file were saved with
+    protocol 2.
+
+    :param file: file to append to
+    :param data: data to append
+    :return:
+    """
+    with open(file, 'ab') as file_:
+        _append_internal(data, file_)
+
+
+def extend(file, data):
+    """
+    Extend file with data (extend and append have the same relationship as
+    the corresponding functions for lists). Make sure that the original file
+    were saved with protocol 2.
+
+    :param file: file to extend
+    :param data: data to extend file with
+    :return:
+    """
+    with open(file, 'ab') as file_:
+        _extend_internal(data, file_)
 
 
 def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
@@ -112,13 +192,24 @@ def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
         if not splitext(file)[1] and force_extension:
             file = file + '.pkl'
 
-    if file is None:
+    if file is None or file is ():
         raise FileNotFoundError("Can't load without a file.")
 
-    # Load
-    with open(file, 'rb') as file_:
-        raw = pickle.load(file_)
-    return raw['data'], raw['metadata']
+    # Load raw
+    raw = _load_raw(file)
+
+    # Determine protocol
+    protocol = _protocol_determine(raw)
+
+    # Format output based on protocol
+    if protocol == 1:
+        return _format_1(raw)
+    elif protocol == 2:
+        return _format_2(raw)
+    else:
+        warn(f"Can't format data with protocol {protocol}. Returning raw "
+             f"content.")
+        return raw
 
 
 def display(files=None):
@@ -140,7 +231,7 @@ def display(files=None):
         files = [files]
     for file in files:
         data, metadata = load(file)
-        _display_internal(file, data, metadata)
+        _display_internal(file, metadata)
 
 
 def init_users(name):
@@ -190,14 +281,13 @@ def _add_user(name, user, users):
     save(USER_PATH, data=users[0], metadata=users[1])
 
 
-def _display_internal(file, data, metadata):
+def _display_internal(file, metadata):
     """
     Internal method for displaying file with metadata.
 
     @author = Joel
 
     :param str file: path to the file
-    :param dict data: the data
     :param dict metadata: metadata describing data
     """
     print(
@@ -206,9 +296,6 @@ def _display_internal(file, data, metadata):
     for key, value in metadata.items():
         print('\033[4m' + key.replace('_', ' ') + ':\033[0m')
         print(str(value) + '\n')
-    print('\033[4m' + 'variables in data' + ':\033[0m')
-    for key in data:
-        print(key)
 
 
 def _get_name():
@@ -259,7 +346,7 @@ def _metadata_defaults():
             }
 
 
-def _failsafe_save(file, data, metadata):
+def _failsafe_save(file, data, metadata, *args):
     """
     Method for (hopefully) failsafe saving.
 
@@ -268,15 +355,17 @@ def _failsafe_save(file, data, metadata):
     :param str file: file to save to
     :param data: data to save
     :param metadata: metadata describing the data
+    :param int protocol: protocol
     :return:
     """
     modifiable = ['file', 'data', 'metadata']
     locals_ = {'file': file, 'data': data, 'metadata': metadata}
     exit_ = False
+    success = False
     while not exit_:
         try:
-            with open(file, 'wb') as file_:
-                pickle.dump({'data': data, 'metadata': metadata}, file_)
+            quick_save(file, data, metadata, *args)
+            success = True
         except Exception as e:
             locals_['e'] = e
             print('\n\033[1m\033[93m' + 'Failed while saving. Handing the '
@@ -328,6 +417,7 @@ def _failsafe_save(file, data, metadata):
             metadata = locals_['metadata']
         else:
             exit_ = True
+    return success
 
 
 def _read_input():
@@ -346,6 +436,129 @@ def _read_input():
         lines += '\n' + line
         line = input(prompt)
     return lines + '\n'
+
+
+def _load_raw(file):
+    """
+    Load everything from pickle-file.
+
+    @author = Joel
+
+    :param string file: File to load from
+    :return: Everything in file
+    :rtype: list
+    """
+    raw = []
+    with open(file, 'rb') as file_:
+        while True:
+            try:
+                raw.append(pickle.load(file_))
+            except EOFError:
+                return raw
+
+
+def _protocol_determine(raw):
+    """
+    Determine which protocol was used when saving the file.
+
+    :param list raw: returned by _load_raw
+    :return: protocol used when file was saved
+    :rtype: int
+    """
+    if not len(raw):
+        raise ValueError("Can't determine protocol of empty file.")
+
+    if 'protocol' not in raw[0]:
+        return 1
+
+    return raw[0]['protocol']
+
+
+def _format_1(raw):
+    """
+    Format data with protocol 1.
+
+    :param raw: returned by _load_raw
+    :return: formatted data
+    """
+    data, metadata = raw[0]['data'], raw[0]['metadata']
+
+    # Check for more content
+    if len(raw) > 1:
+        base_key = 'extra'
+        key = base_key
+        count = 0
+        while key in metadata:
+            key = base_key + f'_{count}'
+            count += 1
+        metadata[key] = raw[1:]
+        warn('File contains extra information which will be returned in '
+             f'metadata[{key}].')
+
+    return data, metadata
+
+
+def _format_2(raw):
+    """
+    Format data with protocol 2.
+
+    :param raw: returned by _load_raw
+    :return: formatted data
+    """
+    return raw[1:], raw[0]
+
+
+def _save_1(file, data, metadata, *args):
+    """
+    Save with protocol 1.
+
+    :param file: file to save to
+    :param data: data to save
+    :param metadata: metadata to save
+    :return:
+    """
+    with open(file, 'wb') as file_:
+        pickle.dump({'data': data, 'metadata': metadata}, file_)
+
+
+def _save_2(file, data, metadata, extend, *args):
+    """
+    Save with protocol 2.
+
+    :param file: file to save to
+    :param data: data to save
+    :param metadata: metadata to save
+    :return:
+    """
+    with open(file, 'wb') as file_:
+        pickle.dump(metadata, file_)
+        if extend:
+            _extend_internal(data, file_)
+        else:
+            _append_internal(data, file_)
+
+
+def _append_internal(data, file):
+    """
+    Append to open file.
+
+    :param data: data to append
+    :param file: open file
+    :return:
+    """
+    pickle.dump(data, file)
+
+
+def _extend_internal(data, file):
+    """
+    Extend open file with data.
+
+    :param data: data to extend with,
+    :param file: open file
+    :return:
+    """
+    for data_ in data:
+        pickle.dump(data_, file)
 
 
 '''
