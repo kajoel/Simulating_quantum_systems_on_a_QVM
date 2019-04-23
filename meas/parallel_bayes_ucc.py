@@ -71,7 +71,7 @@ else:
 
 # Select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_parallel_one_particle_ucc'  # file to save to
+file = 'bayes_parallel_one_particle_ucc_updated'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
@@ -86,8 +86,10 @@ except FileNotFoundError:
             'variance': [],
             'n_calls': [],
             'samples': [],
-            'result': []}
-    metadata = {'description': 'Sweep over func evals with Bayesian optimizer.\
+            'result': [], 
+            'parameters': []}
+
+    metadata = {'description': 'Sweep over func evals with Bayesian optimizer. \
                 Cases are iterations over the value of j, from 1 to 6.',
                 'ansatz': ansatz_.__name__,
                 'minimizer': 'Bayesian Optimizer', 'num_sim': num_sim,
@@ -112,10 +114,12 @@ def simulate(n_calls, samples):
     result = np.zeros(2)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
                                 samples=samples, disp=False)
+    
     result[0] = np.linalg.norm(run_data['x']-facit['x'])
     result[1] = np.mean(run_data['expectation_vars'])
+    parameter = run_data['x']
 
-    return result
+    return result, parameter
 
 
 # Input parameters to iterate over, should yield tuples.
@@ -164,11 +168,12 @@ with Pool(num_workers, maxtasksperchild=1) as p:
             stop_time = perf_counter()  # TODO: remove if you don't want time
 
             # TODO: add the results to the data object
+            data['para_error'].extend(result[i][0][0] for i in range(len(result)))
+            data['variance'].extend(result[i][0][1] for i in range(len(result)))
+            data['n_calls'].extend([inputs[0]]*num_sim)
+            data['samples'].extend([inputs[1]]*num_sim)
+            data['parameters'].extend(result[i][1] for i in range(len(result)))
 
-            data['para_error'].extend(result[i][0] for i in range(len(result)))
-            data['variance'].extend(result[i][1] for i in range(len(result)))
-            data['n_calls'].extend([inputs[0]] * num_sim)
-            data['samples'].extend([inputs[1]] * num_sim)
             data['result'].append(result)
 
             # Update metadata['count'] and save file:

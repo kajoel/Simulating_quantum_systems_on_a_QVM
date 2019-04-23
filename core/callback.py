@@ -29,18 +29,19 @@ def merge_callbacks(*args):
 
 
 def restart_on_same_param(max_para, tol_para, disp = False):
-    '''
-    @author: Sebastian
+    """
+    @author: Sebastian, Carl
+
     :param max_para:
     :param tol_para:
     :return: callback function which can be passed to VQE.
-    '''
+    """
 
     def same_parameter(params, *args, **kwargs):
         if len(params) > max_para - 1:
             bool_tmp = True
             for x in range(2, max_para + 1):
-                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x]) \
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x])\
                            < tol_para
             if bool_tmp:
                 if disp: print("Restarting")

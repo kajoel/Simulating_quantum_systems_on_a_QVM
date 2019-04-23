@@ -300,7 +300,6 @@ class VQE_override(VQE):
                                 meas_basis_change.inst(RY(-np.pi / 2, index))
                             elif gate == 'Y':
                                 meas_basis_change.inst(RX(np.pi / 2, index))
-
                         meas_outcome, meas_vars = \
                             expectation_from_sampling(
                                 pyquil_prog + meas_basis_change,
