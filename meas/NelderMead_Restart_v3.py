@@ -62,7 +62,8 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
     dim = h.shape[0]
     eig = eigs(j, V)[matrix][0]
     H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h, dim)
-
+    print(ansatz_)
+    print(initial_params)
     samples = np.linspace(500, 10000 * len(H), 100)
 
     for sample, max_para in itertools.product(samples, max_params):
@@ -73,13 +74,12 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
 
         data_ = {}
 
-        disp_options = {'disp': False, 'xatol': xatol,
-                        'fatol': fatol,
-                        'maxiter': max_iter}
+        disp_options = {'disp': False, 'xatol': xatol, 'fatol': fatol,
+                        'return_all': True, 'maxiter': 10000}
 
         vqe = vqe_override.VQE_override(minimizer=minimize,
                                         minimizer_kwargs={'method':
-                                                              'Nelder-Mead',
+                                                              'nelder-mead',
                                                           'options': disp_options})
 
         for iter in range(iters):
@@ -88,14 +88,14 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
                   .format(j, ansatz_name, sample, max_para, round(fatol, 3),
                           iter + 1, iters))
 
-            vqe = create_vqe.default_nelder_mead()
-            callback = cb.restart_on_same_param(max_para, tol_para, True)
+            #vqe = create_vqe.default_nelder_mead()
+            callback = cb.restart_on_same_param(2, tol_para, True)
 
             facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_)['fun']
 
             result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
-                                       samples, disp=True, callback=callback)
-
+                                       sample, disp=True, callback=callback, attempts = max_iter)
+            print(result)
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,
                           'increase_samples': increase_samples}

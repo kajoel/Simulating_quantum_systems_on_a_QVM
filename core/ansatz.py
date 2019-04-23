@@ -352,28 +352,28 @@ def create(ansatz_name, h, dim, initial_params=None):
         qc = get_qc(str(h.shape[0]) + 'q-qvm')
         H = matrix_to_op.one_particle(h)
         ansatz_ = one_particle(h)
-        if init_params == None:
+        if initial_params == None:
             initial_params = init_params.alternate(dim)
 
     elif ansatz_name == 'one_particle_ucc':
         qc = get_qc(str(h.shape[0]) + 'q-qvm')
         H = matrix_to_op.one_particle(h)
         ansatz_ = one_particle_ucc(h)
-        if init_params == None:
+        if initial_params == None:
             initial_params = init_params.ucc(dim)
 
     elif ansatz_name == 'multi_particle':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
         H = matrix_to_op.multi_particle(h)
         ansatz_ = multi_particle(h)
-        if init_params == None:
+        if initial_params == None:
             initial_params = init_params.alternate(dim)
 
     elif ansatz_name == 'multi_particle_ucc':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
         H = matrix_to_op.multi_particle(h)
         ansatz_ = multi_particle_ucc(h)
-        if init_params == None:
+        if initial_params == None:
             initial_params = init_params.ucc(dim)
 
     else:
