@@ -274,7 +274,8 @@ class VQE_override(VQE):
             else:
                 # if not isinstance(samples, int):
                 #     raise TypeError("samples variable must be an integer")
-                if isinstance(samples, int):
+                samples = np.array(samples, copy=False)
+                if samples.size == 1 and len(pauli_sum) != 1:
                     coeffs = np.array(
                         [term.coefficient for term in pauli_sum.terms])
                     samples = calc_samples(samples, coeffs)
@@ -317,7 +318,7 @@ def calc_samples(samples, coeffs):
     """
     Calculate how many samples to use for each term.
 
-    :param int samples: Total number of samples.
+    :param samples: Total number of samples.
     :param np.ndarray coeffs: Coefficients of hamiltonian (PauliSum).
     :return: Array of samples (one element per term).
     :rtype: np.ndarray
