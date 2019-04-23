@@ -338,7 +338,7 @@ def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
     return wrap
 
 
-def create(ansatz_name, h, dim, initial_params=None):
+def create(ansatz_name, h, initial_params=None):
     """
     @author: Carl
 
@@ -348,6 +348,8 @@ def create(ansatz_name, h, dim, initial_params=None):
     :param initial_params:
     :return:
     """
+    dim = h.shape[0]
+
     if ansatz_name == 'one_particle':
         qc = get_qc(str(h.shape[0]) + 'q-qvm')
         H = matrix_to_op.one_particle(h)
@@ -365,9 +367,9 @@ def create(ansatz_name, h, dim, initial_params=None):
     elif ansatz_name == 'multi_particle':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
         H = matrix_to_op.multi_particle(h)
-        ansatz_ = multi_particle(h)
+        ansatz_ = multi_particle_stereographic(h)
         if initial_params == None:
-            initial_params = init_params.alternate(dim)
+            initial_params = init_params.alternate_stereographic(h)
 
     elif ansatz_name == 'multi_particle_ucc':
         qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')

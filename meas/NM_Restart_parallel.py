@@ -10,7 +10,13 @@ import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
 from functools import lru_cache
-
+from core.lipkin_quasi_spin import hamiltonians_of_size
+from core import matrix_to_op
+from core import ansatz
+from core.create_vqe import nelder_mead
+from core import vqe_eig
+from core import callback as cb
+import numpy as np
 
 # TODO: (for Joel) check if pauli-objects are thread-safe (they probably are)
 #  check if qc is thread-safe
@@ -29,12 +35,11 @@ from functools import lru_cache
 version = 1
 
 # TODO: select directory and basename of file to save to.
-directory = 'NM_Restart_parallel'  # directory to save to
+directory = 'NM_Restart_Parallel'  # directory to save to
 file = 'parallel_test'  # file to save to (basename)
 
 # Append version number to file
 file += f'_v{version}'
-
 
 # Metadata about what has been done previously will be saved here:
 path_metadata = join(directory, file + '_metadata')
@@ -47,7 +52,7 @@ except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
-                                   f"({basename(__file__)})."}
+    f"({basename(__file__)})."}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
               extract=True)
 
@@ -68,17 +73,19 @@ del metadata, metametadata
 #  e.g (1, 2, 3, 4)), i.e. every call to smallest, vqe.run or similar should
 #  have a unique identifier.
 def identifier_generator():
-    # Example:
-    # input_0 is effectively called here without arguments
-    V, matrix = 1, 0
-    # input_1 is effectively called here with one argument
-    for j in range(1, 6):
-        # input_2 is effectively called here with two arguments
-        for samples in range(100, 1000, 100):
-            # input_4 is effectively called here with four arguments
-            for num_sim in range(5):
-                # input_5 is effectively called here with five arguments
-                yield (V, j, i, samples, num_sim)
+    # size of hamiltonian
+    for size in range(2, 6):
+        # the index of the four hamiltonians
+        for hamiltonian_idx in range(4):
+            # number of samples
+            for samples in np.linspace(100,60000,100):
+                # input_4 is effectively called here with four arguments
+                for max_same_para in range(3, 10):
+                    for repeats in range(5):
+                        # input_5 is effectively called here with five arguments
+                        yield (
+                            size, hamiltonian_idx, samples, max_same_para,
+                            repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -92,22 +99,20 @@ def identifier_generator():
 #  It's a also a good idea to print things like "starting on j=3" here.
 
 @lru_cache(maxsize=1)
-def input_0():
-    # (Poor) example (you probably don't want to return None)
-    return None,  # Note the ',' (comma sign) which makes the output a tuple
+def input_2(size, hamiltonian_idx, ansatz_name='multi_particle'):
+    h = hamiltonians_of_size(size)[hamiltonian_idx]
+    return ansatz.create(ansatz_name, h)
 
 
 @lru_cache(maxsize=1)
-def input_3(V, j, i):
-    # Example of setting up the hamiltonian.
-    return [lipkin_quasi_spin.hamiltonian(V, j)[i]]
-
+def input_4(size, hamiltonian_idx, samples, max_same_para):
+    print(f'Size={size}, Hamiltonian_idx={hamiltonian_idx}, Samples={samples}, Max_same_para={max_same_para}')
 
 # TODO: add your defined input functions to the dictionary below. The key is
 #  how many elements from the identifier the input function will be called
 #  with.
-input_functions = {0: input_0,
-                   3: input_3}
+input_functions = {2: input_2,
+                   4: input_4}
 
 
 # TODO: the function that runs e.g. smallest or vqe.run. Make sure to create
@@ -118,12 +123,19 @@ input_functions = {0: input_0,
 #  input_1(id[0])[1], ..., ..., input_N(id[0], id[1], ..., id[N-1])[0],
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
-def simulate(V, j, i, samples, dummy, h):
+def simulate(size, hamiltonian_idx, samples, max_same_para, repeats, H, qc,
+             ansatz_,
+             initial_params):
     # Use a broad try-except to don't crash if we don't have to
     try:
         # TODO: create VQE-object here! (not multiprocess safe)
         # TODO: run e.g. smallest here and return result.
-        result = {'x': j+i+samples, 'fun': j*i*samples}
+        vqe = nelder_mead(samples=samples, H=H)
+        tol_para = 1e-2
+        callback = cb.restart_on_same_param(max_same_para, tol_para)
+        attempts = 20
+        result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_, samples,
+                                  callback=callback, attempts=attempts)
         return result
 
     except Exception as e:
@@ -134,18 +146,24 @@ def simulate(V, j, i, samples, dummy, h):
 # TODO: function that takes in identifier and outputs the file (as a string)
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
-    return join(directory, file + f'_V{identifier[0]}')
+    return join(directory,
+                file + f'_size={identifier[0]}_matidx={identifier[1]}')
 
 
 # TODO: function that takes in identifier and outputs metadata-string.
 def metadata_from_id(identifier):
-    return {'description': f'Simulations with V={identifier[0]}'}
+    return {'description': 'Nelder-Mead Restart, identifier = data[0], '
+                           'result = data[1]',
+            'size': identifier[0],
+            'matidx': identifier[1],
+            'ansatz' : 'multi_particle_stereographic'}
 
 
 class Bookkeeper:
     """
     Class for keeping track of what's been done and only assign new tasks.
     """
+
     def __init__(self, iterator, book, output_calc=None):
         """
 
@@ -168,7 +186,7 @@ class Bookkeeper:
             x = self.iterator.__next__()
             if x not in self.book:
                 output = []
-                for i in range(len(x)+1):
+                for i in range(len(x) + 1):
                     if i in self.output_calc:
                         output.extend(self.output_calc[i](
                             *[y for j, y in enumerate(x) if j < i]))
@@ -184,13 +202,13 @@ num_workers = os.cpu_count()
 max_task = 1
 chunksize = 1
 
-
 generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 with Pool(num_workers, maxtasksperchild=max_task) as p:
     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-    for identifier, result in result_generator:
+    for x in result_generator:
+        identifier, result = x
         # Handle exceptions:
         if isinstance(result, Exception):
             # Save the error
@@ -208,11 +226,10 @@ with Pool(num_workers, maxtasksperchild=max_task) as p:
             # TODO: Save results and identifier
             #  Note that the results will be unordered so make sure to save
             #  enough info!
-            data.append(file, list(identifier) + result)
+            data.append(file, [identifier,  result])
 
             # Mark the task as completed (last in the else, after saving result)
             data.append(path_metadata, [identifier, True])
-
 
 # Post simulation.
 print('Simulation completed.')

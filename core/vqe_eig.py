@@ -8,7 +8,7 @@ from core import vqe_override
 def smallest(H, qc, initial_params, vqe,
              ansatz_,
              samples=None,
-             return_all = True,
+             return_all=True,
              **kwargs):
     """
     TODO: Fix this documentation. Below is not up to date.
@@ -29,6 +29,9 @@ def smallest(H, qc, initial_params, vqe,
     :return: depending on return_all_data, either dict or only eigvect and param
                 value
     """
+    if samples is not None:
+        samples = round(samples)
+
     if samples is not None and vqe.minimizer.__name__ == 'gp_minimize':
         vqe.minimizer_kwargs['noise'] = sum(np.abs(term.coefficient)
                                             for term in H.terms) \
@@ -37,8 +40,11 @@ def smallest(H, qc, initial_params, vqe,
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       return_all=return_all, **kwargs)
 
-    eig['fun'], _ = vqe.expectation(ansatz_(eig['x']), H,
-                                    samples=samples, qc=qc)
+    x = ansatz_(eig['x'])
+    eig['fun'] = vqe.expectation(x, H, samples=samples, qc=qc)[0]
+    eig['x_correct'] = vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
+                               return_all=return_all)
+
     return eig
 
 
