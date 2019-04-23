@@ -274,8 +274,8 @@ class VQE_override(VQE):
             else:
                 # if not isinstance(samples, int):
                 #     raise TypeError("samples variable must be an integer")
-                samples = np.array(samples, copy=False)
-                if samples.size == 1 and len(pauli_sum) != 1:
+                # TODO: FIX!!! the following doesn't work with numpy scalars
+                if isinstance(samples, int):
                     coeffs = np.array(
                         [term.coefficient for term in pauli_sum.terms])
                     samples = calc_samples(samples, coeffs)

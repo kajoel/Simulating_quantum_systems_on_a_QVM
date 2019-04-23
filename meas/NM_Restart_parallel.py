@@ -82,7 +82,7 @@ def identifier_generator():
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
                         yield (ansatz_name, size, hamiltonian_idx,
-                               round(samples), max_same_para, repeats)
+                               int(round(samples)), max_same_para, repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -130,31 +130,22 @@ input_functions = {3: input_3,
 def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
              repeats, h):
     # Use a broad try-except to don't crash if we don't have to
-    H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
-    vqe = nelder_mead(samples=samples, H=H)
-    tol_para = 1e-2
-    callback = cb.restart_on_same_param(max_same_para, tol_para)
-    attempts = 20
-    result = vqe_eig.smallest(H, qc, initial_params, vqe,
-                              ansatz_, samples,
-                              callback=callback, attempts=attempts)
-    return result
-    # try:
-    #     # TODO: create VQE-object here! (not multiprocess safe)
-    #     # TODO: run e.g. smallest here and return result.
-    #     H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
-    #     vqe = nelder_mead(samples=samples, H=H)
-    #     tol_para = 1e-2
-    #     callback = cb.restart_on_same_param(max_same_para, tol_para)
-    #     attempts = 20
-    #     result = vqe_eig.smallest(H, qc, initial_params, vqe,
-    #                               ansatz_, samples,
-    #                               callback=callback, attempts=attempts)
-    #     return result
-    #
-    # except Exception as e:
-    #     # This will be saved in the metadata file so we can check success-rate.
-    #     return e
+    try:
+        # TODO: create VQE-object here! (not multiprocess safe)
+        # TODO: run e.g. smallest here and return result.
+        H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
+        vqe = nelder_mead(samples=samples, H=H)
+        tol_para = 1e-2
+        callback = cb.restart_on_same_param(max_same_para, tol_para)
+        attempts = 20
+        result = vqe_eig.smallest(H, qc, initial_params, vqe,
+                                  ansatz_, samples,
+                                  callback=callback, attempts=attempts)
+        return result
+
+    except Exception as e:
+        # This will be saved in the metadata file so we can check success-rate.
+        return e
 
 
 # TODO: function that takes in identifier and outputs the file (as a string)
@@ -220,30 +211,34 @@ chunksize = 1
 generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
-with Pool(num_workers, maxtasksperchild=max_task) as p:
-    result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-    for identifier, result in result_generator:
-        # Handle exceptions:
-        if isinstance(result, Exception):
-            # Save the error
-            data.append(path_metadata, [identifier, result])
-        else:
-            file = file_from_id(identifier)
-            if file not in files:
-                if isfile(file):
-                    files.add(file)
-                else:
-                    # Create file
-                    metadata = metadata_from_id(identifier)
-                    data.save(file, [], metadata, extract=True)
 
-            # TODO: Save results and identifier
-            #  Note that the results will be unordered so make sure to save
-            #  enough info!
-            data.append(file, [identifier,  result])
+for x in generator:
+    wrap(x)
 
-            # Mark the task as completed (last in the else, after saving result)
-            data.append(path_metadata, [identifier, True])
+# with Pool(num_workers, maxtasksperchild=max_task) as p:
+#     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
+#     for identifier, result in result_generator:
+#         # Handle exceptions:
+#         if isinstance(result, Exception):
+#             # Save the error
+#             data.append(path_metadata, [identifier, result])
+#         else:
+#             file = file_from_id(identifier)
+#             if file not in files:
+#                 if isfile(file):
+#                     files.add(file)
+#                 else:
+#                     # Create file
+#                     metadata = metadata_from_id(identifier)
+#                     data.save(file, [], metadata, extract=True)
+#
+#             # TODO: Save results and identifier
+#             #  Note that the results will be unordered so make sure to save
+#             #  enough info!
+#             data.append(file, [identifier,  result])
+#
+#             # Mark the task as completed (last in the else, after saving result)
+#             data.append(path_metadata, [identifier, True])
 
 
 # Post simulation.
