@@ -130,22 +130,31 @@ input_functions = {3: input_3,
 def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
              repeats, h):
     # Use a broad try-except to don't crash if we don't have to
-    try:
-        # TODO: create VQE-object here! (not multiprocess safe)
-        # TODO: run e.g. smallest here and return result.
-        H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
-        vqe = nelder_mead(samples=samples, H=H)
-        tol_para = 1e-2
-        callback = cb.restart_on_same_param(max_same_para, tol_para)
-        attempts = 20
-        result = vqe_eig.smallest(H, qc, initial_params, vqe,
-                                  ansatz_, samples,
-                                  callback=callback, attempts=attempts)
-        return result
-
-    except Exception as e:
-        # This will be saved in the metadata file so we can check success-rate.
-        return e
+    H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
+    vqe = nelder_mead(samples=samples, H=H)
+    tol_para = 1e-2
+    callback = cb.restart_on_same_param(max_same_para, tol_para)
+    attempts = 20
+    result = vqe_eig.smallest(H, qc, initial_params, vqe,
+                              ansatz_, samples,
+                              callback=callback, attempts=attempts)
+    return result
+    # try:
+    #     # TODO: create VQE-object here! (not multiprocess safe)
+    #     # TODO: run e.g. smallest here and return result.
+    #     H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
+    #     vqe = nelder_mead(samples=samples, H=H)
+    #     tol_para = 1e-2
+    #     callback = cb.restart_on_same_param(max_same_para, tol_para)
+    #     attempts = 20
+    #     result = vqe_eig.smallest(H, qc, initial_params, vqe,
+    #                               ansatz_, samples,
+    #                               callback=callback, attempts=attempts)
+    #     return result
+    #
+    # except Exception as e:
+    #     # This will be saved in the metadata file so we can check success-rate.
+    #     return e
 
 
 # TODO: function that takes in identifier and outputs the file (as a string)
