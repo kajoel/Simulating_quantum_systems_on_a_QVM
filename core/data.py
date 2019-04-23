@@ -19,12 +19,13 @@ from constants import ROOT_DIR
 from traceback import format_exc
 
 
-USER_PATH = join(ROOT_DIR, 'data', 'users.pkl')
+BASE_DIR = join(ROOT_DIR, 'data')
+USER_PATH = join(BASE_DIR, 'users.pkl')
 HIGHEST_PROTOCOL = 2
 
 
 def save(file=None, data=None, metadata=None,
-         base_dir=join(ROOT_DIR, 'data'),
+         base_dir=BASE_DIR,
          force_extension=True,
          failsafe=True,
          protocol=None,
@@ -87,14 +88,8 @@ def save(file=None, data=None, metadata=None,
     if metadata is None:
         metadata = {}  # to not get mutable default value
     metadata.update({key: default() for key, default in
-                     _metadata_defaults().items() if key not in
+                     _metadata_defaults(protocol).items() if key not in
                      metadata})
-
-    # Make sure that data is a dictionary
-    if data is None:
-        data = {}
-    if not isinstance(data, dict):
-        data = {'data': data}
 
     # Save
     if failsafe:
@@ -139,20 +134,28 @@ def quick_save(file, data, metadata, protocol, *args):
         raise ValueError(f'Unsupported protocol ({protocol}).')
 
 
-def append(file, data):
+def append(file, data, base_dir=BASE_DIR, force_extension=True):
     """
     Append data to file. Make sure that the original file were saved with
     protocol 2.
 
     :param file: file to append to
     :param data: data to append
+    :param string base_dir: prepended to file
+    :param bool force_extension: if True save will add the extension '.pkl' if
+        the file variable is missing extension
     :return:
     """
+    file = join(base_dir, file)
+    # Add extension .pkl if extension is missing and force_extension
+    if not splitext(file)[1] and force_extension:
+        file = file + '.pkl'
+
     with open(file, 'ab') as file_:
         _append_internal(data, file_)
 
 
-def extend(file, data):
+def extend(file, data, base_dir=BASE_DIR, force_extension=True):
     """
     Extend file with data (extend and append have the same relationship as
     the corresponding functions for lists). Make sure that the original file
@@ -160,8 +163,16 @@ def extend(file, data):
 
     :param file: file to extend
     :param data: data to extend file with
+    :param string base_dir: prepended to file
+    :param bool force_extension: if True save will add the extension '.pkl' if
+        the file variable is missing extension
     :return:
     """
+    file = join(base_dir, file)
+    # Add extension .pkl if extension is missing and force_extension
+    if not splitext(file)[1] and force_extension:
+        file = file + '.pkl'
+
     with open(file, 'ab') as file_:
         _extend_internal(data, file_)
 
@@ -321,13 +332,14 @@ def _get_name():
     return name
 
 
-def _metadata_defaults():
+def _metadata_defaults(protocol):
     """
     Lazy initialization of metadata dictionary with default fields. Note the
     lambda.
 
     @author = Joel
 
+    :param int protocol: protocol
     :return: metadata
     :rtype: dictionary
     """
@@ -339,7 +351,8 @@ def _metadata_defaults():
             caller = 'unknown'
         return caller
 
-    return {'created_by': _get_name,
+    return {'protocol': lambda: protocol,
+            'created_by': _get_name,
             'created_from': get_caller,
             'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
                                                                 "%H:%M:%S"),
@@ -517,6 +530,12 @@ def _save_1(file, data, metadata, *args):
     :param metadata: metadata to save
     :return:
     """
+    # Make sure that data is a dictionary
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        data = {'data': data}
+
     with open(file, 'wb') as file_:
         pickle.dump({'data': data, 'metadata': metadata}, file_)
 

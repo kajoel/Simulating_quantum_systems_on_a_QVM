@@ -3,6 +3,7 @@ import numpy as np
 from core import ansatz
 from core import matrix_to_op
 from core import vqe_override
+from time import perf_counter
 
 
 def smallest(H, qc, initial_params, vqe,
@@ -37,13 +38,16 @@ def smallest(H, qc, initial_params, vqe,
                                             for term in H.terms) \
                                         / np.sqrt(samples)
 
+    start_time = perf_counter()
     eig = vqe.vqe_run(ansatz_, H, initial_params, samples=samples, qc=qc,
                       return_all=return_all, **kwargs)
+    stop_time = perf_counter()
 
     x = ansatz_(eig['x'])
     eig['fun'] = vqe.expectation(x, H, samples=samples, qc=qc)[0]
     eig['x_correct'] = vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
-                               return_all=return_all)
+                                   return_all=return_all)
+    eig['time'] = stop_time - start_time
 
     return eig
 

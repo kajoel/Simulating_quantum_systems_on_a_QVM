@@ -2,7 +2,7 @@
 Recipe for long runs. This makes sure to save often and keeps the data in a
 single file.
 
-@author = Joel
+@author = Joel, Carl
 """
 from core import data
 from os.path import join, basename, isfile
@@ -17,10 +17,6 @@ from core.create_vqe import nelder_mead
 from core import vqe_eig
 from core import callback as cb
 import numpy as np
-
-# TODO: (for Joel) check if pauli-objects are thread-safe (they probably are)
-#  check if qc is thread-safe
-
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
@@ -52,7 +48,7 @@ except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
-    f"({basename(__file__)})."}
+                                   f"({basename(__file__)})."}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
               extract=True)
 
@@ -73,19 +69,20 @@ del metadata, metametadata
 #  e.g (1, 2, 3, 4)), i.e. every call to smallest, vqe.run or similar should
 #  have a unique identifier.
 def identifier_generator():
+    # ansatz
+    ansatz_name = 'multi_particle'
     # size of hamiltonian
     for size in range(2, 6):
         # the index of the four hamiltonians
         for hamiltonian_idx in range(4):
             # number of samples
-            for samples in np.linspace(100,60000,100):
+            for samples in np.linspace(100, 60000, 100):
                 # input_4 is effectively called here with four arguments
                 for max_same_para in range(3, 10):
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
-                        yield (
-                            size, hamiltonian_idx, samples, max_same_para,
-                            repeats)
+                        yield (ansatz_name, size, hamiltonian_idx,
+                               round(samples), max_same_para, repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -99,20 +96,27 @@ def identifier_generator():
 #  It's a also a good idea to print things like "starting on j=3" here.
 
 @lru_cache(maxsize=1)
-def input_2(size, hamiltonian_idx, ansatz_name='multi_particle'):
+def input_3(ansatz_name, size, hamiltonian_idx):
     h = hamiltonians_of_size(size)[hamiltonian_idx]
-    return ansatz.create(ansatz_name, h)
+    return h,
 
 
 @lru_cache(maxsize=1)
-def input_4(size, hamiltonian_idx, samples, max_same_para):
-    print(f'Size={size}, Hamiltonian_idx={hamiltonian_idx}, Samples={samples}, Max_same_para={max_same_para}')
+def input_5(ansatz_name, size, hamiltonian_idx, samples, max_same_para):
+    print(f'Size={size}, Hamiltonian_idx={hamiltonian_idx}, '
+          f'Samples={samples}, Max_same_para={max_same_para}')
+    return ()
+
 
 # TODO: add your defined input functions to the dictionary below. The key is
 #  how many elements from the identifier the input function will be called
 #  with.
-input_functions = {2: input_2,
-                   4: input_4}
+input_functions = {3: input_3,
+                   5: input_5}
+
+
+# TODO: define constants needed in simulate (below). If you change any of
+#  these you must change the version (above) to not sa
 
 
 # TODO: the function that runs e.g. smallest or vqe.run. Make sure to create
@@ -123,18 +127,19 @@ input_functions = {2: input_2,
 #  input_1(id[0])[1], ..., ..., input_N(id[0], id[1], ..., id[N-1])[0],
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
-def simulate(size, hamiltonian_idx, samples, max_same_para, repeats, H, qc,
-             ansatz_,
-             initial_params):
+def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
+             repeats, h):
     # Use a broad try-except to don't crash if we don't have to
     try:
         # TODO: create VQE-object here! (not multiprocess safe)
         # TODO: run e.g. smallest here and return result.
+        H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
         vqe = nelder_mead(samples=samples, H=H)
         tol_para = 1e-2
         callback = cb.restart_on_same_param(max_same_para, tol_para)
         attempts = 20
-        result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_, samples,
+        result = vqe_eig.smallest(H, qc, initial_params, vqe,
+                                  ansatz_, samples,
                                   callback=callback, attempts=attempts)
         return result
 
@@ -147,16 +152,17 @@ def simulate(size, hamiltonian_idx, samples, max_same_para, repeats, H, qc,
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
     return join(directory,
-                file + f'_size={identifier[0]}_matidx={identifier[1]}')
+                file + f'_{identifier[0]}_size={identifier[1]}_matidx'
+                       f'={identifier[2]}')
 
 
 # TODO: function that takes in identifier and outputs metadata-string.
 def metadata_from_id(identifier):
-    return {'description': 'Nelder-Mead Restart, identifier = data[0], '
-                           'result = data[1]',
-            'size': identifier[0],
-            'matidx': identifier[1],
-            'ansatz' : 'multi_particle_stereographic'}
+    return {'description': 'Nelder-Mead Restart, identifier = data[:][0], '
+                           'result = data[:][1]',
+            'size': identifier[1],
+            'matidx': identifier[2],
+            'ansatz': identifier[0]}
 
 
 class Bookkeeper:
@@ -207,8 +213,7 @@ files = set()
 
 with Pool(num_workers, maxtasksperchild=max_task) as p:
     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-    for x in result_generator:
-        identifier, result = x
+    for identifier, result in result_generator:
         # Handle exceptions:
         if isinstance(result, Exception):
             # Save the error
@@ -231,9 +236,20 @@ with Pool(num_workers, maxtasksperchild=max_task) as p:
             # Mark the task as completed (last in the else, after saving result)
             data.append(path_metadata, [identifier, True])
 
+
 # Post simulation.
-print('Simulation completed.')
-metadata = data.load(path_metadata)[0]
+metadata, metametadata = data.load(path_metadata)
+meta_dict = {}
+for x in metadata:
+    # Keep only the last exception for given identifier.
+    if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+        meta_dict[x[0]] = x[1]
+metadata = [[x, meta_dict[x]] for x in meta_dict]
+data.save(file=path_metadata, data=metadata, metadata=metametadata,
+          extract=True, disp=False)
+
+# Print some stats
+print('\nSimulation completed.')
 print(f'Total number of tasks {len(metadata)}')
 print(f'Number of previously completed tasks: {len(ids)}')
 done = sum(x[1] for x in metadata if x[1] is True)

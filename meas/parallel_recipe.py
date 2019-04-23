@@ -37,7 +37,7 @@ file += f'_v{version}'
 
 
 # Metadata about what has been done previously will be saved here:
-path_metadata = join(directory, file + '_metadata')
+path_metadata = join(directory, file + '_metadata.pkl')
 
 # Load/initialize metadata
 try:
@@ -91,7 +91,13 @@ def identifier_generator():
 #  have to return an object that can be iterated over (like a tuple or list).
 #  Make sure to include @lru_cache(maxsize=1) on the line above def.
 #  You do not have to define all (or any) of input_0, input_1, ...
-#  It's a also a good idea to print things like "starting on j=3" here.
+#  It's a also a good idea to print things like "starting on j=3" here (make
+#  sure to return an empty tuple if you don't want to return anything!).
+#  The elements (in the tuples or lists) returned by these functions has to
+#  be serializable (i.e. you have to be able to pickle them). This excludes
+#  ansatz_(h) (local objects can't be pickled, return ansatz_ instead) and
+#  qc-objects from pyquil.
+
 
 @lru_cache(maxsize=1)
 def input_0():
@@ -121,6 +127,8 @@ input_functions = {0: input_0,
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
 def simulate(V, j, i, samples, dummy, h):
+    #  TODO: If you wan't to do a test run, uncomment the following
+    # return ValueError('test')
     # Use a broad try-except to don't crash if we don't have to
     try:
         # TODO: create VQE-object here! (not multiprocess safe)
@@ -190,6 +198,13 @@ chunksize = 1
 generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
+# TODO: If something isn't working and you can't make sense of the errors.
+#  Try to run with the for-block below instead of the with-block for
+#  debugging purposes.
+
+# for x in generator:
+#     wrap(x)
+
 with Pool(num_workers, maxtasksperchild=max_task) as p:
     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
     for identifier, result in result_generator:
@@ -210,7 +225,7 @@ with Pool(num_workers, maxtasksperchild=max_task) as p:
             # TODO: Save results and identifier
             #  Note that the results will be unordered so make sure to save
             #  enough info!
-            data.append(file, list(identifier) + result)
+            data.append(file, [identifier, result])
 
             # Mark the task as completed (last in the else, after saving result)
             data.append(path_metadata, [identifier, True])
