@@ -212,33 +212,29 @@ generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 
-for x in generator:
-    wrap(x)
+with Pool(num_workers, maxtasksperchild=max_task) as p:
+    result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
+    for identifier, result in result_generator:
+        # Handle exceptions:
+        if isinstance(result, Exception):
+            # Save the error
+            data.append(path_metadata, [identifier, result])
+        else:
+            file_ = file_from_id(identifier)
+            if file_ not in files:
+                files.add(file_)
+                if not isfile(file_):
+                    # Create file
+                    metadata = metadata_from_id(identifier)
+                    data.save(file_, [], metadata, extract=True)
 
-# with Pool(num_workers, maxtasksperchild=max_task) as p:
-#     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-#     for identifier, result in result_generator:
-#         # Handle exceptions:
-#         if isinstance(result, Exception):
-#             # Save the error
-#             data.append(path_metadata, [identifier, result])
-#         else:
-#             file = file_from_id(identifier)
-#             if file not in files:
-#                 if isfile(file):
-#                     files.add(file)
-#                 else:
-#                     # Create file
-#                     metadata = metadata_from_id(identifier)
-#                     data.save(file, [], metadata, extract=True)
-#
-#             # TODO: Save results and identifier
-#             #  Note that the results will be unordered so make sure to save
-#             #  enough info!
-#             data.append(file, [identifier,  result])
-#
-#             # Mark the task as completed (last in the else, after saving result)
-#             data.append(path_metadata, [identifier, True])
+            # TODO: Save results and identifier
+            #  Note that the results will be unordered so make sure to save
+            #  enough info!
+            data.append(file_, [identifier, result])
+
+            # Mark the task as completed (last in the else, after saving result)
+            data.append(path_metadata, [identifier, True])
 
 
 # Post simulation.
