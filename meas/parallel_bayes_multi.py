@@ -75,7 +75,7 @@ else:
 
 # Select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_parallel_multi_particle'  # file to save to
+file = 'bayes_parallel_multi_particle_updated'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
@@ -90,7 +90,9 @@ except FileNotFoundError:
             'variance': [],
             'n_calls': [],
             'samples': [],
-            'result': []}
+            'result': [], 
+            'parameters': []}
+
     metadata = {'description': 'Sweep over func evals with Bayesian optimizer. \
                 Cases are iterations over the value of j, from 1 to 6.',
                 'ansatz': ansatz_.__name__,
@@ -102,7 +104,7 @@ except FileNotFoundError:
 # The function that runs smallest. The inputs to this function is
 #  iterated over while constant parameters should be defined in cases above.
 def simulate(n_calls, samples):
-    dimension = [(-5.0, 5.0)]*(h.shape[0]-1)
+    dimension = [(-1.0, 1.0)]*(h.shape[0]-1)
     temp_ansatz = ansatz_(h)
     qc = ansatz.multi_particle_qc(h)
     H = convert_op(h)
@@ -118,8 +120,9 @@ def simulate(n_calls, samples):
                                 samples=samples, disp=False)
     result[0] = np.linalg.norm(run_data['x']-facit['x'])
     result[1] = np.mean(run_data['expectation_vars'])
+    parameter = run_data['x']
 
-    return result
+    return result, parameter
 
 
 # Input parameters to iterate over, should yield tuples.
@@ -168,11 +171,14 @@ with Pool(num_workers, maxtasksperchild=1) as p:
             stop_time = perf_counter()  # TODO: remove if you don't want time
 
             # TODO: add the results to the data object
-            
-            data['para_error'].extend(result[i][0] for i in range(len(result)))
-            data['variance'].extend(result[i][1] for i in range(len(result)))
+            for part in result: print(part)
+            print(result)
+            data['para_error'].extend(result[i][0][0] for i in range(len(result)))
+            data['variance'].extend(result[i][0][1] for i in range(len(result)))
             data['n_calls'].extend([inputs[0]]*num_sim)
             data['samples'].extend([inputs[1]]*num_sim)
+            data['parameters'].extend(result[i][1] for i in range(len(result)))
+
             data['result'].append(result)
 
             # Update metadata['count'] and save file:
