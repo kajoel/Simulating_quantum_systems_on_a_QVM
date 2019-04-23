@@ -5,21 +5,15 @@ single file.
 @author = Joel
 """
 from core import data
-from os.path import join, basename
+from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
+from functools import lru_cache
 
 
 # TODO: (for Joel) check if pauli-objects are thread-safe (they probably are)
-#  write new save style and append (with open(file, 'ab')) in data (using
-#       multiple objects in pickle)
-#  write class that takes iterator and set and wraps it to iterate through
-#       the iterator but only yield the second output if the first is not in
-#       the set (in that case, add the first to the set and save to metafile)
-#  change metadata['ids'] to a set with identifiers corresponding to
-#  previously completed tasks (use protocol=2 in data.save and load).
-#  cache output_func
+#  check if qc is thread-safe
 
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
@@ -48,13 +42,25 @@ path_metadata = join(directory, file + '_metadata')
 # Load/initialize metadata
 try:
     # Try to load the file (will raise FileNotFoundError if not existing)
-    metadata = data.load(path_metadata)[0]
+    metadata, metametadata = data.load(path_metadata)
 except FileNotFoundError:
-    metadata = {'ids': {}}
+    metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
                                    f"({basename(__file__)})."}
-    data.save(file=path_metadata, data=metadata, metadata=metametadata)
+    data.save(file=path_metadata, data=metadata, metadata=metametadata,
+              extract=True)
+
+# Extract identifiers to previously completed simulations
+ids = set()
+for id_, value in metadata:
+    if value is True:
+        if id_ in ids:
+            raise KeyError('Multiple entries for same id in metadata.')
+        ids.add(id_)
+
+# Cleanup (metadata could contain hundreds of Exception objects)
+del metadata, metametadata
 
 
 # TODO: identifiers to iterate over, should yield a tuple that uniquely
@@ -83,12 +89,17 @@ def identifier_generator():
 #  setup things as early as possible (better to do it in input_0 than input_1
 #  and so on) to avoid creating identical objects (and save some time). These
 #  have to return an object that can be iterated over (like a tuple or list).
+#  Make sure to include @lru_cache(maxsize=1) on the line above def.
 #  You do not have to define all (or any) of input_0, input_1, ...
+#  It's a also a good idea to print things like "starting on j=3" here.
+
+@lru_cache(maxsize=1)
 def input_0():
     # (Poor) example (you probably don't want to return None)
     return None,  # Note the ',' (comma sign) which makes the output a tuple
 
 
+@lru_cache(maxsize=1)
 def input_3(V, j, i):
     # Example of setting up the hamiltonian.
     return [lipkin_quasi_spin.hamiltonian(V, j)[i]]
@@ -122,11 +133,29 @@ def simulate(V, j, i, samples, dummy, h):
         return e
 
 
+# TODO: function that takes in identifier and outputs the file (as a string)
+#  to save to. Keep the number of files down!
+def file_from_id(identifier):
+    return join(directory, file + f'_V{identifier[0]}')
+
+
+# TODO: function that takes in identifier and outputs metadata-string.
+def metadata_from_id(identifier):
+    return {'description': f'Simulations with V={identifier[0]}'}
+
+
 class Bookkeeper:
     """
     Class for keeping track of what's been done and only assign new tasks.
     """
     def __init__(self, iterator, book, output_calc=None):
+        """
+
+        :param iterator: Iterable
+        :param set book: Set of identifiers corresponding to previously
+            completed tasks.
+        :param output_calc: List of functions
+        """
         if output_calc is None:
             output_calc = {}
         self.iterator = iterator
@@ -139,8 +168,7 @@ class Bookkeeper:
     def __next__(self):
         while True:
             x = self.iterator.__next__()
-            if x not in self.book or self.book[x] is not True:
-                self.book[x] = True
+            if x not in self.book:
                 output = []
                 for i in range(len(x)+1):
                     if i in self.output_calc:
@@ -159,7 +187,8 @@ max_task = 1
 chunksize = 1
 
 
-generator = Bookkeeper(identifier_generator(), metadata['ids'], input_functions)
+generator = Bookkeeper(identifier_generator(), ids, input_functions)
+files = set()
 
 with Pool(num_workers, maxtasksperchild=max_task) as p:
     result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
@@ -169,15 +198,29 @@ with Pool(num_workers, maxtasksperchild=max_task) as p:
             # Save the error
             data.append(path_metadata, [identifier, result])
         else:
-            # Use identifier and result to determine file and append to that
-            # file using data.append
+            file = file_from_id(identifier)
+            if file not in files:
+                if isfile(file):
+                    files.add(file)
+                else:
+                    # Create file
+                    metadata = metadata_from_id(identifier)
+                    data.save(file, [], metadata, extract=True)
 
-            # Note that the results will be unordered so make sure to save
-            # enough info!
+            # TODO: Save results and identifier
+            #  Note that the results will be unordered so make sure to save
+            #  enough info!
+            data.append(file, list(identifier) + result)
 
             # Mark the task as completed (last in the else, after saving result)
             data.append(path_metadata, [identifier, True])
 
 
 # Post simulation.
-# TODO: Joel. Load metadata file. Go through and check success rate etc.
+print('Simulation completed.')
+metadata = data.load(path_metadata)[0]
+print(f'Total number of tasks {len(metadata)}')
+print(f'Number of previously completed tasks: {len(ids)}')
+done = sum(x[1] for x in metadata if x[1] is True)
+print(f'Number of completed tasks this run: {done - len(ids)}')
+print(f'Number of tasks remaining: {len(metadata) - done}')
