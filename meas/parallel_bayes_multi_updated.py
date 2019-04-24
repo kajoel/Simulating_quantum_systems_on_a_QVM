@@ -8,14 +8,11 @@ from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
-from core import lipkin_quasi_spin
 from functools import lru_cache
 from core.lipkin_quasi_spin import hamiltonians_of_size
-from core import matrix_to_op
 from core import ansatz
 from core.create_vqe import default_bayes
 from core import vqe_eig
-from core import callback as cb
 import numpy as np
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
@@ -28,11 +25,11 @@ import numpy as np
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 2
+version = 1
 
 # TODO: select directory and basename of file to save to.
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_parallel_multi_particle'  # file to save to
+file = 'Test'  # file to save to
 
 # Append version number to file
 file += f'_v{version}'
@@ -72,18 +69,36 @@ def identifier_generator():
     # ansatz
     ansatz_name = 'multi_particle'
     # size of hamiltonian
+    # size of hamiltonian
+    for size in range(2, 3):
+        num_para = size-1
+        for hamiltonian_idx in range(2):
+            # number of calls
+            for n_calls in range(10, 20, 5 + 5*(num_para-1)):
+                # number of samples
+                for samples in range(100, 500, 250*num_para):
+                    # input_4 is effectively called here with four arguments
+                    for repeats in range(2):
+                        # input_5 is effectively called here with five arguments
+                        yield(ansatz_name, size, hamiltonian_idx,
+                              int(round(samples)), n_calls, repeats)
+
+
+
+    '''
     for size in range(2, 6):
         num_para = size-1
         for hamiltonian_idx in range(4):
             # number of calls
             for n_calls in range(10, 30 + num_para*15, 5 + 5*(num_para-1)):
                 # number of samples
-                for samples in range(100, 250 + 4000*num_para, 250*num_para):
+                for samples in range(100, 250 + 5000*num_para, 250*num_para):
                     # input_4 is effectively called here with four arguments
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
-                        yield (ansatz_name, size, hamiltonian_idx,
-                               int(round(samples)), n_calls, repeats)
+                        yield(ansatz_name, size, hamiltonian_idx,
+                              int(round(samples)), n_calls, repeats)
+    '''
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -116,9 +131,6 @@ input_functions = {3: input_3,
                    5: input_5}
 
 
-# TODO: define constants needed in simulate (below). If you change any of
-#  these you must change the version (above) to not sa
-
 
 # TODO: the function that runs e.g. smallest or vqe.run. Make sure to create
 #  non-multiprocess-safe objects (such as VQE-objects) here rather than
@@ -132,18 +144,20 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
              repeats, h):
     # Use a broad try-except to don't crash if we don't have to
     try:
-
-        # TODO: create VQE-object here! (not multiprocess safe)
-        # TODO: run e.g. smallest here and return result.
-        dimension = [(-1.0, 1.0)]*(size-1)
+        dimension = [(-1.0, 1.0)]*(size-1)   
         H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
-        result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples)
+        result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples, 
+                                  return_all=True)
+
+        # Saves only the parameters, opt Bayes returns A LOT more. 
+        result['iteration_params'] = result['iteration_params'][-1].x_iters
         return result
 
     except Exception as e:
         # This will be saved in the metadata file so we can check success-rate.
         return e
+
 
 
 # TODO: function that takes in identifier and outputs the file (as a string)
@@ -210,46 +224,48 @@ generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 
-with Pool(num_workers, maxtasksperchild=max_task) as p:
-    result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-    for identifier, result in result_generator:
-        # Handle exceptions:
-        if isinstance(result, Exception):
-            # Save the error
-            data.append(path_metadata, [identifier, result])
-        else:
-            file_ = file_from_id(identifier)
-            if file_ not in files:
-                files.add(file_)
-                if not isfile(file_):
-                    # Create file
-                    metadata = metadata_from_id(identifier)
-                    data.save(file_, [], metadata, extract=True)
+try:
+    with Pool(num_workers, maxtasksperchild=max_task) as p:
+        result_generator = p.imap_unordered(wrap, generator,
+                                            chunksize=chunksize)
+        for identifier, result in result_generator:
+            # Handle exceptions:
+            if isinstance(result, Exception):
+                # Save the error
+                data.append(path_metadata, [identifier, result])
+            else:
+                file_ = file_from_id(identifier)
+                if file_ not in files:
+                    files.add(file_)
+                    if not isfile(file_):
+                        # Create file
+                        metadata = metadata_from_id(identifier)
+                        data.save(file_, [], metadata, extract=True)
 
-            # TODO: Save results and identifier
-            #  Note that the results will be unordered so make sure to save
-            #  enough info!
-            data.append(file_, [identifier, result])
+                # TODO: Save results and identifier
+                #  Note that the results will be unordered so make sure to save
+                #  enough info!
+                data.append(file_, [identifier, result])
 
-            # Mark the task as completed (last in the else, after saving result)
-            data.append(path_metadata, [identifier, True])
+                # Mark the task as completed (last in the else,
+                # after saving result)
+                data.append(path_metadata, [identifier, True])
+finally:
+    # Post simulation.
+    metadata, metametadata = data.load(path_metadata)
+    meta_dict = {}
+    for x in metadata:
+        # Keep only the last exception for given identifier.
+        if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+            meta_dict[x[0]] = x[1]
+    metadata = [[x, meta_dict[x]] for x in meta_dict]
+    data.save(file=path_metadata, data=metadata, metadata=metametadata,
+              extract=True, disp=False)
 
-
-# Post simulation.
-metadata, metametadata = data.load(path_metadata)
-meta_dict = {}
-for x in metadata:
-    # Keep only the last exception for given identifier.
-    if x[0] not in meta_dict or meta_dict[x[0]] is not True:
-        meta_dict[x[0]] = x[1]
-metadata = [[x, meta_dict[x]] for x in meta_dict]
-data.save(file=path_metadata, data=metadata, metadata=metametadata,
-          extract=True, disp=False)
-
-# Print some stats
-print('\nSimulation completed.')
-print(f'Total number of tasks {len(metadata)}')
-print(f'Number of previously completed tasks: {len(ids)}')
-done = sum(x[1] for x in metadata if x[1] is True)
-print(f'Number of completed tasks this run: {done - len(ids)}')
-print(f'Number of tasks remaining: {len(metadata) - done}')
+    # Print some stats
+    print('\nSimulation completed.')
+    print(f'Total number of tasks {len(metadata)}')
+    print(f'Number of previously completed tasks: {len(ids)}')
+    done = sum(x[1] for x in metadata if x[1] is True)
+    print(f'Number of completed tasks this run: {done - len(ids)}')
+    print(f'Number of tasks remaining: {len(metadata) - done}')

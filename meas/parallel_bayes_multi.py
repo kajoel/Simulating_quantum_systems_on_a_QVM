@@ -75,7 +75,7 @@ else:
 
 # Select directory and file to save to (the case is appended to the file).
 directory = 'bayes_total_evals'  # directory to save to
-file = 'bayes_parallel_multi_particle_updated'  # file to save to
+file = 'bayes_parallel_multi_particle_updated_test'  # file to save to
 
 # Complete path to the saved file (relative to the data directory):
 path = join(directory, file + '_' + str(case))
@@ -109,7 +109,7 @@ def simulate(n_calls, samples):
     qc = ansatz.multi_particle_qc(h)
     H = convert_op(h)
 
-    vqe_nm = create_vqe.default_nelder_mead()
+    vqe_nm = create_vqe.nelder_mead(fatol=1)
     facit = vqe_eig.smallest(H, qc, init_params.alternate_stereographic(h),
                              vqe_nm, temp_ansatz, disp=False)
     
