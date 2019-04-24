@@ -17,10 +17,25 @@ from core.create_vqe import default_bayes
 from core import vqe_eig
 from core import callback as cb
 import numpy as np
+import sys
+import warnings
+from constants import ROOT_DIR
+from uuid import getnode as get_mac
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
 #  BETTER TO SAVE TOO MUCH THAN TOO LITTLE!
+
+# Input number of workers
+if len(sys.argv) <= 1:
+    num_workers = os.cpu_count()
+else:
+    try:
+        num_workers = int(sys.argv[1])
+    except ValueError:
+        num_workers = os.cpu_count()
+        warnings.warn(f'Could not parse input parameters. Using num_workers'
+                      f'={num_workers}')
 
 # TODO: give a version-number of the script (this should be changed iff the
 #  meaning of the elements in the tuple yielded by the generator (
@@ -36,6 +51,10 @@ file = 'bayes_parallel_multi_particle'  # file to save to
 
 # Append version number to file
 file += f'_v{version}'
+directory += f'_v{version}'
+
+# Make subdirectory based on MAC-address (to allow for multiple computers)
+directory = join(directory, str(get_mac()))
 
 # Metadata about what has been done previously will be saved here:
 path_metadata = join(directory, file + '_metadata')
@@ -135,10 +154,10 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
 
         # TODO: create VQE-object here! (not multiprocess safe)
         # TODO: run e.g. smallest here and return result.
-        dimension = [(-1.0, 1.0)]*(size-1)
+        interval = [(-1.0, 1.0)]*(size-1)
         H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
-        result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples)
+        result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
         return result
 
     except Exception as e:
@@ -149,14 +168,13 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
 # TODO: function that takes in identifier and outputs the file (as a string)
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
-    return join(directory,
-                file + f'_{identifier[0]}_size={identifier[1]}_matidx'
-                       f'={identifier[2]}')
+    return file + f'_{identifier[0]}_size={identifier[1]}_matidx'\
+                  f'={identifier[2]}'
 
 
 # TODO: function that takes in identifier and outputs metadata-string.
 def metadata_from_id(identifier):
-    return {'description': 'Bayes optimizer'
+    return {'description': 'Bayes optimizer, identifier = data[:][0], '
                            'result = data[:][1]',
             'size': identifier[1],
             'matidx': identifier[2],
@@ -202,7 +220,6 @@ def wrap(x):
 
 
 # Might want to change these to improve performance
-num_workers = os.cpu_count()
 max_task = 1
 chunksize = 1
 
@@ -210,46 +227,50 @@ generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 
-with Pool(num_workers, maxtasksperchild=max_task) as p:
-    result_generator = p.imap_unordered(wrap, generator, chunksize=chunksize)
-    for identifier, result in result_generator:
-        # Handle exceptions:
-        if isinstance(result, Exception):
-            # Save the error
-            data.append(path_metadata, [identifier, result])
-        else:
-            file_ = file_from_id(identifier)
-            if file_ not in files:
-                files.add(file_)
-                if not isfile(file_):
-                    # Create file
-                    metadata = metadata_from_id(identifier)
-                    data.save(file_, [], metadata, extract=True)
+try:
+    with Pool(num_workers, maxtasksperchild=max_task) as p:
+        result_generator = p.imap_unordered(wrap, generator,
+                                            chunksize=chunksize)
+        for identifier, result in result_generator:
+            # Handle exceptions:
+            if isinstance(result, Exception):
+                # Save the error
+                data.append(path_metadata, [identifier, result])
+            else:
+                file_ = file_from_id(identifier)
+                if file_ not in files:
+                    files.add(file_)
+                    if not isfile(join(ROOT_DIR, 'data', directory,
+                                       file_ + '.pkl')):
+                        # Create file
+                        metadata = metadata_from_id(identifier)
+                        data.save(join(directory, file_), [], metadata,
+                                  extract=True)
 
-            # TODO: Save results and identifier
-            #  Note that the results will be unordered so make sure to save
-            #  enough info!
-            data.append(file_, [identifier, result])
+                # TODO: Save results and identifier
+                #  Note that the results will be unordered so make sure to save
+                #  enough info!
+                data.append(join(directory, file_), [identifier, result])
 
-            # Mark the task as completed (last in the else, after saving result)
-            data.append(path_metadata, [identifier, True])
+                # Mark the task as completed (last in the else,
+                # after saving result)
+                data.append(path_metadata, [identifier, True])
+finally:
+    # Post simulation.
+    metadata, metametadata = data.load(path_metadata)
+    meta_dict = {}
+    for x in metadata:
+        # Keep only the last exception for given identifier.
+        if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+            meta_dict[x[0]] = x[1]
+    metadata = [[x, meta_dict[x]] for x in meta_dict]
+    data.save(file=path_metadata, data=metadata, metadata=metametadata,
+              extract=True, disp=False)
 
-
-# Post simulation.
-metadata, metametadata = data.load(path_metadata)
-meta_dict = {}
-for x in metadata:
-    # Keep only the last exception for given identifier.
-    if x[0] not in meta_dict or meta_dict[x[0]] is not True:
-        meta_dict[x[0]] = x[1]
-metadata = [[x, meta_dict[x]] for x in meta_dict]
-data.save(file=path_metadata, data=metadata, metadata=metametadata,
-          extract=True, disp=False)
-
-# Print some stats
-print('\nSimulation completed.')
-print(f'Total number of tasks {len(metadata)}')
-print(f'Number of previously completed tasks: {len(ids)}')
-done = sum(x[1] for x in metadata if x[1] is True)
-print(f'Number of completed tasks this run: {done - len(ids)}')
-print(f'Number of tasks remaining: {len(metadata) - done}')
+    # Print some stats
+    print('\nSimulation completed.')
+    print(f'Total number of tasks this far: {len(metadata)}')
+    print(f'Number of previously completed tasks: {len(ids)}')
+    done = sum(x[1] for x in metadata if x[1] is True)
+    print(f'Number of completed tasks this run: {done - len(ids)}')
+    print(f'Number of tasks remaining: {len(metadata) - done}')

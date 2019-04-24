@@ -51,6 +51,7 @@ file = 'parallel_test'  # file to save to (basename)
 
 # Append version number to file
 file += f'_v{version}'
+directory += f'_v{version}'
 
 # Make subdirectory based on MAC-address (to allow for multiple computers)
 directory = join(directory, str(get_mac()))
