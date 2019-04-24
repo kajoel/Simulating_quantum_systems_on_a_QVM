@@ -225,31 +225,6 @@ generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 
-# for x in generator:
-#     identifier, result = x
-#     # Handle exceptions:
-#     if isinstance(result, Exception):
-#         # Save the error
-#         data.append(path_metadata, [identifier, result])
-#     else:
-#         file_ = file_from_id(identifier)
-#         if file_ not in files:
-#             files.add(file_)
-#             if not isfile(join(ROOT_DIR, 'data', file_ + '.pkl')):
-#                 # Create file
-#                 metadata = metadata_from_id(identifier)
-#                 data.save(file_, [], metadata, extract=True)
-#
-#         # TODO: Save results and identifier
-#         #  Note that the results will be unordered so make sure to save
-#         #  enough info!
-#         data.append(file_, [identifier, result])
-#
-#         # Mark the task as completed (last in the else,
-#         # after saving result)
-#         data.append(path_metadata, [identifier, True])
-
-
 try:
     with Pool(num_workers, maxtasksperchild=max_task) as p:
         result_generator = p.imap_unordered(wrap, generator,
