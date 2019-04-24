@@ -1,8 +1,8 @@
 """
-Recipe for long runs. This makes sure to save often and keeps the data in a
-single file.
+Long runs with bayes optimiztion, created from recipe for long runs. 
+This makes sure to save often and keeps the data in a single file.
 
-@author = Joel, Carl
+@author = Joel, Carl, Axel
 """
 from core import data
 from os.path import join, basename, isfile
@@ -14,10 +14,23 @@ from core import ansatz
 from core.create_vqe import default_bayes
 from core import vqe_eig
 import numpy as np
+import sys
+import warnings
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
 #  BETTER TO SAVE TOO MUCH THAN TOO LITTLE!
+
+# Input number of workers
+if len(sys.argv) <= 1:
+    num_workers = os.cpu_count()
+else:
+    try:
+        num_workers = int(sys.argv[1])
+    except ValueError:
+        num_workers = os.cpu_count()
+        warnings.warn(f'Could not parse input parameters. Using num_workers'
+                      f'={num_workers}')
 
 # TODO: give a version-number of the script (this should be changed iff the
 #  meaning of the elements in the tuple yielded by the generator (
@@ -70,22 +83,6 @@ def identifier_generator():
     ansatz_name = 'multi_particle'
     # size of hamiltonian
     # size of hamiltonian
-    for size in range(2, 3):
-        num_para = size-1
-        for hamiltonian_idx in range(2):
-            # number of calls
-            for n_calls in range(10, 20, 5 + 5*(num_para-1)):
-                # number of samples
-                for samples in range(100, 500, 250*num_para):
-                    # input_4 is effectively called here with four arguments
-                    for repeats in range(2):
-                        # input_5 is effectively called here with five arguments
-                        yield(ansatz_name, size, hamiltonian_idx,
-                              int(round(samples)), n_calls, repeats)
-
-
-
-    '''
     for size in range(2, 6):
         num_para = size-1
         for hamiltonian_idx in range(4):
@@ -98,7 +95,6 @@ def identifier_generator():
                         # input_5 is effectively called here with five arguments
                         yield(ansatz_name, size, hamiltonian_idx,
                               int(round(samples)), n_calls, repeats)
-    '''
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -215,8 +211,6 @@ def wrap(x):
     return x[0], simulate(*x[0], *x[1])
 
 
-# Might want to change these to improve performance
-num_workers = os.cpu_count()
 max_task = 1
 chunksize = 1
 
