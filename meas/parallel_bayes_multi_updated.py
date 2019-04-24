@@ -227,50 +227,78 @@ generator = Bookkeeper(identifier_generator(), ids, input_functions)
 files = set()
 
 
-try:
-    with Pool(num_workers, maxtasksperchild=max_task) as p:
-        result_generator = p.imap_unordered(wrap, generator,
-                                            chunksize=chunksize)
-        for identifier, result in result_generator:
-            # Handle exceptions:
-            if isinstance(result, Exception):
-                # Save the error
-                data.append(path_metadata, [identifier, result])
-            else:
-                file_ = file_from_id(identifier)
-                if file_ not in files:
-                    files.add(file_)
-                    if not isfile(join(ROOT_DIR, 'data', directory,
-                                       file_ + '.pkl')):
-                        # Create file
-                        metadata = metadata_from_id(identifier)
-                        data.save(join(directory, file_), [], metadata,
-                                  extract=True)
+# TODO: For debugging purposes. Don't forget to copy to the with below if any
+#  changes are made!
+for x in generator:
+    identifier, result = wrap(x)
+    # Handle exceptions:
+    if isinstance(result, Exception):
+        # Save the error
+        data.append(path_metadata, [identifier, result])
+    else:
+        file_ = file_from_id(identifier)
+        if file_ not in files:
+            files.add(file_)
+            if not isfile(join(ROOT_DIR, 'data', directory,
+                               file_ + '.pkl')):
+                # Create file
+                metadata = metadata_from_id(identifier)
+                data.save(join(directory, file_), [], metadata,
+                          extract=True)
 
-                # TODO: Save results and identifier
-                #  Note that the results will be unordered so make sure to save
-                #  enough info!
-                data.append(join(directory, file_), [identifier, result])
+        # TODO: Save results and identifier
+        #  Note that the results will be unordered so make sure to save
+        #  enough info!
+        data.append(join(directory, file_), [identifier, result])
 
-                # Mark the task as completed (last in the else,
-                # after saving result)
-                data.append(path_metadata, [identifier, True])
-finally:
-    # Post simulation.
-    metadata, metametadata = data.load(path_metadata)
-    meta_dict = {}
-    for x in metadata:
-        # Keep only the last exception for given identifier.
-        if x[0] not in meta_dict or meta_dict[x[0]] is not True:
-            meta_dict[x[0]] = x[1]
-    metadata = [[x, meta_dict[x]] for x in meta_dict]
-    data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, disp=False)
+        # Mark the task as completed (last in the else,
+        # after saving result)
+        data.append(path_metadata, [identifier, True])
 
-    # Print some stats
-    print('\nSimulation completed.')
-    print(f'Total number of tasks this far: {len(metadata)}')
-    print(f'Number of previously completed tasks: {len(ids)}')
-    done = sum(x[1] for x in metadata if x[1] is True)
-    print(f'Number of completed tasks this run: {done - len(ids)}')
-    print(f'Number of tasks remaining: {len(metadata) - done}')
+# try:
+#     with Pool(num_workers, maxtasksperchild=max_task) as p:
+#         result_generator = p.imap_unordered(wrap, generator,
+#                                             chunksize=chunksize)
+#         for identifier, result in result_generator:
+#             # Handle exceptions:
+#             if isinstance(result, Exception):
+#                 # Save the error
+#                 data.append(path_metadata, [identifier, result])
+#             else:
+#                 file_ = file_from_id(identifier)
+#                 if file_ not in files:
+#                     files.add(file_)
+#                     if not isfile(join(ROOT_DIR, 'data', directory,
+#                                        file_ + '.pkl')):
+#                         # Create file
+#                         metadata = metadata_from_id(identifier)
+#                         data.save(join(directory, file_), [], metadata,
+#                                   extract=True)
+#
+#                 # TODO: Save results and identifier
+#                 #  Note that the results will be unordered so make sure to save
+#                 #  enough info!
+#                 data.append(join(directory, file_), [identifier, result])
+#
+#                 # Mark the task as completed (last in the else,
+#                 # after saving result)
+#                 data.append(path_metadata, [identifier, True])
+# finally:
+#     # Post simulation.
+#     metadata, metametadata = data.load(path_metadata)
+#     meta_dict = {}
+#     for x in metadata:
+#         # Keep only the last exception for given identifier.
+#         if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+#             meta_dict[x[0]] = x[1]
+#     metadata = [[x, meta_dict[x]] for x in meta_dict]
+#     data.save(file=path_metadata, data=metadata, metadata=metametadata,
+#               extract=True, disp=False)
+#
+#     # Print some stats
+#     print('\nSimulation completed.')
+#     print(f'Total number of tasks this far: {len(metadata)}')
+#     print(f'Number of previously completed tasks: {len(ids)}')
+#     done = sum(x[1] for x in metadata if x[1] is True)
+#     print(f'Number of completed tasks this run: {done - len(ids)}')
+#     print(f'Number of tasks remaining: {len(metadata) - done}')
