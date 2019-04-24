@@ -2,7 +2,7 @@
 Recipe for long runs. This makes sure to save often and keeps the data in a
 single file.
 
-@author = Joel, Carl
+@author = Joel, Carl, Axel
 """
 from core import data
 from os.path import join, basename, isfile
@@ -158,6 +158,9 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
         H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
         result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
+
+        # Saves only the parameters, opt Bayes returns A LOT more.
+        result['iteration_params'] = result['iteration_params'][-1].x_iters
         return result
 
     except Exception as e:
