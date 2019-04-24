@@ -42,7 +42,7 @@ version = 1
 
 # TODO: select directory and basename of file to save to.
 directory = 'bayes_total_evals'  # directory to save to
-file = 'parallel_bayes_multi'  # file to save to
+file = 'parallel_bayes_ucc'  # file to save to
 
 # Append version number to file
 file += f'_v{version}'
@@ -80,7 +80,7 @@ del metadata, metametadata
 #  have a unique identifier.
 def identifier_generator():
     # ansatz
-    ansatz_name = 'multi_particle'
+    ansatz_name = 'one_particle_ucc'
     # size of hamiltonian
     # size of hamiltonian
     for size in range(2, 6):
@@ -140,7 +140,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
              repeats, h):
     # Use a broad try-except to don't crash if we don't have to
     try:
-        dimension = [(-1.0, 1.0)]*(size-1)   
+        dimension = [(-3.0, 3.0)]*(size-1)   
         H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
         result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples, 

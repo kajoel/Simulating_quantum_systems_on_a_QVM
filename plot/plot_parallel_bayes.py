@@ -14,10 +14,10 @@ from constants import ROOT_DIR
 from os.path import join
 
 #name of the files without the case at the end. Case is from 0 to 10
-file_name = 'bayes_parallel_one_particle_ucc_updated_0'
+file_name = 'parallel_bayes_v1_multi_particle_size=2_matidx=0'
 file_path = join('bayes_total_evals', file_name)
 
 data, _ = data.load(file_path)
-for key in data:
-    print(key)
-    print(data[key])
+print(type(data))
+print(len(data))
+print(data[-1])
