@@ -17,10 +17,23 @@ from core.create_vqe import nelder_mead
 from core import vqe_eig
 from core import callback as cb
 import numpy as np
+import sys
+import warnings
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
 #  BETTER TO SAVE TOO MUCH THAN TOO LITTLE!
+
+# Input number of workers
+if len(sys.argv) <= 1:
+    num_workers = os.cpu_count()
+else:
+    try:
+        num_workers = int(sys.argv[1])
+    except ValueError:
+        num_workers = os.cpu_count()
+        warnings.warn(f'Could not parse input parameters. Using num_workers'
+                      f'={num_workers}')
 
 # TODO: give a version-number of the script (this should be changed iff the
 #  meaning of the elements in the tuple yielded by the generator (
@@ -204,7 +217,6 @@ def wrap(x):
 
 
 # Might want to change these to improve performance
-num_workers = os.cpu_count()
 max_task = 1
 chunksize = 1
 
