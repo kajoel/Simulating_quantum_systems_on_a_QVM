@@ -1,21 +1,26 @@
 """
-Long runs with bayes optimiztion, created from recipe for long runs. 
-This makes sure to save often and keeps the data in a single file.
+Recipe for long runs. This makes sure to save often and keeps the data in a
+single file.
 
-@author = Joel, Carl, Axel
+@author = Joel, Carl
 """
 from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
+from core import lipkin_quasi_spin
 from functools import lru_cache
 from core.lipkin_quasi_spin import hamiltonians_of_size
+from core import matrix_to_op
 from core import ansatz
 from core.create_vqe import default_bayes
 from core import vqe_eig
+from core import callback as cb
 import numpy as np
 import sys
 import warnings
+from constants import ROOT_DIR
+from uuid import getnode as get_mac
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
@@ -38,14 +43,18 @@ else:
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 1
+version = 2
 
 # TODO: select directory and basename of file to save to.
 directory = 'bayes_total_evals'  # directory to save to
-file = 'parallel_bayes_multi'  # file to save to
+file = 'bayes_parallel_multi_particle'  # file to save to
 
 # Append version number to file
 file += f'_v{version}'
+directory += f'_v{version}'
+
+# Make subdirectory based on MAC-address (to allow for multiple computers)
+directory = join(directory, str(get_mac()))
 
 # Metadata about what has been done previously will be saved here:
 path_metadata = join(directory, file + '_metadata')
@@ -82,19 +91,18 @@ def identifier_generator():
     # ansatz
     ansatz_name = 'multi_particle'
     # size of hamiltonian
-    # size of hamiltonian
     for size in range(2, 6):
         num_para = size-1
         for hamiltonian_idx in range(4):
             # number of calls
             for n_calls in range(10, 30 + num_para*15, 5 + 5*(num_para-1)):
                 # number of samples
-                for samples in range(100, 250 + 5000*num_para, 250*num_para):
+                for samples in range(100, 250 + 4000*num_para, 250*num_para):
                     # input_4 is effectively called here with four arguments
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
-                        yield(ansatz_name, size, hamiltonian_idx,
-                              int(round(samples)), n_calls, repeats)
+                        yield (ansatz_name, size, hamiltonian_idx,
+                               int(round(samples)), n_calls, repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -127,6 +135,9 @@ input_functions = {3: input_3,
                    5: input_5}
 
 
+# TODO: define constants needed in simulate (below). If you change any of
+#  these you must change the version (above) to not sa
+
 
 # TODO: the function that runs e.g. smallest or vqe.run. Make sure to create
 #  non-multiprocess-safe objects (such as VQE-objects) here rather than
@@ -140,14 +151,13 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
              repeats, h):
     # Use a broad try-except to don't crash if we don't have to
     try:
-        dimension = [(-1.0, 1.0)]*(size-1)   
+
+        # TODO: create VQE-object here! (not multiprocess safe)
+        # TODO: run e.g. smallest here and return result.
+        interval = [(-1.0, 1.0)]*(size-1)
         H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
-        result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples, 
-                                  return_all=True)
-
-        # Saves only the parameters, opt Bayes returns A LOT more. 
-        result['iteration_params'] = result['iteration_params'][-1].x_iters
+        result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
         return result
 
     except Exception as e:
@@ -155,21 +165,17 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
         return e
 
 
-
 # TODO: function that takes in identifier and outputs the file (as a string)
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
-    return join(directory,
-                file + f'_{identifier[0]}_size={identifier[1]}_matidx'
-                       f'={identifier[2]}')
+    return file + f'_{identifier[0]}_size={identifier[1]}_matidx'\
+                  f'={identifier[2]}'
 
 
 # TODO: function that takes in identifier and outputs metadata-string.
 def metadata_from_id(identifier):
-    return {'description': 'Bayes optimizer, identifier = data[n][0], '
-                           'result = data[n][1] for run number n. '
-                           'Identifier structure: ansatz_name, size, '
-                           'matrix_index, samples, n_calls, repeats.',
+    return {'description': 'Bayes optimizer, identifier = data[:][0], '
+                           'result = data[:][1]',
             'size': identifier[1],
             'matidx': identifier[2],
             'ansatz': identifier[0]}
@@ -213,6 +219,7 @@ def wrap(x):
     return x[0], simulate(*x[0], *x[1])
 
 
+# Might want to change these to improve performance
 max_task = 1
 chunksize = 1
 
@@ -233,15 +240,17 @@ try:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
                     files.add(file_)
-                    if not isfile(file_):
+                    if not isfile(join(ROOT_DIR, 'data', directory,
+                                       file_ + '.pkl')):
                         # Create file
                         metadata = metadata_from_id(identifier)
-                        data.save(file_, [], metadata, extract=True)
+                        data.save(join(directory, file_), [], metadata,
+                                  extract=True)
 
                 # TODO: Save results and identifier
                 #  Note that the results will be unordered so make sure to save
                 #  enough info!
-                data.append(file_, [identifier, result])
+                data.append(join(directory, file_), [identifier, result])
 
                 # Mark the task as completed (last in the else,
                 # after saving result)
@@ -260,7 +269,7 @@ finally:
 
     # Print some stats
     print('\nSimulation completed.')
-    print(f'Total number of tasks {len(metadata)}')
+    print(f'Total number of tasks this far: {len(metadata)}')
     print(f'Number of previously completed tasks: {len(ids)}')
     done = sum(x[1] for x in metadata if x[1] is True)
     print(f'Number of completed tasks this run: {done - len(ids)}')
