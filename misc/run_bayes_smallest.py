@@ -5,7 +5,7 @@ Created on Fri April 5 11:06 2019
 
 @author: axel
 """
-
+import core.interface
 from core import init_params,matrix_to_op,ansatz,lipkin_quasi_spin, data, vqe_eig, create_vqe
 from pyquil import get_qc
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ def run_bayes_opt(n_jobs=1):
     h = lipkin_quasi_spin.hamiltonian(j,V)[1]
     qubits = h.shape[0]
     qc = get_qc('{}q-qvm'.format(qubits))
-    vqe = create_vqe.default_bayes(n_calls=15)
+    vqe = core.interface.default_bayes(n_calls=15)
     ansatz_ = ansatz.multi_particle(h)
     H = matrix_to_op.multi_particle(h)
     dimension = [(-20.0, 20.0) for i in range(h.shape[0]-1)]

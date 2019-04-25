@@ -8,6 +8,7 @@ Created on Ons 17 April 10:48 2019
 
 
 # Imports for the module
+import core.interface
 from core import data, vqe_override, vqe_eig, init_params, create_vqe
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
@@ -83,7 +84,7 @@ def bayes_iteration_sweep(h,
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
-        vqe = create_vqe.default_bayes(n_calls=num_func_eval)
+        vqe = core.interface.default_bayes(n_calls=num_func_eval)
         
         temp_data=np.zeros( (3, measurments_per_step) )
         for j in range(measurments_per_step):
