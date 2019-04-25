@@ -9,3 +9,5 @@ Misc/.idea/**/*
 OpenFermion/\.idea/
 
 package-lock\.json
+
+data_ignore/
