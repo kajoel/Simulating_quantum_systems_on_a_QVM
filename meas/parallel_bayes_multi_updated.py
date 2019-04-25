@@ -34,8 +34,30 @@ else:
         num_workers = int(sys.argv[1])
     except ValueError:
         num_workers = os.cpu_count()
-        warnings.warn(f'Could not parse input parameters. Using num_workers'
-                      f'={num_workers}')
+        warnings.warn(f'Could not parse input parameter 1 num_workers.')
+
+# Input start of range
+if len(sys.argv) <= 2:
+    start_range = 0
+else:
+    try:
+        start_range = int(sys.argv[2])
+    except ValueError:
+        start_range = 0
+        warnings.warn(f'Could not parse input parameter 2 start_range.')
+
+# Input end of range
+if len(sys.argv) <= 3:
+    stop_range = np.inf
+else:
+    try:
+        stop_range = int(sys.argv[3])
+    except ValueError:
+        stop_range = np.inf
+        warnings.warn(f'Could not parse input parameter 3 stop_range.')
+
+print(f'\nStarting with num_workers = {num_workers}, and range = '
+      f'[{start_range}, {stop_range})\n')
 
 # TODO: give a version-number of the script (this should be changed iff the
 #  meaning of the elements in the tuple yielded by the generator (
@@ -192,19 +214,24 @@ class Bookkeeper:
     Class for keeping track of what's been done and only assign new tasks.
     """
 
-    def __init__(self, iterator, book, output_calc=None):
+    def __init__(self, iterator, book, output_calc=None, bounds=None):
         """
 
         :param iterator: Iterable
         :param set book: Set of identifiers corresponding to previously
             completed tasks.
         :param output_calc: List of functions
+        :param bounds: Bounds of elements to return from iterator
         """
         if output_calc is None:
             output_calc = {}
+        if bounds is None:
+            bounds = [0, np.inf]
         self.iterator = iterator
         self.book = book
         self.output_calc = output_calc
+        self.bounds = bounds
+        self.count = -1  # to start from 0 (see += 1 below)
 
     def __iter__(self):
         return self
@@ -212,7 +239,12 @@ class Bookkeeper:
     def __next__(self):
         while True:
             x = self.iterator.__next__()
-            if x not in self.book:
+            self.count += 1
+
+            if self.count >= self.bounds[1]:
+                raise StopIteration
+
+            if x not in self.book and self.count >= self.bounds[0]:
                 output = []
                 for i in range(len(x) + 1):
                     if i in self.output_calc:
@@ -229,7 +261,8 @@ def wrap(x):
 max_task = 1
 chunksize = 1
 
-generator = Bookkeeper(identifier_generator(), ids, input_functions)
+generator = Bookkeeper(identifier_generator(), ids, input_functions,
+                       [start_range, stop_range])
 files = set()
 
 
