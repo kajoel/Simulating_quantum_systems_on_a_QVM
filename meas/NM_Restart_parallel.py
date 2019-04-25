@@ -185,10 +185,10 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     vqe = nelder_mead(samples=samples, H=H)
     tol_para = 1e-2
     callback = cb.restart_break(max_same_para, tol_para)
-    attempts = 20
+    max_fun_evals = 100
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
-                              callback=callback, attempts=attempts)
+                              callback=callback, max_fun_evals=max_fun_evals)
     result.correct = eig
     return result
 
@@ -290,7 +290,7 @@ try:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
                     files.add(file_)
-                    if not isfile(join(ROOT_DIR, 'data', directory,
+                    if not isfile(join(base_dir, directory,
                                        file_ + '.pkl')):
                         # Create file
                         metadata = metadata_from_id(identifier)

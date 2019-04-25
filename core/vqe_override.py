@@ -134,7 +134,7 @@ class VQE_override(VQE):
             nonlocal fun_evals
             fun_evals += 1
             if fun_evals >= max_fun_evals:
-                raise RestartError  # attempt restart and break while below
+                raise BreakError  # attempt restart and break while below
 
             # Save params, exp_val and exp_var
             iteration_params.append(params)
@@ -163,12 +163,13 @@ class VQE_override(VQE):
 
         def wrap_callbacks(iter_vars, *args, **kwargs):
             # save values
-            callback_idx.append(fun_evals)
-            # call VQE's callback
-            callback(iteration_params, expectation_vals, expectation_vars)
+            callback_idx.append(fun_evals-1)
             # display
             if disp is True:
                 print_current_iter(iter_vars)
+            # call VQE's callback
+            callback(iteration_params, expectation_vals, expectation_vars)
+
 
         if 'callback' in arguments:
             self.minimizer_kwargs['callback'] = wrap_callbacks
