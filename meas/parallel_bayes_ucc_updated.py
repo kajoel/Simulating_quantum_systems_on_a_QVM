@@ -4,14 +4,14 @@ This makes sure to save often and keeps the data in a single file.
 
 @author = Joel, Carl, Axel
 """
+import core.interface
 from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
 from functools import lru_cache
-from core.lipkin_quasi_spin import hamiltonians_of_size
+from core.interface import hamiltonians_of_size, default_bayes
 from core import ansatz
-from core.create_vqe import default_bayes
 from core import vqe_eig
 import numpy as np
 import sys
@@ -173,7 +173,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
     # Use a broad try-except to don't crash if we don't have to
     try:
         dimension = [(-3.0, 3.0)]*(size-1)   
-        H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
+        H, qc, ansatz_,_ = core.interface.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
         result = vqe_eig.smallest(H, qc, dimension, vqe, ansatz_, samples, 
                                   return_all=True)

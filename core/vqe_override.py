@@ -31,7 +31,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False, callback=None, attempts=1):
+                return_all=False, callback=None, max_fun_evals=1):
         """
         functional minimization loop.
 
@@ -123,6 +123,8 @@ class VQE_override(VQE):
             self._current_expectation = mean_value  # store for printing
             nonlocal fun_evals
             fun_evals += 1
+            if fun_evals >= max_fun_evals:
+                raise RestartError  # attempt restart and break while below
             # print(fun_evals)
 
             return mean_value
@@ -166,13 +168,12 @@ class VQE_override(VQE):
 
         results = OptResults()
         results.status = 0
-        for attempt_dummy in range(attempts):
+        while fun_evals < max_fun_evals:
             break_ = True
             try:
                 result = self.minimizer(*args, **self.minimizer_kwargs)
             except BreakError:
-                results.x = iteration_params[-1]
-                results.fun = expectation_vals[-1]
+                pass
             except RestartError as e:
                 break_ = False
                 args[1] = iteration_params[-1]
@@ -194,12 +195,16 @@ class VQE_override(VQE):
             if break_:
                 break
         else:
-            results.x = iteration_params[-1]
-            results.fun = expectation_vals[-1]
             results.status = 1
             if disp:
-                print("Restarts exceeded maximum of %i attempts and run was "
-                      "terminated." % attempts)
+                print(f"Restarts exceeded maximum of {max_fun_evals} function "
+                      f"evalutations  and run was terminated.")
+
+        # add results in case of Break- or RestartError
+        if not hasattr(results, 'x'):
+            idx = int(np.argmin(expectation_vals))
+            results.x = iteration_params[idx]
+            results.fun = expectation_vals[idx]
 
         if return_all:
             # iteration_params.append(result['x'][0])

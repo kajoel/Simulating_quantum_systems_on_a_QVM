@@ -1,5 +1,6 @@
 import numpy as np
 # Imports for VQE
+import core.interface
 from core import ansatz, create_vqe
 from core import matrix_to_op
 from core import vqe_override
@@ -45,9 +46,10 @@ def smallest(H, qc, initial_params, vqe,
 
     x = eig['x']
     eig['fun'] = vqe.expectation(ansatz_(x), H, samples=samples, qc=qc)[0]
+    eig['fun_none'] = vqe.expectation(ansatz_(x), H, samples=None, qc=qc)[0]
     # Cant run Bayes without a interval
     if vqe.minimizer.__name__ == 'gp_minimize':
-        temp_vqe = create_vqe.nelder_mead(H=H, samples=samples)
+        temp_vqe = core.interface.nelder_mead(H=H, samples=samples)
         eig['correct'] = temp_vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
                                           return_all=False, disp=False)
     else:

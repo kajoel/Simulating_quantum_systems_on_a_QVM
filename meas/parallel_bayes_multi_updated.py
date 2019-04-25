@@ -4,16 +4,16 @@ single file.
 
 @author = Joel, Carl, Axel
 """
+import core.interface
 from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
 from functools import lru_cache
-from core.lipkin_quasi_spin import hamiltonians_of_size
+from core.interface import hamiltonians_of_size, default_bayes
 from core import matrix_to_op
 from core import ansatz
-from core.create_vqe import default_bayes
 from core import vqe_eig
 from core import callback as cb
 import numpy as np
@@ -180,7 +180,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
         # TODO: create VQE-object here! (not multiprocess safe)
         # TODO: run e.g. smallest here and return result.
         interval = [(-1.0, 1.0)]*(size-1)
-        H, qc, ansatz_,_ = ansatz.create(ansatz_name, h)
+        H, qc, ansatz_,_ = core.interface.create(ansatz_name, h)
         vqe = default_bayes(n_calls=n_calls)
         result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
 

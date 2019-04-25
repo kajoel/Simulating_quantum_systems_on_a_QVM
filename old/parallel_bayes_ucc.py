@@ -4,6 +4,7 @@ one_particle_ucc ansatz
 
 @author: Recipe: Joel, filled in TODO: Axel
 """
+import core.interface
 from core.data import save, load
 from os.path import join
 import os
@@ -109,7 +110,7 @@ def simulate(n_calls, samples):
     facit = vqe_eig.smallest(H, qc, init_params.ucc(h.shape[0]), vqe_nm,
                              temp_ansatz, disp=False)
    
-    vqe = create_vqe.default_bayes(n_calls=n_calls)
+    vqe = core.interface.default_bayes(n_calls=n_calls)
     
     result = np.zeros(2)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
