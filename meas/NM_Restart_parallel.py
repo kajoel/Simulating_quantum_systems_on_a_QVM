@@ -184,7 +184,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h)
     vqe = nelder_mead(samples=samples, H=H)
     tol_para = 1e-2
-    callback = cb.restart(max_same_para, tol_para)
+    callback = cb.restart_break(max_same_para, tol_para)
     attempts = 20
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
