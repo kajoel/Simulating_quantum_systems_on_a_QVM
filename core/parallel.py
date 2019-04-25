@@ -1,14 +1,19 @@
 """
 Module with function for running in parallel and doing cleanups after runs etc.
+
+@author = Joel
 """
 import numpy as np
-from time import perf_counter
+import warnings
 import os
 from os.path import join, isfile
 from multiprocessing import Pool
+from time import perf_counter
 from uuid import getnode as get_mac
 from core import data
 from constants import ROOT_DIR
+
+max_num_workers = os.cpu_count()
 
 
 class Bookkeeper:
@@ -55,12 +60,57 @@ class Bookkeeper:
                 return x, output
 
 
+def script_input(args):
+    """
+    Parse script inputs to parallel.run
+
+    :param args: Input sys.argv
+    :return: kwargs to parallel.run
+    """
+    # Input number of workers
+    if len(args) <= 1:
+        num_workers = max_num_workers
+    else:
+        try:
+            num_workers = int(args[1])
+        except ValueError:
+            num_workers = max_num_workers
+            warnings.warn(f'Could not parse input parameter 1 num_workers.')
+
+    # Input start of range
+    if len(args) <= 2:
+        start_range = 0
+    else:
+        try:
+            start_range = int(args[2])
+        except ValueError:
+            start_range = 0
+            warnings.warn(f'Could not parse input parameter 2 start_range.')
+
+    # Input end of range
+    if len(args) <= 3:
+        stop_range = np.inf
+    else:
+        try:
+            stop_range = int(args[3])
+        except ValueError:
+            stop_range = np.inf
+            warnings.warn(f'Could not parse input parameter 3 stop_range.')
+
+    print(f'\nStarting with num_workers = {num_workers}, and range = '
+          f'[{start_range}, {stop_range})\n')
+
+    return {'num_workers': num_workers,
+            'start_range': start_range,
+            'stop_range': stop_range}
+
+
 def run(simulate,
         identifier_generator,
         input_functions,
         directory,
         version,
-        metametadata,
+        script_file,
         file_from_id,
         metadata_from_id,
         num_workers=os.cpu_count(),
@@ -70,6 +120,8 @@ def run(simulate,
         chunksize=1):
     """
     Run simulate in parallel.
+
+    # TODO: param doc
 
     :return:
     """
@@ -83,6 +135,15 @@ def run(simulate,
         metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     except FileNotFoundError:
         metadata = []
+        metametadata = {
+            'description': "File that keeps track of what's been done "
+                           "previously in this script "
+            f"({script_file}).",
+            'run_time': [],
+            'num_workers': [],
+            'num_tasks_completed': [],
+            'success_rate': [],
+            'created_from': script_file}
         data.save(file=path_metadata, data=metadata, metadata=metametadata,
                   extract=True, base_dir=base_dir)
 
@@ -112,7 +173,6 @@ def run(simulate,
                            [start_range, stop_range])
 
     # Counters and such
-    max_num_workers = os.cpu_count()
     files = set()
     success = 0
     fail = 0
@@ -132,17 +192,17 @@ def run(simulate,
                                 base_dir=base_dir)
                 else:
                     success += 1
-                    file_ = file_from_id(identifier)
-                    if file_ not in files:
-                        files.add(file_)
+                    file = file_from_id(identifier)
+                    if file not in files:
+                        files.add(file)
                         if not isfile(join(base_dir, directory,
-                                           file_ + '.pkl')):
+                                           file + '.pkl')):
                             # Create file
                             metadata = metadata_from_id(identifier)
-                            data.save(join(directory, file_), [], metadata,
+                            data.save(join(directory, file), [], metadata,
                                       extract=True, base_dir=base_dir)
 
-                    data.append(join(directory, file_), [identifier, result],
+                    data.append(join(directory, file), [identifier, result],
                                 base_dir=base_dir)
 
                     # Mark the task as completed (last in the else,
