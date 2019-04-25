@@ -21,6 +21,7 @@ import sys
 import warnings
 from constants import ROOT_DIR
 from uuid import getnode as get_mac
+from time import perf_counter
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
@@ -92,7 +93,11 @@ except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
-                                   f"({basename(__file__)})."}
+                                   f"({basename(__file__)}).",
+                    'run_time': [],
+                    'num_workers': [],
+                    'num_tasks_completed': [],
+                    'success_rate': []}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
               extract=True, base_dir=base_dir)
 
@@ -142,8 +147,8 @@ def identifier_generator():
 
 @lru_cache(maxsize=1)
 def input_3(ansatz_name, size, hamiltonian_idx):
-    h = hamiltonians_of_size(size)[hamiltonian_idx]
-    return h,
+    h, eig = hamiltonians_of_size(size)
+    return h[hamiltonian_idx], eig[hamiltonian_idx]
 
 
 @lru_cache(maxsize=1)
@@ -173,24 +178,18 @@ input_functions = {3: input_3,
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
 def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
-             repeats, h):
-    # Use a broad try-except to don't crash if we don't have to
-    try:
+             repeats, h, eig):
+    # TODO: create VQE-object here! (not multiprocess safe)
+    # TODO: run e.g. smallest here and return result.
+    interval = [(-1.0, 1.0)]*(size-1)
+    H, qc, ansatz_,_ = core.interface.create(ansatz_name, h)
+    vqe = default_bayes(n_calls=n_calls)
+    result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
 
-        # TODO: create VQE-object here! (not multiprocess safe)
-        # TODO: run e.g. smallest here and return result.
-        interval = [(-1.0, 1.0)]*(size-1)
-        H, qc, ansatz_,_ = core.interface.create(ansatz_name, h)
-        vqe = default_bayes(n_calls=n_calls)
-        result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
-
-        # Saves only the parameters, opt Bayes returns A LOT more.
-        result['iteration_params'] = result['iteration_params'][-1].x_iters
-        return result
-
-    except Exception as e:
-        # This will be saved in the metadata file so we can check success-rate.
-        return e
+    # Saves only the parameters, opt Bayes returns A LOT more.
+    result['iteration_params'] = result['iteration_params'][-1].x_iters
+    result.correct = eig
+    return result
 
 
 # TODO: function that takes in identifier and outputs the file (as a string)
@@ -254,7 +253,13 @@ class Bookkeeper:
 
 
 def wrap(x):
-    return x[0], simulate(*x[0], *x[1])
+    # Use a broad try-except to not crash if we don't have to
+    try:
+        return x[0], simulate(*x[0], *x[1])
+
+    except Exception as e:
+        # This will be saved in the metadata file so we can check success-rate.
+        return x[0], e
 
 
 # Might want to change these to improve performance
@@ -264,7 +269,9 @@ chunksize = 1
 generator = Bookkeeper(identifier_generator(), ids, input_functions,
                        [start_range, stop_range])
 files = set()
-
+success = 0
+fail = 0
+start_time = perf_counter()
 
 try:
     with Pool(num_workers, maxtasksperchild=max_task) as p:
@@ -273,10 +280,12 @@ try:
         for identifier, result in result_generator:
             # Handle exceptions:
             if isinstance(result, Exception):
+                fail += 1
                 # Save the error
                 data.append(path_metadata, [identifier, result],
                             base_dir=base_dir)
             else:
+                success += 1
                 file_ = file_from_id(identifier)
                 if file_ not in files:
                     files.add(file_)
@@ -298,6 +307,10 @@ try:
                 data.append(path_metadata, [identifier, True],
                             base_dir=base_dir)
 finally:
+    stop_time = perf_counter()
+    if success + fail == 0:
+        fail = 1  # To avoid division by zero
+
     # Post simulation.
     metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     meta_dict = {}
@@ -306,13 +319,17 @@ finally:
         if x[0] not in meta_dict or meta_dict[x[0]] is not True:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
+    metametadata['run_time'].append(stop_time - start_time)
+    metametadata['num_workers'].append(num_workers)
+    metametadata['num_tasks_completed'].append(success)
+    metametadata['success_rate'].append(success/(success+fail))
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, disp=False, base_dir=base_dir)
+              extract=True, base_dir=base_dir)
 
     # Print some stats
     print('\nSimulation completed.')
     print(f'Total number of tasks this far: {len(metadata)}')
-    print(f'Number of previously completed tasks: {len(ids)}')
+    print(f'Completed tasks this run: {success}')
+    print(f'Success rate this run: {success/(success+fail)}')
     done = sum(x[1] for x in metadata if x[1] is True)
-    print(f'Number of completed tasks this run: {done - len(ids)}')
     print(f'Number of tasks remaining: {len(metadata) - done}')
