@@ -91,6 +91,12 @@ class VQE_override(VQE):
         expectation_vals = []
         expectation_vars = []
         fun_evals = 0
+        callback_idx = []
+
+        # Problem: expectation_vals did not (for Nelder-Mead in
+        # scipy.optimize) correspond to objective_function(
+
+
         self._current_expectation = None
         self._current_variance = None
 
@@ -125,7 +131,11 @@ class VQE_override(VQE):
             fun_evals += 1
             if fun_evals >= max_fun_evals:
                 raise RestartError  # attempt restart and break while below
-            # print(fun_evals)
+
+            # Save params, exp_val and exp_var
+            iteration_params.append(params)
+            expectation_vals .append(mean_value)
+            expectation_vars.append(tmp_vars)
 
             return mean_value
 
@@ -149,9 +159,7 @@ class VQE_override(VQE):
 
         def wrap_callbacks(iter_vars, *args, **kwargs):
             # save values
-            iteration_params.append(iter_vars)
-            expectation_vals.append(self._current_expectation)
-            expectation_vars.append(self._current_variance)
+            callback_idx.append(fun_evals)
             # call VQE's callback
             callback(iteration_params, expectation_vals, expectation_vars)
             # display
@@ -200,18 +208,28 @@ class VQE_override(VQE):
                 print(f"Restarts exceeded maximum of {max_fun_evals} function "
                       f"evalutations  and run was terminated.")
 
-        # add results in case of Break- or RestartError
+        # Save results in case of Break- or RestartError
         if not hasattr(results, 'x'):
             idx = int(np.argmin(expectation_vals))
             results.x = iteration_params[idx]
             results.fun = expectation_vals[idx]
 
         if return_all:
-            # iteration_params.append(result['x'][0])
-            # expectation_vals.append(result['fun'])
-            results.iteration_params = iteration_params
-            results.expectation_vals = expectation_vals
-            results.expectation_vars = expectation_vars
+            # Convert to ndarray for better indexing options (se bellow)
+            iteration_params = np.array(iteration_params)
+            expectation_vals = np.array(expectation_vals)
+            expectation_vars = np.array(expectation_vars)
+
+            # From each time callback is called
+            results.iteration_params = iteration_params[callback_idx]
+            results.expectation_vals = expectation_vals[callback_idx]
+            results.expectation_vars = expectation_vars[callback_idx]
+
+            # From every function evaluation
+            results.iteration_params_all = iteration_params
+            results.expectation_vals_all = expectation_vals
+            results.expectation_vars_all = expectation_vars
+
             results.fun_evals = fun_evals
         return results
 

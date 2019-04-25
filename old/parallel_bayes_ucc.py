@@ -13,7 +13,7 @@ from multiprocessing import Pool
 import itertools
 import warnings
 from time import perf_counter
-from core import ansatz, vqe_eig, vqe_override, matrix_to_op, create_vqe, \
+from core import ansatz, vqe_eig, vqe_override, matrix_to_op, \
                  lipkin_quasi_spin, init_params
 import numpy as np
 
@@ -106,7 +106,7 @@ def simulate(n_calls, samples):
     qc = ansatz.one_particle_qc(h)
     H = convert_op(h)
 
-    vqe_nm = create_vqe.default_nelder_mead()
+    vqe_nm = core.interface.create_vqe.default_nelder_mead()
     facit = vqe_eig.smallest(H, qc, init_params.ucc(h.shape[0]), vqe_nm,
                              temp_ansatz, disp=False)
    

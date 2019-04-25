@@ -141,8 +141,8 @@ def identifier_generator():
 
 @lru_cache(maxsize=1)
 def input_3(ansatz_name, size, hamiltonian_idx):
-    h = hamiltonians_of_size(size)[hamiltonian_idx]
-    return h,
+    h, eig = hamiltonians_of_size(size)
+    return h[hamiltonian_idx], eig[hamiltonian_idx]
 
 
 @lru_cache(maxsize=1)
@@ -172,7 +172,7 @@ input_functions = {3: input_3,
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
 def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
-             repeats, h):
+             repeats, h, eig):
     # Use a broad try-except to don't crash if we don't have to
     try:
         # TODO: create VQE-object here! (not multiprocess safe)
@@ -185,6 +185,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
         result = vqe_eig.smallest(H, qc, initial_params, vqe,
                                   ansatz_, samples,
                                   callback=callback, attempts=attempts)
+        result.correct = eig
         return result
 
     except Exception as e:

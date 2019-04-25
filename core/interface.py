@@ -9,6 +9,7 @@ from core import matrix_to_op, init_params, vqe_override
 from core.ansatz import one_particle, one_particle_ucc, \
     multi_particle_stereographic, multi_particle_ucc
 from core.lipkin_quasi_spin import hamiltonian
+from scipy.sparse.linalg import eigsh
 
 
 def create(ansatz_name, h, initial_params=None):
@@ -57,6 +58,21 @@ def create(ansatz_name, h, initial_params=None):
     return H, qc, ansatz_, initial_params
 
 
+def smallest_eig(h):
+    """
+    Find smallest eigenvalue of subscriptable sparse matrix.
+
+    @author = Joel
+
+    :param h: sparse matrix
+    :return: smallest eigenvalue
+    """
+    if h.shape[0] == 1:
+        return h[0, 0]
+    else:
+        return eigsh(h, k=1, which='SA', return_eigenvectors=False)[0]
+
+
 @lru_cache(maxsize=1)
 def hamiltonians_of_size(size: int, V=1., e=1.) -> tuple:
     """
@@ -70,8 +86,15 @@ def hamiltonians_of_size(size: int, V=1., e=1.) -> tuple:
         hamiltonian(size - 1, V, e)[0],
         hamiltonian(size - 1 / 2, V, e)[0],
         hamiltonian(size - 1 / 2, V, e)[1],
-        hamiltonian(size, V, e)[1])
-    return mats
+        hamiltonian(size, V, e)[1]
+    )
+    eigs = (
+        smallest_eig(mats[0]),
+        smallest_eig(mats[1]),
+        smallest_eig(mats[2]),
+        smallest_eig(mats[3])
+    )
+    return mats, eigs
 
 
 def nelder_mead(xatol=1e-2, fatol=None, samples=None, H=None, return_all=False,

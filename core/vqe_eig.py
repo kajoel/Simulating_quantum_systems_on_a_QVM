@@ -44,14 +44,7 @@ def smallest(H, qc, initial_params, vqe,
     x = eig['x']
     eig['fun'] = vqe.expectation(ansatz_(x), H, samples=samples, qc=qc)[0]
     eig['fun_none'] = vqe.expectation(ansatz_(x), H, samples=None, qc=qc)[0]
-    # Cant run Bayes without a interval
-    if vqe.minimizer.__name__ == 'gp_minimize':
-        temp_vqe = core.interface.nelder_mead(H=H, samples=samples)
-        eig['correct'] = temp_vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
-                                          return_all=False, disp=False)
-    else:
-        eig['correct'] = vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
-                                     return_all=False)
+
     eig['time'] = stop_time - start_time
 
     return eig
