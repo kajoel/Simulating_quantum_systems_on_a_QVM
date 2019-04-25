@@ -1,9 +1,6 @@
 import numpy as np
-# Imports for VQE
 import core.interface
-from core import ansatz, create_vqe
 from core import matrix_to_op
-from core import vqe_override
 from time import perf_counter
 
 
