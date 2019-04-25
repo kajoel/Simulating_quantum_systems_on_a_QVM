@@ -49,6 +49,9 @@ version = 1
 directory = 'NM_Restart_Parallel'  # directory to save to
 file = 'parallel_test'  # file to save to (basename)
 
+# Base dir, save to gitignored directory to avoid problems
+base_dir = join(ROOT_DIR, 'data_ignore')
+
 # Append version number to file
 file += f'_v{version}'
 directory += f'_v{version}'
@@ -62,14 +65,14 @@ path_metadata = join(directory, file + '_metadata')
 # Load/initialize metadata
 try:
     # Try to load the file (will raise FileNotFoundError if not existing)
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
 except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
                                    f"({basename(__file__)})."}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True)
+              extract=True, base_dir=base_dir)
 
 # Extract identifiers to previously completed simulations
 ids = set()
@@ -237,7 +240,8 @@ try:
             # Handle exceptions:
             if isinstance(result, Exception):
                 # Save the error
-                data.append(path_metadata, [identifier, result])
+                data.append(path_metadata, [identifier, result],
+                            base_dir=base_dir)
             else:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
@@ -247,19 +251,21 @@ try:
                         # Create file
                         metadata = metadata_from_id(identifier)
                         data.save(join(directory, file_), [], metadata,
-                                  extract=True)
+                                  extract=True, base_dir=base_dir)
 
                 # TODO: Save results and identifier
                 #  Note that the results will be unordered so make sure to save
                 #  enough info!
-                data.append(join(directory, file_), [identifier, result])
+                data.append(join(directory, file_), [identifier, result],
+                            base_dir=base_dir)
 
                 # Mark the task as completed (last in the else,
                 # after saving result)
-                data.append(path_metadata, [identifier, True])
+                data.append(path_metadata, [identifier, True],
+                            base_dir=base_dir)
 finally:
     # Post simulation.
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     meta_dict = {}
     for x in metadata:
         # Keep only the last exception for given identifier.
@@ -267,7 +273,7 @@ finally:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, disp=False)
+              extract=True, disp=False, base_dir=base_dir)
 
     # Print some stats
     print('\nSimulation completed.')
