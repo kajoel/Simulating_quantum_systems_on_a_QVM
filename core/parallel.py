@@ -16,6 +16,23 @@ from constants import ROOT_DIR
 max_num_workers = os.cpu_count()
 
 
+class Wrap:
+    """
+    Class for wrapping simulate (pickable)
+    """
+    def __init__(self, simulate):
+        self.simulate = simulate
+
+    def __call__(self, x):
+        # Use a broad try-except to not crash if we don't have to
+        try:
+            return x[0], self.simulate(*x[0], *x[1])
+
+        except Exception as e:
+            # This will be saved in the metadata file.
+            return x[0], e
+
+
 class Bookkeeper:
     """
     Class for keeping track of what's been done and only assign new tasks.
@@ -159,14 +176,8 @@ def run(simulate,
     del metadata, metametadata
 
     # Wrap simulate to get expected input/output and handle exceptions
-    def wrap(x):
-        # Use a broad try-except to not crash if we don't have to
-        try:
-            return x[0], simulate(*x[0], *x[1])
+    wrap = Wrap(simulate)
 
-        except Exception as e:
-            # This will be saved in the metadata file.
-            return x[0], e
 
     # Generator for pool
     generator = Bookkeeper(identifier_generator, ids, input_functions,
