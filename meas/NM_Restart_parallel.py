@@ -34,8 +34,30 @@ else:
         num_workers = int(sys.argv[1])
     except ValueError:
         num_workers = os.cpu_count()
-        warnings.warn(f'Could not parse input parameters. Using num_workers'
-                      f'={num_workers}')
+        warnings.warn(f'Could not parse input parameter 1 num_workers.')
+
+# Input start of range
+if len(sys.argv) <= 2:
+    start_range = 0
+else:
+    try:
+        start_range = int(sys.argv[2])
+    except ValueError:
+        start_range = 0
+        warnings.warn(f'Could not parse input parameter 2 start_range.')
+
+# Input end of range
+if len(sys.argv) <= 3:
+    stop_range = np.inf
+else:
+    try:
+        stop_range = int(sys.argv[3])
+    except ValueError:
+        stop_range = np.inf
+        warnings.warn(f'Could not parse input parameter 3 stop_range.')
+
+print(f'\nStarting with num_workers = {num_workers}, and range = '
+      f'[{start_range}, {stop_range})\n')
 
 # TODO: give a version-number of the script (this should be changed iff the
 #  meaning of the elements in the tuple yielded by the generator (
@@ -48,6 +70,9 @@ version = 1
 # TODO: select directory and basename of file to save to.
 directory = 'NM_Restart_Parallel'  # directory to save to
 file = 'parallel_test'  # file to save to (basename)
+
+# Base dir, save to gitignored directory to avoid problems
+base_dir = join(ROOT_DIR, 'data_ignore')
 
 # Append version number to file
 file += f'_v{version}'
@@ -62,14 +87,14 @@ path_metadata = join(directory, file + '_metadata')
 # Load/initialize metadata
 try:
     # Try to load the file (will raise FileNotFoundError if not existing)
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
 except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
                                    f"({basename(__file__)})."}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True)
+              extract=True, base_dir=base_dir)
 
 # Extract identifiers to previously completed simulations
 ids = set()
@@ -188,19 +213,24 @@ class Bookkeeper:
     Class for keeping track of what's been done and only assign new tasks.
     """
 
-    def __init__(self, iterator, book, output_calc=None):
+    def __init__(self, iterator, book, output_calc=None, bounds=None):
         """
 
         :param iterator: Iterable
         :param set book: Set of identifiers corresponding to previously
             completed tasks.
         :param output_calc: List of functions
+        :param bounds: Bounds of elements to return from iterator
         """
         if output_calc is None:
             output_calc = {}
+        if bounds is None:
+            bounds = [0, np.inf]
         self.iterator = iterator
         self.book = book
         self.output_calc = output_calc
+        self.bounds = bounds
+        self.count = -1  # to start from 0 (see += 1 below)
 
     def __iter__(self):
         return self
@@ -208,7 +238,12 @@ class Bookkeeper:
     def __next__(self):
         while True:
             x = self.iterator.__next__()
-            if x not in self.book:
+            self.count += 1
+
+            if self.count >= self.bounds[1]:
+                raise StopIteration
+
+            if x not in self.book and self.count >= self.bounds[0]:
                 output = []
                 for i in range(len(x) + 1):
                     if i in self.output_calc:
@@ -225,7 +260,8 @@ def wrap(x):
 max_task = 1
 chunksize = 1
 
-generator = Bookkeeper(identifier_generator(), ids, input_functions)
+generator = Bookkeeper(identifier_generator(), ids, input_functions,
+                       [start_range, stop_range])
 files = set()
 
 
@@ -237,7 +273,8 @@ try:
             # Handle exceptions:
             if isinstance(result, Exception):
                 # Save the error
-                data.append(path_metadata, [identifier, result])
+                data.append(path_metadata, [identifier, result],
+                            base_dir=base_dir)
             else:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
@@ -247,19 +284,21 @@ try:
                         # Create file
                         metadata = metadata_from_id(identifier)
                         data.save(join(directory, file_), [], metadata,
-                                  extract=True)
+                                  extract=True, base_dir=base_dir)
 
                 # TODO: Save results and identifier
                 #  Note that the results will be unordered so make sure to save
                 #  enough info!
-                data.append(join(directory, file_), [identifier, result])
+                data.append(join(directory, file_), [identifier, result],
+                            base_dir=base_dir)
 
                 # Mark the task as completed (last in the else,
                 # after saving result)
-                data.append(path_metadata, [identifier, True])
+                data.append(path_metadata, [identifier, True],
+                            base_dir=base_dir)
 finally:
     # Post simulation.
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     meta_dict = {}
     for x in metadata:
         # Keep only the last exception for given identifier.
@@ -267,7 +306,7 @@ finally:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, disp=False)
+              extract=True, disp=False, base_dir=base_dir)
 
     # Print some stats
     print('\nSimulation completed.')
