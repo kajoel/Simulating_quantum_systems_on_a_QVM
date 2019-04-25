@@ -1,6 +1,7 @@
 # Carl 10/4
 ###############################################################################
 # Imports
+import core.interface
 from core.lipkin_quasi_spin import hamiltonian, eigs
 from grove.pyvqe.vqe import VQE
 import numpy as np
@@ -61,7 +62,7 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
     eig = eigs(j, V)[matrix][0]
-    H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h, dim)
+    H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h, dim)
     print(ansatz_)
     print(initial_params)
     samples = np.linspace(500, 10000 * len(H), 100)

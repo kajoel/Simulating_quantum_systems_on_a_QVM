@@ -4,16 +4,16 @@ single file.
 
 @author = Joel, Carl
 """
+import core.interface
 from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
 from functools import lru_cache
-from core.lipkin_quasi_spin import hamiltonians_of_size
+from core.interface import hamiltonians_of_size, nelder_mead
 from core import matrix_to_op
 from core import ansatz
-from core.create_vqe import nelder_mead
 from core import vqe_eig
 from core import callback as cb
 import numpy as np
@@ -76,7 +76,7 @@ base_dir = join(ROOT_DIR, 'data_ignore')
 
 # Append version number to file
 file += f'_v{version}'
-directory += f'_v{version}'
+directory += f'v{version}'
 
 # Make subdirectory based on MAC-address (to allow for multiple computers)
 directory = join(directory, str(get_mac()))
@@ -177,7 +177,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     try:
         # TODO: create VQE-object here! (not multiprocess safe)
         # TODO: run e.g. smallest here and return result.
-        H, qc, ansatz_, initial_params = ansatz.create(ansatz_name, h)
+        H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h)
         vqe = nelder_mead(samples=samples, H=H)
         tol_para = 1e-2
         callback = cb.restart_on_same_param(max_same_para, tol_para)
