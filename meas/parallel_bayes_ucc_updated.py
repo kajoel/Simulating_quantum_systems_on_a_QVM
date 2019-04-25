@@ -16,6 +16,8 @@ from core import vqe_eig
 import numpy as np
 import sys
 import warnings
+from constants import ROOT_DIR
+from uuid import getnode as get_mac
 
 # TODO: When writing a meas script, change (only) the parts marked by TODOs.
 #  MAKE SURE TO SAFE ENOUGH INFORMATION!
@@ -38,14 +40,22 @@ else:
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 1
+version = 2
 
 # TODO: select directory and basename of file to save to.
 directory = 'bayes_total_evals'  # directory to save to
 file = 'parallel_bayes_ucc'  # file to save to
 
+# Base dir, save to gitignored directory to avoid problems
+base_dir = join(ROOT_DIR, 'data_ignore')
+
 # Append version number to file
 file += f'_v{version}'
+directory += f'_v{version}'
+
+# Make subdirectory based on MAC-address (to allow for multiple computers)
+directory = join(directory, str(get_mac()))
+
 
 # Metadata about what has been done previously will be saved here:
 path_metadata = join(directory, file + '_metadata')
@@ -53,14 +63,14 @@ path_metadata = join(directory, file + '_metadata')
 # Load/initialize metadata
 try:
     # Try to load the file (will raise FileNotFoundError if not existing)
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
 except FileNotFoundError:
     metadata = []
     metametadata = {'description': "File that keeps track of what's been done "
                                    "previously in this script "
                                    f"({basename(__file__)})."}
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True)
+              extract=True, base_dir=base_dir)
 
 # Extract identifiers to previously completed simulations
 ids = set()
@@ -159,9 +169,8 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
 # TODO: function that takes in identifier and outputs the file (as a string)
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
-    return join(directory,
-                file + f'_{identifier[0]}_size={identifier[1]}_matidx'
-                       f'={identifier[2]}')
+    return file + f'_{identifier[0]}_size={identifier[1]}_matidx'\
+                  f'={identifier[2]}'
 
 
 # TODO: function that takes in identifier and outputs metadata-string.
@@ -228,27 +237,32 @@ try:
             # Handle exceptions:
             if isinstance(result, Exception):
                 # Save the error
-                data.append(path_metadata, [identifier, result])
+                data.append(path_metadata, [identifier, result],
+                            base_dir=base_dir)
             else:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
                     files.add(file_)
-                    if not isfile(file_):
+                    if not isfile(join(ROOT_DIR, 'data', directory,
+                                       file_ + '.pkl')):
                         # Create file
                         metadata = metadata_from_id(identifier)
-                        data.save(file_, [], metadata, extract=True)
+                        data.save(join(directory, file_), [], metadata,
+                                  extract=True, base_dir=base_dir)
 
                 # TODO: Save results and identifier
                 #  Note that the results will be unordered so make sure to save
                 #  enough info!
-                data.append(file_, [identifier, result])
+                data.append(join(directory, file_), [identifier, result],
+                            base_dir=base_dir)
 
                 # Mark the task as completed (last in the else,
                 # after saving result)
-                data.append(path_metadata, [identifier, True])
+                data.append(path_metadata, [identifier, True],
+                            base_dir=base_dir)
 finally:
     # Post simulation.
-    metadata, metametadata = data.load(path_metadata)
+    metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     meta_dict = {}
     for x in metadata:
         # Keep only the last exception for given identifier.
@@ -256,11 +270,11 @@ finally:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, disp=False)
+              extract=True, disp=False, base_dir=base_dir)
 
     # Print some stats
     print('\nSimulation completed.')
-    print(f'Total number of tasks {len(metadata)}')
+    print(f'Total number of tasks this far: {len(metadata)}')
     print(f'Number of previously completed tasks: {len(ids)}')
     done = sum(x[1] for x in metadata if x[1] is True)
     print(f'Number of completed tasks this run: {done - len(ids)}')
