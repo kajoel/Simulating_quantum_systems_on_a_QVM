@@ -13,7 +13,7 @@ from tkinter.filedialog import askopenfilename, askopenfilenames, \
 from datetime import datetime
 from os.path import basename, join, dirname, isdir, splitext
 from inspect import stack, getmodule
-from os import getuid, mkdir
+from os import getuid, makedirs
 from pwd import getpwuid
 from constants import ROOT_DIR
 from traceback import format_exc
@@ -70,7 +70,7 @@ def save(file=None, data=None, metadata=None,
         # Create directory (if not existing)
         dir_ = dirname(file)
         if not isdir(dir_):
-            mkdir(dir_)
+            makedirs(dir_)
         # Add extension .pkl if extension is missing and force_extension
         if not splitext(file)[1] and force_extension:
             file = file + '.pkl'

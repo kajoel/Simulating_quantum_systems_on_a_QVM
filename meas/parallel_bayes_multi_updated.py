@@ -11,7 +11,7 @@ import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
 from functools import lru_cache
-from core.interface import hamiltonians_of_size, default_bayes
+from core.interface import hamiltonians_of_size, vqe_default_bayes
 from core import matrix_to_op
 from core import ansatz
 from core import vqe_eig
@@ -183,8 +183,8 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
     # TODO: create VQE-object here! (not multiprocess safe)
     # TODO: run e.g. smallest here and return result.
     interval = [(-1.0, 1.0)]*(size-1)
-    H, qc, ansatz_,_ = core.interface.create(ansatz_name, h)
-    vqe = default_bayes(n_calls=n_calls)
+    H, qc, ansatz_,_ = core.interface.create_and_convert(ansatz_name, h)
+    vqe = vqe_default_bayes(n_calls=n_calls)
     result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
 
     # Saves only the parameters, opt Bayes returns A LOT more.
@@ -290,7 +290,7 @@ try:
                 file_ = file_from_id(identifier)
                 if file_ not in files:
                     files.add(file_)
-                    if not isfile(join(ROOT_DIR, 'data', directory,
+                    if not isfile(join(base_dir, directory,
                                        file_ + '.pkl')):
                         # Create file
                         metadata = metadata_from_id(identifier)

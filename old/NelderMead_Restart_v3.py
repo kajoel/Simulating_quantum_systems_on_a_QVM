@@ -62,7 +62,7 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
     h = hamiltonian(j, V)[matrix]
     dim = h.shape[0]
     eig = eigs(j, V)[matrix][0]
-    H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h, dim)
+    H, qc, ansatz_, initial_params = core.interface.create_and_convert(ansatz_name, h, dim)
     print(ansatz_)
     print(initial_params)
     samples = np.linspace(500, 10000 * len(H), 100)

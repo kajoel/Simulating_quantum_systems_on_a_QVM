@@ -110,11 +110,11 @@ def simulate(n_calls, samples):
     qc = ansatz.multi_particle_qc(h)
     H = convert_op(h)
 
-    vqe_nm = core.interface.nelder_mead(fatol=1)
+    vqe_nm = core.interface.vqe_nelder_mead(fatol=1)
     facit = vqe_eig.smallest(H, qc, init_params.alternate_stereographic(h),
                              vqe_nm, temp_ansatz, disp=False)
     
-    vqe = core.interface.default_bayes(n_calls=n_calls)
+    vqe = core.interface.vqe_default_bayes(n_calls=n_calls)
     
     result = np.zeros(2)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 

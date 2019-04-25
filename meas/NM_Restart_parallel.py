@@ -11,7 +11,7 @@ import os
 from multiprocessing import Pool
 from core import lipkin_quasi_spin
 from functools import lru_cache
-from core.interface import hamiltonians_of_size, nelder_mead
+from core.interface import hamiltonians_of_size, vqe_nelder_mead
 from core import matrix_to_op
 from core import ansatz
 from core import vqe_eig
@@ -181,8 +181,8 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
              repeats, h, eig):
     # TODO: create VQE-object here! (not multiprocess safe)
     # TODO: run e.g. smallest here and return result.
-    H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h)
-    vqe = nelder_mead(samples=samples, H=H)
+    H, qc, ansatz_, initial_params = core.interface.create_and_convert(ansatz_name, h)
+    vqe = vqe_nelder_mead(samples=samples, H=H)
     tol_para = 1e-2
     callback = cb.restart_break(max_same_para, tol_para)
     max_fun_evals = 100

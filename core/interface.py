@@ -12,13 +12,15 @@ from core.lipkin_quasi_spin import hamiltonian
 from scipy.sparse.linalg import eigsh
 
 
-def create(ansatz_name, h, initial_params=None):
+def create_and_convert(ansatz_name, h, initial_params=None):
     """
+    Creates anstaz, qc and initial_params and converts hamiltonian
+    matrix h to hamiltonian PauliSum H.
+
     @author: Carl
 
     :param ansatz_name:
     :param h:
-    :param dim:
     :param initial_params:
     :return:
     """
@@ -97,8 +99,8 @@ def hamiltonians_of_size(size: int, V=1., e=1.) -> tuple:
     return mats, eigs
 
 
-def nelder_mead(xatol=1e-2, fatol=None, samples=None, H=None, return_all=False,
-                maxiter=10000):
+def vqe_nelder_mead(xatol=1e-2, fatol=None, samples=None, H=None, return_all=False,
+                    maxiter=10000):
     '''
     If fatol=None, samples and H must be provided
 
@@ -123,11 +125,11 @@ def nelder_mead(xatol=1e-2, fatol=None, samples=None, H=None, return_all=False,
                                                        'options': disp_options})
 
 
-def default_bayes(acq_func="gp_hedge",
-                  n_calls=15,
-                  n_random_starts=4,
-                  random_state=123,
-                  n_jobs=1):
+def vqe_default_bayes(acq_func="gp_hedge",
+                      n_calls=15,
+                      n_random_starts=4,
+                      random_state=123,
+                      n_jobs=1):
     '''
     @author: Axel
     :param acq_func: Function to minimize over the gaussian prior.

@@ -1,18 +1,21 @@
 """
-Long runs with bayes optimiztion, created from recipe for long runs. 
-This makes sure to save often and keeps the data in a single file.
+Recipe for long runs. This makes sure to save often and keeps the data in a
+single file.
 
-@author = Joel, Carl, Axel
+@author = Joel, Carl
 """
 import core.interface
 from core import data
 from os.path import join, basename, isfile
 import os
 from multiprocessing import Pool
+from core import lipkin_quasi_spin
 from functools import lru_cache
-from core.interface import hamiltonians_of_size, vqe_default_bayes
+from core.interface import hamiltonians_of_size, vqe_nelder_mead
+from core import matrix_to_op
 from core import ansatz
 from core import vqe_eig
+from core import callback as cb
 import numpy as np
 import sys
 import warnings
@@ -64,22 +67,21 @@ print(f'\nStarting with num_workers = {num_workers}, and range = '
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 2
+version = 3
 
 # TODO: select directory and basename of file to save to.
-directory = 'bayes_total_evals'  # directory to save to
-file = 'parallel_bayes_ucc'  # file to save to
+directory = 'NM_Restart_Parallel'  # directory to save to
+file = ''  # file to save to (basename)
 
 # Base dir, save to gitignored directory to avoid problems
 base_dir = join(ROOT_DIR, 'data_ignore')
 
 # Append version number to file
-file += f'_v{version}'
+file += f'v{version}'
 directory += f'_v{version}'
 
 # Make subdirectory based on MAC-address (to allow for multiple computers)
 directory = join(directory, str(get_mac()))
-
 
 # Metadata about what has been done previously will be saved here:
 path_metadata = join(directory, file + '_metadata')
@@ -118,21 +120,19 @@ del metadata, metametadata
 #  have a unique identifier.
 def identifier_generator():
     # ansatz
-    ansatz_name = 'one_particle_ucc'
+    ansatz_name = 'multi_particle'
     # size of hamiltonian
-    # size of hamiltonian
-    for size in range(2, 6):
-        num_para = size-1
+    for size in range(2, 3):
+        # the index of the four hamiltonians
         for hamiltonian_idx in range(4):
-            # number of calls
-            for n_calls in range(10, 30 + num_para*15, 5 + 5*(num_para-1)):
-                # number of samples
-                for samples in range(100, 250 + 5000*num_para, 250*num_para):
-                    # input_4 is effectively called here with four arguments
+            # number of samples
+            for samples in np.linspace(400, 60000, 100):
+                # input_4 is effectively called here with four arguments
+                for max_same_para in range(1, 10):
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
-                        yield(ansatz_name, size, hamiltonian_idx,
-                              int(round(samples)), n_calls, repeats)
+                        yield (ansatz_name, size, hamiltonian_idx,
+                               int(round(samples)), max_same_para, repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -152,9 +152,9 @@ def input_3(ansatz_name, size, hamiltonian_idx):
 
 
 @lru_cache(maxsize=1)
-def input_5(ansatz_name, size, hamiltonian_idx, samples, n_calls):
+def input_5(ansatz_name, size, hamiltonian_idx, samples, max_same_para):
     print(f'Size={size}, Hamiltonian_idx={hamiltonian_idx}, '
-          f'Samples={samples}, n_calls={n_calls}')
+          f'Samples={samples}, Max_same_para={max_same_para}')
     return ()
 
 
@@ -165,6 +165,9 @@ input_functions = {3: input_3,
                    5: input_5}
 
 
+# TODO: define constants needed in simulate (below). If you change any of
+#  these you must change the version (above) to not sa
+
 
 # TODO: the function that runs e.g. smallest or vqe.run. Make sure to create
 #  non-multiprocess-safe objects (such as VQE-objects) here rather than
@@ -174,19 +177,20 @@ input_functions = {3: input_3,
 #  input_1(id[0])[1], ..., ..., input_N(id[0], id[1], ..., id[N-1])[0],
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
-def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
+def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
              repeats, h, eig):
-    intervall = [(-3.0, 3.0)]*(size-1)
-    H, qc, ansatz_,_ = core.interface.create_and_convert(ansatz_name, h)
-    vqe = vqe_default_bayes(n_calls=n_calls)
-    result = vqe_eig.smallest(H, qc, intervall, vqe, ansatz_, samples,
-                              return_all=True)
-
-    # Saves only the parameters, opt Bayes returns A LOT more.
-    result['iteration_params'] = result['iteration_params'][-1].x_iters
+    # TODO: create VQE-object here! (not multiprocess safe)
+    # TODO: run e.g. smallest here and return result.
+    H, qc, ansatz_, initial_params = core.interface.create_and_convert(ansatz_name, h)
+    vqe = vqe_nelder_mead(samples=samples, H=H)
+    tol_para = 1e-3
+    callback = cb.restart_break(max_same_para, tol_para)
+    max_fun_evals = 100
+    result = vqe_eig.smallest(H, qc, initial_params, vqe,
+                              ansatz_, samples,
+                              callback=callback, max_fun_evals=max_fun_evals)
     result.correct = eig
     return result
-
 
 
 # TODO: function that takes in identifier and outputs the file (as a string)
@@ -198,10 +202,8 @@ def file_from_id(identifier):
 
 # TODO: function that takes in identifier and outputs metadata-string.
 def metadata_from_id(identifier):
-    return {'description': 'Bayes optimizer, identifier = data[n][0], '
-                           'result = data[n][1] for run number n. '
-                           'Identifier structure: ansatz_name, size, '
-                           'matrix_index, samples, n_calls, repeats.',
+    return {'description': 'Nelder-Mead Restart, identifier = data[:][0], '
+                           'result = data[:][1]',
             'size': identifier[1],
             'matidx': identifier[2],
             'ansatz': identifier[0]}
@@ -261,6 +263,7 @@ def wrap(x):
         return x[0], e
 
 
+# Might want to change these to improve performance
 max_task = 1
 chunksize = 1
 
@@ -278,8 +281,8 @@ try:
         for identifier, result in result_generator:
             # Handle exceptions:
             if isinstance(result, Exception):
-                # Save the error
                 fail += 1
+                # Save the error
                 data.append(path_metadata, [identifier, result],
                             base_dir=base_dir)
             else:
@@ -320,7 +323,7 @@ finally:
     metametadata['run_time'].append(stop_time - start_time)
     metametadata['num_workers'].append((num_workers, max_num_workers))
     metametadata['num_tasks_completed'].append(success)
-    metametadata['success_rate'].append(success/(success+fail))
+    metametadata['success_rate'].append(success / (success + fail))
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
               extract=True, base_dir=base_dir)
 
@@ -328,6 +331,6 @@ finally:
     print('\nSimulation completed.')
     print(f'Total number of tasks this far: {len(metadata)}')
     print(f'Completed tasks this run: {success}')
-    print(f'Success rate this run: {success/(success+fail)}')
+    print(f'Success rate this run: {success / (success + fail)}')
     done = sum(x[1] for x in metadata if x[1] is True)
     print(f'Number of tasks remaining: {len(metadata) - done}')

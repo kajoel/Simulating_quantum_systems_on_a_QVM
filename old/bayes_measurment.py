@@ -78,13 +78,13 @@ def bayes_iteration_sweep(h,
     run_data = []
     # Calculates a facit with sample=None
     
-    vqe = core.interface.nelder_mead()
+    vqe = core.interface.vqe_nelder_mead()
     facit = vqe_eig.smallest(H, qc, init_params.alternate(h.shape[0]), vqe, 
                              ansatz_, disp=False)
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
-        vqe = core.interface.default_bayes(n_calls=num_func_eval)
+        vqe = core.interface.vqe_default_bayes(n_calls=num_func_eval)
         
         temp_data=np.zeros( (3, measurments_per_step) )
         for j in range(measurments_per_step):
