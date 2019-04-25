@@ -46,8 +46,8 @@ start = time.time()
 energies = vqe_eig.smallest(H, qc, initial_params, vqe,
                             ansatz_=ansatz_,
                             samples=200, disp=True,
-                            callback=cb.restart_on_same_param(5, 1e-3,
-                                                              disp=True),
+                            callback=cb.restart(5, 1e-3,
+                                                disp=True),
                             attempts=5)['fun']
 end = time.time()
 pprint.pprint([round(x, 3) for x in Realenergies.tolist()])

@@ -94,6 +94,7 @@ class VQE_override(VQE):
         expectation_vals = []
         expectation_vars = []
         fun_evals = 0
+        restarts = 0
         callback_idx = []
 
         # Problem: expectation_vals did not (for Nelder-Mead in
@@ -186,8 +187,9 @@ class VQE_override(VQE):
             except BreakError:
                 pass
             except RestartError as e:
+                restarts += 1
                 break_ = False
-                args[1] = iteration_params[-1]
+                args[1] = iteration_params[int(np.argmin(expectation_vals))]
                 if e.samples is not None:
                     sample_list = calc_samples(e.samples, coeffs)
             else:
@@ -234,6 +236,7 @@ class VQE_override(VQE):
             results.expectation_vars_all = expectation_vars
 
             results.fun_evals = fun_evals
+            results.restarts = restarts
         return results
 
     @staticmethod

@@ -28,13 +28,14 @@ from time import perf_counter
 #  BETTER TO SAVE TOO MUCH THAN TOO LITTLE!
 
 # Input number of workers
+max_num_workers = os.cpu_count()
 if len(sys.argv) <= 1:
-    num_workers = os.cpu_count()
+    num_workers = max_num_workers
 else:
     try:
         num_workers = int(sys.argv[1])
     except ValueError:
-        num_workers = os.cpu_count()
+        num_workers = max_num_workers
         warnings.warn(f'Could not parse input parameter 1 num_workers.')
 
 # Input start of range
@@ -66,18 +67,18 @@ print(f'\nStarting with num_workers = {num_workers}, and range = '
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 1
+version = 2
 
 # TODO: select directory and basename of file to save to.
 directory = 'NM_Restart_Parallel'  # directory to save to
-file = 'parallel_test'  # file to save to (basename)
+file = ''  # file to save to (basename)
 
 # Base dir, save to gitignored directory to avoid problems
 base_dir = join(ROOT_DIR, 'data_ignore')
 
 # Append version number to file
-file += f'_v{version}'
-directory += f'v{version}'
+file += f'v{version}'
+directory += f'_v{version}'
 
 # Make subdirectory based on MAC-address (to allow for multiple computers)
 directory = join(directory, str(get_mac()))
@@ -121,13 +122,13 @@ def identifier_generator():
     # ansatz
     ansatz_name = 'multi_particle'
     # size of hamiltonian
-    for size in range(2, 6):
+    for size in range(2, 3):
         # the index of the four hamiltonians
         for hamiltonian_idx in range(4):
             # number of samples
-            for samples in np.linspace(100, 60000, 100):
+            for samples in np.linspace(400, 60000, 100):
                 # input_4 is effectively called here with four arguments
-                for max_same_para in range(3, 10):
+                for max_same_para in range(1, 10):
                     for repeats in range(5):
                         # input_5 is effectively called here with five arguments
                         yield (ansatz_name, size, hamiltonian_idx,
@@ -183,7 +184,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h)
     vqe = nelder_mead(samples=samples, H=H)
     tol_para = 1e-2
-    callback = cb.restart_on_same_param(max_same_para, tol_para)
+    callback = cb.restart(max_same_para, tol_para)
     attempts = 20
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
@@ -320,7 +321,7 @@ finally:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
     metametadata['run_time'].append(stop_time - start_time)
-    metametadata['num_workers'].append(num_workers)
+    metametadata['num_workers'].append((num_workers, max_num_workers))
     metametadata['num_tasks_completed'].append(success)
     metametadata['success_rate'].append(success / (success + fail))
     data.save(file=path_metadata, data=metadata, metadata=metametadata,

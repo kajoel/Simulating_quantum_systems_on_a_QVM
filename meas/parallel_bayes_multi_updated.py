@@ -28,13 +28,14 @@ from time import perf_counter
 #  BETTER TO SAVE TOO MUCH THAN TOO LITTLE!
 
 # Input number of workers
+max_num_workers = os.cpu_count()
 if len(sys.argv) <= 1:
-    num_workers = os.cpu_count()
+    num_workers = max_num_workers
 else:
     try:
         num_workers = int(sys.argv[1])
     except ValueError:
-        num_workers = os.cpu_count()
+        num_workers = max_num_workers
         warnings.warn(f'Could not parse input parameter 1 num_workers.')
 
 # Input start of range
@@ -320,7 +321,7 @@ finally:
             meta_dict[x[0]] = x[1]
     metadata = [[x, meta_dict[x]] for x in meta_dict]
     metametadata['run_time'].append(stop_time - start_time)
-    metametadata['num_workers'].append(num_workers)
+    metametadata['num_workers'].append((num_workers, max_num_workers))
     metametadata['num_tasks_completed'].append(success)
     metametadata['success_rate'].append(success/(success+fail))
     data.save(file=path_metadata, data=metadata, metadata=metametadata,
