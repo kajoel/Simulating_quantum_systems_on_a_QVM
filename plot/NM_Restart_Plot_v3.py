@@ -18,7 +18,7 @@ fontsize = 10
 base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v2')
 
 j, V, matrix = 1, 1, 0
-ansatz_types = ['one_particle_ucc', 'multi_particle']
+ansatz_types = ['multi_particle']
 #ansatz_types = ['one_particle_ucc']
 file = 'NMR_j={}.pkl'.format(j)
 data_, metadata = data.load(file, base_dir)

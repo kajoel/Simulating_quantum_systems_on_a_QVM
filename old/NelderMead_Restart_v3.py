@@ -44,7 +44,7 @@ V, matrix = 1, 0
 ansatz_types = ['one_particle', 'one_particle_ucc', 'multi_particle',
                 'multi_particle_ucc']
 
-ansatz_types = ['one_particle_ucc', 'multi_particle']
+ansatz_types = ['multi_particle']
 
 xatol = 1e-2
 tol_para = 1e-2
@@ -65,6 +65,8 @@ for j, ansatz_name in itertools.product(range(1, 6), ansatz_types):
     H, qc, ansatz_, initial_params = core.interface.create(ansatz_name, h, dim)
     print(ansatz_)
     print(initial_params)
+    print(H)
+    print(qc)
     samples = np.linspace(500, 10000 * len(H), 100)
 
     for sample, max_para in itertools.product(samples, max_params):
@@ -95,7 +97,7 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
             facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_)['fun']
 
             result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
-                                       sample, disp=True, callback=callback, attempts = max_iter)
+                                       sample, disp=True, callback=callback)
             print(result)
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,

@@ -31,7 +31,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False, callback=None, max_fun_evals=1):
+                return_all=False, callback=None, max_fun_evals=np.inf):
         """
         functional minimization loop.
 
@@ -84,6 +84,9 @@ class VQE_override(VQE):
             self._disp_fun = disp
         else: pass
         """
+
+        if max_fun_evals <= 1:
+            raise ValueError('Need more than one fun eval.')
 
         self._disp_fun = print
 
