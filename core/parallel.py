@@ -8,7 +8,7 @@ import warnings
 import os
 from os.path import join, isfile
 from multiprocessing import Pool
-from time import perf_counter
+from time import perf_counter, sleep
 from uuid import getnode as get_mac
 from core import data
 from constants import ROOT_DIR
@@ -134,13 +134,65 @@ def run(simulate,
         start_range=0,
         stop_range=np.inf,
         max_task=1,
-        chunksize=1):
+        chunksize=1,
+        restart=True,
+        delay=5):
     """
-    Run simulate in parallel.
-
     # TODO: param doc
 
+    :param simulate:
+    :param identifier_generator:
+    :param input_functions:
+    :param directory:
+    :param version:
+    :param script_file:
+    :param file_from_id:
+    :param metadata_from_id:
+    :param num_workers:
+    :param start_range:
+    :param stop_range:
+    :param max_task:
+    :param chunksize:
+    :param restart:
+    :param delay:
     :return:
+    """
+    while restart and _run_internal(
+            simulate,
+            identifier_generator,
+            input_functions,
+            directory,
+            version,
+            script_file,
+            file_from_id,
+            metadata_from_id,
+            num_workers,
+            start_range,
+            stop_range,
+            max_task,
+            chunksize,
+            ):
+        print(f'\nRestarting in {delay} s.\n')
+        sleep(delay)
+
+
+def _run_internal(simulate,
+                  identifier_generator,
+                  input_functions,
+                  directory,
+                  version,
+                  script_file,
+                  file_from_id,
+                  metadata_from_id,
+                  num_workers,
+                  start_range,
+                  stop_range,
+                  max_task,
+                  chunksize):
+    """
+    Internal parallel run.
+
+    :return: number of remaining tasks.
     """
     # Files and paths
     base_dir = join(ROOT_DIR, 'data_ignore')
@@ -177,7 +229,6 @@ def run(simulate,
 
     # Wrap simulate to get expected input/output and handle exceptions
     wrap = Wrap(simulate)
-
 
     # Generator for pool
     generator = Bookkeeper(identifier_generator, ids, input_functions,
@@ -227,12 +278,7 @@ def run(simulate,
 
         # Post simulation.
         metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
-        meta_dict = {}
-        for x in metadata:
-            # Keep only the last exception for given identifier.
-            if x[0] not in meta_dict or meta_dict[x[0]] is not True:
-                meta_dict[x[0]] = x[1]
-        metadata = [[x, meta_dict[x]] for x in meta_dict]
+        metadata = cleanup_small(metadata)
         metametadata['run_time'].append(stop_time - start_time)
         metametadata['num_workers'].append((num_workers, max_num_workers))
         metametadata['num_tasks_completed'].append(success)
@@ -245,5 +291,23 @@ def run(simulate,
         print(f'Total number of tasks this far: {len(metadata)}')
         print(f'Completed tasks this run: {success}')
         print(f'Success rate this run: {success / (success + fail)}')
-        done = sum(x[1] for x in metadata if x[1] is True)
-        print(f'Number of tasks remaining: {len(metadata) - done}')
+        remaining = len(metadata) - sum(x[1] for x in metadata if x[1] is True)
+        print(f'Number of tasks remaining: {remaining}')
+
+        # Return remaining for restart
+        return remaining
+
+
+def cleanup_small(metadata):
+    """
+    Cleanup metadata at path.
+
+    :param metadata: unclean metadata
+    :return: cleaned metadata
+    """
+    meta_dict = {}
+    for x in metadata:
+        # Keep only the last exception for given identifier.
+        if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+            meta_dict[x[0]] = x[1]
+    return [[x, meta_dict[x]] for x in meta_dict]
