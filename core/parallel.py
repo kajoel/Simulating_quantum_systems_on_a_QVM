@@ -18,7 +18,7 @@ max_num_workers = os.cpu_count()
 
 class Wrap:
     """
-    Class for wrapping simulate (pickable)
+    Class for wrapping simulate (need pickable object for multiprocess Pool)
     """
     def __init__(self, simulate):
         self.simulate = simulate
