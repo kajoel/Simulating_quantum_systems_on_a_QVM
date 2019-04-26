@@ -19,8 +19,8 @@ directory = f'bayes_total_evals_v{version}'
 
 def load_data(ansatz_, size, matidx):
     file_name = f'{ansatz_}_size={size}_matidx={matidx}'
-    if ansatz_ == 'multi_particle': temp_direc = directory + '/multi'
-    else: temp_direc = directory + '/ucc'
+    if ansatz_ == 'multi_particle': temp_direc = directory + '/247163800758493'
+    else: temp_direc = directory + '/176156460388480'
 
     file_path = join(temp_direc, file_name)
     return data.load(file_path)
