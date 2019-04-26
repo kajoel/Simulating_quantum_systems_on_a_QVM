@@ -17,7 +17,6 @@ import itertools
 from constants import ROOT_DIR
 from os.path import join
 from core import callback as cb
-from core import create_vqe
 
 
 ###############################################################################
@@ -51,7 +50,7 @@ tol_para = 1e-2
 max_iter = 20
 increase_samples = 0
 
-max_params = range(5, 10)
+max_params = range(1, 10)
 samples = np.linspace(500, 10000, 20)
 base_dir = join(ROOT_DIR, 'data/NelderMead_Restart_v2')
 
@@ -92,11 +91,10 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
             #vqe = create_vqe.default_nelder_mead()
             callback = cb.restart(2, tol_para, True)
 
-            facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_)['fun']
+            facit = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_)['x']
 
             result = vqe_eig.smallest(H, qc, initial_params, vqe, ansatz_,
-                                       sample, disp=True, callback=callback, attempts = max_iter)
-            print(result)
+                                       sample, disp=True, callback=callback)
             parameters = {'fatol': fatol, 'xatol': xatol, 'tol_para': tol_para,
                           'max_para': max_para, 'max_iter': max_iter,
                           'increase_samples': increase_samples}
@@ -104,6 +102,8 @@ max_para = {}, fatol = {}, iteration = {}/{}' \
             result['facit'] = facit
             result['samples'] = sample
             data_[iter] = result
+
+            print(result['x'], result['facit'])
 
         file = 'NelderMead_Restart_j={}_samples={}_ansatz={}_maxpara={}.pkl' \
             .format(j, sample, ansatz_name, max_para)

@@ -46,12 +46,12 @@ for mat_idx in range(4):
     for max_para in range(3, 10):
         nr_tmp[max_para] = 0
         for meas_, fel_ in zip(meas[max_para],fel[max_para]):
-            if meas_<8000*4 and fel_<1:
+            if meas_<100000 and fel_<1:
                 nr_tmp[max_para] +=1
 
     nr_pts[mat_idx] = nr_tmp
 
-
+    '''
     for fig in range(3,10):
         label = f'Matrix index: {mat_idx}'
         plt.figure(fig-2)
@@ -61,6 +61,7 @@ for mat_idx in range(4):
         plt.ylabel('Procentuellt fel')
         plt.legend()
         #plt.xlim(-100,1000000)
+    '''
 
 print('Number of points:')
 tot_pts = [0 for i in range(7)]
