@@ -134,7 +134,7 @@ class VQE_override(VQE):
             nonlocal fun_evals
             fun_evals += 1
             if fun_evals >= max_fun_evals:
-                raise BreakError  # attempt restart and break while below
+                raise RestartError  # attempt restart and break while below
 
             # Save params, exp_val and exp_var
             iteration_params.append(params)
