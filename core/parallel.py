@@ -157,9 +157,11 @@ def run(simulate,
     :param delay:
     :return:
     """
-    while restart and _run_internal(
+    remaining = 1
+    while restart and remaining:
+        remaining = _run_internal(
             simulate,
-            identifier_generator,
+            identifier_generator(),
             input_functions,
             directory,
             version,
@@ -171,9 +173,10 @@ def run(simulate,
             stop_range,
             max_task,
             chunksize,
-            ):
-        print(f'\nRestarting in {delay} s.\n')
-        sleep(delay)
+            )
+        if remaining:
+            print(f'\n{remaining} tasks remaining.\nRestarting in {delay} s.\n')
+            sleep(delay)
 
 
 def _run_internal(simulate,
