@@ -10,7 +10,8 @@ import itertools
 from plot import tikzfigure
 
 
-nr_meas = 3000000
+max_meas = 3000000
+min_meas = 500000
 procent = 1
 
 color_map = np.array(
@@ -95,16 +96,17 @@ for mat_idx in range(4):
         identifier, result = tmp
         max_para = identifier[4]
         #print(f"Eig: {result['correct']}, fun_none: {result['fun_none']}")
-        #print(result['status'])
+        # print(result['status'])
         meas[mat_idx][max_para].append(identifier[3]*result['fun_evals'])
         fel[mat_idx][max_para].append(np.abs((result['fun_none']-result['correct'])/result['correct'])*100)
 
+    print(f"any status 1: {any(result['status'] == 1 for _, result in data_)}")
 
 plot_meas_fel(meas, fel)
 
 #tot_pts_tmp = np.asarray([])
 tot_pts_tmp = []
-meas_tol = np.arange(1000, nr_meas, 1000)
+meas_tol = np.arange(min_meas, max_meas, 1000)
 for meas_tol_ in meas_tol:
     #tot_pts_tmp = np.append(tot_pts_tmp, np.asarray(tot_pts(meas_tol_, fel, meas)))
     tot_pts_tmp.append(tot_pts(meas_tol_, fel, meas, fel_tol=procent))
@@ -113,7 +115,9 @@ plt.figure(2)
 legend = [f'{i}' for i in max_para_range]
 plt.plot(meas_tol, tot_pts_tmp)
 plt.legend(legend)
+
 plt.show()
+
 
 '''
 nr_tmp = pts_in_square(100000, fel, meas)
