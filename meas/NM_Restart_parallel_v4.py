@@ -46,7 +46,7 @@ def identifier_generator():
             # number of samples
             for samples in np.linspace(400, 60000, 100):
                 # input_4 is effectively called here with four arguments
-                for max_same_para in range(4, 7):
+                for max_same_para in range(3, 7):
                     for repeats in range(2):
                         # input_5 is effectively called here with five arguments
                         yield (ansatz_name, size, hamiltonian_idx,
@@ -103,7 +103,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     vqe = vqe_nelder_mead(samples=samples, H=H)
     tol_para = 1e-3
     callback = cb.restart(max_same_para, tol_para)
-    max_fun_evals = 100
+    max_fun_evals = 200
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
                               callback=callback, max_fun_evals=max_fun_evals)

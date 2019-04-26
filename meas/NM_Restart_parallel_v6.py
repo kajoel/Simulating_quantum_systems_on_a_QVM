@@ -26,7 +26,7 @@ run_kwargs = parallel.script_input(sys.argv)
 #  simulation (the default behaviour of this script is to continue where it
 #  stopped last time it was run). The version-number will be added to the
 #  file name (e.g test_v1_...)
-version = 5
+version = 6
 
 # TODO: select directory and basename of file to save to.
 directory = 'NM_Restart_Parallel'  # directory to save to
@@ -46,10 +46,11 @@ def identifier_generator():
             # number of samples
             for samples in np.linspace(400, 60000, 100):
                 # input_4 is effectively called here with four arguments
-                for repeats in range(5):
-                    # input_5 is effectively called here with five arguments
-                    yield (ansatz_name, size, hamiltonian_idx,
-                           int(round(samples)), repeats)
+                for max_same_para in range(3, 7):
+                    for repeats in range(2):
+                        # input_5 is effectively called here with five arguments
+                        yield (ansatz_name, size, hamiltonian_idx,
+                               int(round(samples)), max_same_para, repeats)
 
 
 # TODO: Functions for creating objects (things larger than ints/floats) that
@@ -94,16 +95,18 @@ input_functions = {3: input_3,
 #  input_1(id[0])[1], ..., ..., input_N(id[0], id[1], ..., id[N-1])[0],
 #  input_N(id[0], id[1], ..., id[N-1])[1], ...
 #  (only including the defined input functions)
-def simulate(ansatz_name, size, hamiltonian_idx, samples,
+def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
              repeats, h, eig):
     # TODO: create VQE-object here! (not multiprocess safe)
     # TODO: run e.g. smallest here and return result.
     H, qc, ansatz_, initial_params = core.interface.create_and_convert(ansatz_name, h)
     vqe = vqe_nelder_mead(samples=samples, H=H)
+    tol_para = 1e-3
+    callback = cb.restart_break(max_same_para, tol_para)
     max_fun_evals = 200
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
-                              max_fun_evals=max_fun_evals)
+                              callback=callback, max_fun_evals=max_fun_evals)
     result.correct = eig
     return result
 
