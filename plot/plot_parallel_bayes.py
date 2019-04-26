@@ -97,11 +97,12 @@ def heatmap(ansatz_, size):
     for i, value in temp_dict.items():
         x = value[0][2]
         y = value[0][3]
+        
         #y = [x[i]*temp_y[i] for i in range(len(x))]
 
         z = value[0][1]
-        xi = np.linspace(x[0], x[-1], int(len(x)/2))
-        yi = np.linspace(y[0], y[-1], int(len(y)/2))
+        xi = np.linspace(np.unique(x)[0], np.unique(x)[-1], int(len(x)/2))
+        yi = np.linspace(np.unique(y)[0], np.unique(y)[-1], int(len(y)/2))
         zi = griddata((x, y), z, (xi[None,:], yi[:,None]), method='cubic')
         plt.figure()
         CS = plt.contour(xi,yi,zi,15,linewidths=0.5,colors='k')
@@ -136,12 +137,12 @@ def plot_all_of_size(ansatz_, size, mean = False):
     temp_dict = load_multiple(ansatz_, size, mean=mean)
     
     if ansatz_ == 'multi_particle':c = 'r'
-    else: c = 'b'
+    else: c = 'k'
 
     for i, value in temp_dict.items():
         if i == 0: label = ansatz_
         else: label = None
-        plt.scatter(value[0][0], value[0][1], c=c, label=label)
+        plt.scatter(value[0][0], value[0][1], s =10**2 , c=c, label=label, )
     plt.xlabel('Evaluations on quantum computer')
     plt.ylabel('Eigenvalue error')
     plt.legend()
@@ -156,14 +157,14 @@ if __name__ == '__main__':
     plot_all_of_size('multi_particle', size, True)
     
     heatmap('multi_particle', size)    
-
+    '''
     plt.figure()
     plot_all_of_size('one_particle_ucc', size)
     plt.figure()
     plot_all_of_size('one_particle_ucc', size, True)
     
     heatmap('one_particle_ucc', size)    
-
+    '''
     plt.show()
 
 
