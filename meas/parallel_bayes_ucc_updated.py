@@ -125,7 +125,7 @@ def metadata_from_id(identifier):
 
 parallel.run(
     simulate=simulate,
-    identifier_generator=identifier_generator(),
+    identifier_generator=identifier_generator,
     input_functions=input_functions,
     directory=directory,
     version=version,
