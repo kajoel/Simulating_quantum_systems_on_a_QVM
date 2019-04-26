@@ -8,8 +8,7 @@ import core.interface
 from os.path import basename
 from functools import lru_cache
 from core.interface import hamiltonians_of_size, vqe_default_bayes
-from core import parallel
-from core import vqe_eig
+from core import parallel, vqe_eig
 import numpy as np
 import sys
 
@@ -30,7 +29,7 @@ run_kwargs = parallel.script_input(sys.argv)
 #  file name (e.g test_v1_...)
 version = 3
 
-# TODO: select directory and basename of file to save to.
+# TODO: select directory to save to.
 directory = 'bayes_total_evals'  # directory to save to
 
 
@@ -103,8 +102,6 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
     result = vqe_eig.smallest(H, qc, intervall, vqe, ansatz_, samples,
                               return_all=True)
 
-    # Saves only the parameters, opt Bayes returns A LOT more.
-    result['iteration_params'] = result['iteration_params'][-1].x_iters
     result.correct = eig
     return result
 
@@ -112,7 +109,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
 # TODO: function that takes in identifier and outputs the file (as a string)
 #  to save to. Keep the number of files down!
 def file_from_id(identifier):
-    return f'_{identifier[0]}_size={identifier[1]}_matidx={identifier[2]}'
+    return f'{identifier[0]}_size={identifier[1]}_matidx={identifier[2]}'
 
 
 # TODO: function that takes in identifier and outputs metadata-string.

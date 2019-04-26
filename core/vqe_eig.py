@@ -44,7 +44,6 @@ def smallest(H, qc, initial_params, vqe,
     x = eig['x']
     eig['fun'] = vqe.expectation(ansatz_(x), H, samples=samples, qc=qc)[0]
     eig['fun_none'] = vqe.expectation(ansatz_(x), H, samples=None, qc=qc)[0]
-
     eig['time'] = stop_time - start_time
 
     return eig
