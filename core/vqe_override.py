@@ -180,13 +180,13 @@ class VQE_override(VQE):
             self.minimizer_kwargs['jac'] = jacobian
 
         results = OptResults()
-        results.status = 0
         while fun_evals < max_fun_evals:
             break_ = True
             try:
                 result = self.minimizer(*args, **self.minimizer_kwargs)
             except BreakError:
-                pass
+                results.status = -1
+                results.message = 'Stopped by BreakError.'
             except RestartError as e:
                 restarts += 1
                 break_ = False
@@ -194,6 +194,8 @@ class VQE_override(VQE):
                 if e.samples is not None:
                     sample_list = calc_samples(e.samples, coeffs)
             else:
+                results.status = 0
+                results.message = 'Minimizer stopped naturally.'
                 if hasattr(result, 'status'):
                     if result.status != 0:
                         self._disp_fun(
@@ -210,6 +212,7 @@ class VQE_override(VQE):
                 break
         else:
             results.status = 1
+            results.message = 'Exceeded maximum number of function evaluations.'
             if disp:
                 print(f"Restarts exceeded maximum of {max_fun_evals} function "
                       f"evalutations  and run was terminated.")
