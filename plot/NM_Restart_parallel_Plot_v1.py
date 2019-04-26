@@ -42,7 +42,7 @@ def plot_meas_fel(meas, fel, fig=1):
 
 
 size = 2
-version = 2
+version = 3
 
 base_dir = join(ROOT_DIR, f'data/NM_Restart_Parallel_v{version}')
 
@@ -79,7 +79,7 @@ plot_meas_fel(meas, fel)
 
 #tot_pts_tmp = np.asarray([])
 tot_pts_tmp = []
-meas_tol = np.arange(10000, 3000000, 10000)
+meas_tol = np.arange(10000, 1000000, 10000)
 for meas_tol_ in meas_tol:
     #tot_pts_tmp = np.append(tot_pts_tmp, np.asarray(tot_pts(meas_tol_, fel, meas)))
     tot_pts_tmp.append(tot_pts(meas_tol_, fel, meas, fel_tol=1))
