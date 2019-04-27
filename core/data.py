@@ -309,7 +309,7 @@ def _display_internal(file, metadata):
         print(str(value) + '\n')
 
 
-def _get_name():
+def get_name():
     """
     Finds who is trying to use save (for metadata purposes).
 
@@ -352,7 +352,7 @@ def _metadata_defaults(protocol):
         return caller
 
     return {'protocol': lambda: protocol,
-            'created_by': _get_name,
+            'created_by': get_name,
             'created_from': get_caller,
             'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
                                                                 "%H:%M:%S"),
