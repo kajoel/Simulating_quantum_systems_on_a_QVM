@@ -93,7 +93,10 @@ def script_input(args):
     :param args: Input sys.argv
     :return: kwargs to parallel.run
     """
-    # TODO: better script_input that can take string 'cleanup' and 'init'
+    # Handle cleanup and init
+    if len(args) == 2 and args[1] in ['init', 'cleanup']:
+        print(f'\nStarting {args[1]}.\n')
+        return {args[1]: True}
 
     # Input number of workers
     if len(args) <= 1:
@@ -125,8 +128,8 @@ def script_input(args):
             stop_range = np.inf
             warnings.warn(f'Could not parse input parameter 3 stop_range.')
 
-    print(f'\nStarting with num_workers = {num_workers}, and range = '
-          f'[{start_range}, {stop_range})\n')
+    print(f'\nStarting simulation with num_workers = {num_workers}, and range ='
+          f' [{start_range}, {stop_range})\n')
 
     return {'num_workers': num_workers,
             'start_range': start_range,
