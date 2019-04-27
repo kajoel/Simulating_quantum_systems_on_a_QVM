@@ -1,8 +1,6 @@
 import numpy as np
-# Imports for VQE
-from core import ansatz
+import core.interface
 from core import matrix_to_op
-from core import vqe_override
 from time import perf_counter
 
 
@@ -45,8 +43,7 @@ def smallest(H, qc, initial_params, vqe,
 
     x = eig['x']
     eig['fun'] = vqe.expectation(ansatz_(x), H, samples=samples, qc=qc)[0]
-    eig['x_correct'] = vqe.vqe_run(ansatz_, H, x, samples=None, qc=qc,
-                                   return_all=return_all)
+    eig['fun_none'] = vqe.expectation(ansatz_(x), H, samples=None, qc=qc)[0]
     eig['time'] = stop_time - start_time
 
     return eig

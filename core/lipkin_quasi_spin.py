@@ -112,19 +112,3 @@ def _quasi_internal(j, m_start, V, e):
     H = e * J_z.tocsr() + V / 2 * (J_p2 + J_m2)
     return H
 
-
-@lru_cache(maxsize=1)
-def hamiltonians_of_size(size: int, V=1., e=1.) -> tuple:
-    """
-
-    :param size:
-    :param V:
-    :param e:
-    :return:
-    """
-    mats = (
-        hamiltonian(size - 1, V, e)[0],
-        hamiltonian(size - 1 / 2, V, e)[0],
-        hamiltonian(size - 1 / 2, V, e)[1],
-        hamiltonian(size, V, e)[1])
-    return mats

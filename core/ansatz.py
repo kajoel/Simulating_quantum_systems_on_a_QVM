@@ -5,7 +5,6 @@ Created on Mon Mar  4 10:50:49 2019
 # Imports
 from core import maps
 import numpy as np
-from scipy import sparse
 from pyquil.quil import Program
 from grove.alpha.arbitrary_state.arbitrary_state import create_arbitrary_state
 from openfermion import FermionOperator, QubitOperator, jordan_wigner, \
@@ -15,8 +14,6 @@ from pyquil.paulis import PauliSum, PauliTerm, exponential_map, suzuki_trotter
 from pyquil.gates import X
 from typing import Callable, List, Union
 from pyquil import get_qc
-from core import matrix_to_op
-from core import init_params
 import warnings
 
 def one_particle(h: np.ndarray):
@@ -224,19 +221,6 @@ def multi_particle_ucc(h, reference=0, trotter_order=1, trotter_steps=1):
     return wrap
 
 
-# ################## ANSATZ RELATED QC:s #######################
-
-
-def one_particle_qc(h: np.ndarray):
-    # TODO: doc
-    return get_qc('{}q-qvm'.format(h.shape[0]))
-
-
-def multi_particle_qc(h: np.ndarray):
-    # TODO: doc
-    return get_qc('{}q-qvm'.format(int.bit_length(h.shape[0])))
-
-
 # ################## ANSATZ RELATED FUNCTIONS ##################
 
 
@@ -338,47 +322,3 @@ def exponential_map_commuting_pauli_terms(terms: Union[List[PauliTerm],
     return wrap
 
 
-def create(ansatz_name, h, initial_params=None):
-    """
-    @author: Carl
-
-    :param ansatz_name:
-    :param h:
-    :param dim:
-    :param initial_params:
-    :return:
-    """
-    dim = h.shape[0]
-
-    if ansatz_name == 'one_particle':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = one_particle(h)
-        if initial_params == None:
-            initial_params = init_params.alternate(dim)
-
-    elif ansatz_name == 'one_particle_ucc':
-        qc = get_qc(str(h.shape[0]) + 'q-qvm')
-        H = matrix_to_op.one_particle(h)
-        ansatz_ = one_particle_ucc(h)
-        if initial_params == None:
-            initial_params = init_params.ucc(dim)
-
-    elif ansatz_name == 'multi_particle':
-        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = multi_particle_stereographic(h)
-        if initial_params == None:
-            initial_params = init_params.alternate_stereographic(h)
-
-    elif ansatz_name == 'multi_particle_ucc':
-        qc = get_qc(str(int.bit_length(h.shape[0])) + 'q-qvm')
-        H = matrix_to_op.multi_particle(h)
-        ansatz_ = multi_particle_ucc(h)
-        if initial_params == None:
-            initial_params = init_params.ucc(dim)
-
-    else:
-        H, qc, ansatz_ = None, None, None
-
-    return H, qc, ansatz_, initial_params

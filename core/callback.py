@@ -28,23 +28,61 @@ def merge_callbacks(*args):
     return callback
 
 
-def restart_on_same_param(max_para, tol_para, disp = False):
+def restart_break(max_same_para, tol_para, disp=False):
+    """
+    Callback (new) for restarting and breaking.
+
+    @author = Joel, Carl
+
+    :param max_same_para: how many times to stand still before restarting
+    :param tol_para: how close is considered to stand "still"
+    :param disp: if True, print Restarting when restarting
+    :return: callback function which can be passed to VQE.
+    """
+    last_restart = None
+    restarts = 0
+
+    def same_parameter(params, *args, **kwargs):
+        nonlocal last_restart, restarts
+        if len(params) > max_same_para - 1:
+            bool_tmp = True
+            for x in range(2, max_same_para + 1):
+                bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x])\
+                           < tol_para
+
+            if bool_tmp:
+                restarts += 1
+                if last_restart is not None and \
+                        np.linalg.norm(params[-1] - last_restart) < tol_para:
+                    raise BreakError
+                else:
+                    last_restart = params[-1]
+                    if disp:
+                        print(f"\nRestart: {restarts}")
+                    raise RestartError
+
+    return same_parameter
+
+
+def restart(max_same_para, tol_para, disp = False):
     """
     @author: Sebastian, Carl
 
-    :param max_para:
-    :param tol_para:
+    :param max_same_para: how many times to stand still before restarting
+    :param tol_para: how close is considered to stand "still"
+    :param disp: if True, print Restarting when restarting
     :return: callback function which can be passed to VQE.
     """
 
     def same_parameter(params, *args, **kwargs):
-        if len(params) > max_para - 1:
+        if len(params) > max_same_para - 1:
             bool_tmp = True
-            for x in range(2, max_para + 1):
+            for x in range(2, max_same_para + 1):
                 bool_tmp = bool_tmp and np.linalg.norm(params[-1] - params[-x])\
                            < tol_para
             if bool_tmp:
-                if disp: print("Restarting")
+                if disp:
+                    print("Restarting")
                 raise RestartError
 
     return same_parameter

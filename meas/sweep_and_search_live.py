@@ -6,12 +6,9 @@ from pyquil import get_qc
 from core import vqe_eig
 from core import ansatz
 from core import callback as cb
-from old import vqe_analysis
 
 import numpy as np
 from core import matrix_to_op
-from meas import liveplot
-
 
 samples = 5000
 sweep_params = 30

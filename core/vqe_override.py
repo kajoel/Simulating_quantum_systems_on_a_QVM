@@ -31,7 +31,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False, callback=None, attempts=1):
+                return_all=False, callback=None, max_fun_evals=np.inf):
         """
         functional minimization loop.
 
@@ -85,12 +85,22 @@ class VQE_override(VQE):
         else: pass
         """
 
+        if max_fun_evals <= 1:
+            raise ValueError('Need more than one fun eval.')
+
         self._disp_fun = print
 
         iteration_params = []
         expectation_vals = []
         expectation_vars = []
         fun_evals = 0
+        restarts = 0
+        callback_idx = []
+
+        # Problem: expectation_vals did not (for Nelder-Mead in
+        # scipy.optimize) correspond to objective_function(
+
+
         self._current_expectation = None
         self._current_variance = None
 
@@ -123,7 +133,13 @@ class VQE_override(VQE):
             self._current_expectation = mean_value  # store for printing
             nonlocal fun_evals
             fun_evals += 1
-            # print(fun_evals)
+            if fun_evals >= max_fun_evals:
+                raise RestartError  # attempt restart and break while below
+
+            # Save params, exp_val and exp_var
+            iteration_params.append(params)
+            expectation_vals .append(mean_value)
+            expectation_vars.append(tmp_vars)
 
             return mean_value
 
@@ -147,14 +163,13 @@ class VQE_override(VQE):
 
         def wrap_callbacks(iter_vars, *args, **kwargs):
             # save values
-            iteration_params.append(iter_vars)
-            expectation_vals.append(self._current_expectation)
-            expectation_vars.append(self._current_variance)
-            # call VQE's callback
-            callback(iteration_params, expectation_vals, expectation_vars)
+            callback_idx.append(fun_evals-1)
             # display
             if disp is True:
                 print_current_iter(iter_vars)
+            # call VQE's callback
+            callback(iteration_params, expectation_vals, expectation_vars)
+
 
         if 'callback' in arguments:
             self.minimizer_kwargs['callback'] = wrap_callbacks
@@ -165,20 +180,22 @@ class VQE_override(VQE):
             self.minimizer_kwargs['jac'] = jacobian
 
         results = OptResults()
-        results.status = 0
-        for attempt_dummy in range(attempts):
+        while fun_evals < max_fun_evals:
             break_ = True
             try:
                 result = self.minimizer(*args, **self.minimizer_kwargs)
             except BreakError:
-                results.x = iteration_params[-1]
-                results.fun = expectation_vals[-1]
+                results.status = -1
+                results.message = 'Stopped by BreakError.'
             except RestartError as e:
+                restarts += 1
                 break_ = False
-                args[1] = iteration_params[-1]
+                args[1] = iteration_params[int(np.argmin(expectation_vals))]
                 if e.samples is not None:
                     sample_list = calc_samples(e.samples, coeffs)
             else:
+                results.status = 0
+                results.message = 'Minimizer stopped naturally.'
                 if hasattr(result, 'status'):
                     if result.status != 0:
                         self._disp_fun(
@@ -194,20 +211,36 @@ class VQE_override(VQE):
             if break_:
                 break
         else:
-            results.x = iteration_params[-1]
-            results.fun = expectation_vals[-1]
             results.status = 1
+            results.message = 'Exceeded maximum number of function evaluations.'
             if disp:
-                print("Restarts exceeded maximum of %i attempts and run was "
-                      "terminated." % attempts)
+                print(f"Restarts exceeded maximum of {max_fun_evals} function "
+                      f"evalutations  and run was terminated.")
+
+        # Save results in case of Break- or RestartError
+        if not hasattr(results, 'x'):
+            idx = int(np.argmin(expectation_vals))
+            results.x = iteration_params[idx]
+            results.fun = expectation_vals[idx]
 
         if return_all:
-            # iteration_params.append(result['x'][0])
-            # expectation_vals.append(result['fun'])
-            results.iteration_params = iteration_params
-            results.expectation_vals = expectation_vals
-            results.expectation_vars = expectation_vars
+            # Convert to ndarray for better indexing options (se bellow)
+            iteration_params = np.array(iteration_params)
+            expectation_vals = np.array(expectation_vals)
+            expectation_vars = np.array(expectation_vars)
+
+            # From each time callback is called
+            results.iteration_params = iteration_params[callback_idx]
+            results.expectation_vals = expectation_vals[callback_idx]
+            results.expectation_vars = expectation_vars[callback_idx]
+
+            # From every function evaluation
+            results.iteration_params_all = iteration_params
+            results.expectation_vals_all = expectation_vals
+            results.expectation_vars_all = expectation_vars
+
             results.fun_evals = fun_evals
+            results.restarts = restarts
         return results
 
     @staticmethod

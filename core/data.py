@@ -13,7 +13,7 @@ from tkinter.filedialog import askopenfilename, askopenfilenames, \
 from datetime import datetime
 from os.path import basename, join, dirname, isdir, splitext
 from inspect import stack, getmodule
-from os import getuid, mkdir
+from os import getuid, makedirs
 from pwd import getpwuid
 from constants import ROOT_DIR
 from traceback import format_exc
@@ -70,7 +70,7 @@ def save(file=None, data=None, metadata=None,
         # Create directory (if not existing)
         dir_ = dirname(file)
         if not isdir(dir_):
-            mkdir(dir_)
+            makedirs(dir_)
         # Add extension .pkl if extension is missing and force_extension
         if not splitext(file)[1] and force_extension:
             file = file + '.pkl'
@@ -309,7 +309,7 @@ def _display_internal(file, metadata):
         print(str(value) + '\n')
 
 
-def _get_name():
+def get_name():
     """
     Finds who is trying to use save (for metadata purposes).
 
@@ -352,7 +352,7 @@ def _metadata_defaults(protocol):
         return caller
 
     return {'protocol': lambda: protocol,
-            'created_by': _get_name,
+            'created_by': get_name,
             'created_from': get_caller,
             'created_datetime': lambda: datetime.now().strftime("%Y-%m-%d, "
                                                                 "%H:%M:%S"),
