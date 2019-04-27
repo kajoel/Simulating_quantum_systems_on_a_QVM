@@ -386,6 +386,9 @@ def _cleanup_big(identifier_generator, directory, script_file):
     :param directory: Directory of cleanup.
     :return:
     """
+    # TODO: collect metadata regarding time, success rate, etc. from
+    #  mac-subdirs to total/metadata, save as dict with mac as key(?)
+
     start_time = perf_counter()
     # Get total/metadata
     metadata, metametadata = _get_metadata(directory, warn=False)
