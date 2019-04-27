@@ -5,15 +5,20 @@ Module with function for running in parallel and doing cleanups after runs etc.
 """
 import numpy as np
 import warnings
+import shutil
 import os
 from os.path import join, isfile
 from multiprocessing import Pool
 from time import perf_counter, sleep
+from datetime import datetime
 from uuid import getnode as get_mac
+from pathlib import Path
 from core import data
 from constants import ROOT_DIR
 
 max_num_workers = os.cpu_count()
+base_dir = join(ROOT_DIR, 'data_ignore')
+mac = get_mac()
 
 
 class Wrap:
@@ -136,8 +141,11 @@ def run(simulate,
         max_task=1,
         chunksize=1,
         restart=True,
-        delay=5):
+        delay=5,
+        init=False,
+        cleanup=False):
     """
+    Run simulations, metadata initialization or cleanup.
     # TODO: param doc
 
     :param simulate:
@@ -155,35 +163,56 @@ def run(simulate,
     :param chunksize:
     :param restart:
     :param delay:
+    :param init:
+    :param cleanup:
     :return:
     """
-    remaining = 1
-    while restart and remaining:
-        remaining = _run_internal(
-            simulate,
-            identifier_generator(),
-            input_functions,
-            directory,
-            version,
-            script_file,
-            file_from_id,
-            metadata_from_id,
-            num_workers,
-            start_range,
-            stop_range,
-            max_task,
-            chunksize,
-            )
-        if remaining:
-            print(f'\n{remaining} tasks remaining.\nRestarting in {delay} s.\n')
-            sleep(delay)
+    directory = join(directory, f'v{version}')
+    task = 'run'*(not init and not cleanup) \
+           + 'cleanup'*(not init and cleanup) \
+           + 'init'*init
+    _mark_running(directory, task)
+    try:
+        if init:
+            if _is_running(directory, ('run', 'cleanup', 'init')):
+                raise RuntimeError("Can't run init when anyone else is "
+                                   "running.")
+            _init_metadata(identifier_generator(),
+                           directory,
+                           script_file)
+        elif cleanup:
+            if _is_running(directory, ('run', 'cleanup', 'init')):
+                raise RuntimeError("Can't run cleanup when anyone else is "
+                                   "running.")
+            _cleanup_big(identifier_generator(), directory, script_file)
+        else:
+            if _is_running(directory, ('cleanup', 'init')):
+                raise RuntimeError("Can't run simulation when someone else is "
+                                   "initializing metadata or cleaning up.")
+            while restart and _run_internal(
+                    simulate,
+                    identifier_generator(),
+                    input_functions,
+                    directory,
+                    script_file,
+                    file_from_id,
+                    metadata_from_id,
+                    num_workers,
+                    start_range,
+                    stop_range,
+                    max_task,
+                    chunksize,
+                    ):
+                print(f'\nRestarting in {delay} s.\n')
+                sleep(delay)
+    finally:
+        _mark_not_running(directory, task)
 
 
 def _run_internal(simulate,
                   identifier_generator,
                   input_functions,
                   directory,
-                  version,
                   script_file,
                   file_from_id,
                   metadata_from_id,
@@ -198,15 +227,14 @@ def _run_internal(simulate,
     :return: number of remaining tasks.
     """
     # Files and paths
-    base_dir = join(ROOT_DIR, 'data_ignore')
-    directory += f'_v{version}'
-    directory = join(directory, str(get_mac()))
+    directory_nomac = directory
+    directory = join(directory, str(mac))
     path_metadata = join(directory, 'metadata')
     try:
         # Try to load the file (will raise FileNotFoundError if not existing)
         metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
     except FileNotFoundError:
-        metadata = []
+        metadata = _get_metadata(directory_nomac)[0]
         metametadata = {
             'description': "File that keeps track of what's been done "
                            "previously in this script "
@@ -276,16 +304,17 @@ def _run_internal(simulate,
                                 base_dir=base_dir)
     finally:
         stop_time = perf_counter()
-        if success + fail == 0:
-            fail = 1  # To avoid division by zero
+        total = success + fail
+        if total == 0:
+            total = 1  # To avoid division by zero
 
         # Post simulation.
         metadata, metametadata = data.load(path_metadata, base_dir=base_dir)
-        metadata = cleanup_small(metadata)
+        metadata = _cleanup_small(metadata)
         metametadata['run_time'].append(stop_time - start_time)
         metametadata['num_workers'].append((num_workers, max_num_workers))
         metametadata['num_tasks_completed'].append(success)
-        metametadata['success_rate'].append(success / (success + fail))
+        metametadata['success_rate'].append(success / total)
         data.save(file=path_metadata, data=metadata, metadata=metametadata,
                   extract=True, base_dir=base_dir)
 
@@ -293,17 +322,192 @@ def _run_internal(simulate,
         print('\nSimulation completed.')
         print(f'Total number of tasks this far: {len(metadata)}')
         print(f'Completed tasks this run: {success}')
-        print(f'Success rate this run: {success / (success + fail)}')
+        print(f'Success rate this run: {success / total}')
         remaining = len(metadata) - sum(x[1] for x in metadata if x[1] is True)
-        print(f'Number of tasks remaining: {remaining}')
+        print(f'Minimum number of tasks remaining for this run: {fail}')
+        print(f'Total number of tasks remaining: {remaining}')
 
-        # Return remaining for restart
-        return remaining
+        # No success and no fail => no restart
+        return success + fail
 
 
-def cleanup_small(metadata):
+def _init_metadata(identifier_generator, directory, script_file):
     """
-    Cleanup metadata at path.
+    Initialize metadata.
+
+    :param identifier_generator: id generator
+    :param directory: directory
+    :param script_file: name of script
+    :return:
+    """
+    # Fix directory and path
+    directory = join(directory, 'total')
+    path_metadata = join(directory, 'metadata')
+
+    # Save metadata file
+    metadata = []
+    metametadata = {
+        'description': "File that keeps track of what's been done "
+                       "previously in this script "
+                       f"({script_file}).",
+        'created_from': script_file}
+    data.save(file=path_metadata, data=metadata, metadata=metametadata,
+              extract=True, base_dir=base_dir)
+
+    # Add identifiers
+    count = 0
+    start_time = perf_counter()
+    for identifier in identifier_generator:
+        count += 1
+        data.append(path_metadata, [identifier, False], base_dir=base_dir)
+    stop_time = perf_counter()
+
+    print(f'\nMetadata initialization completed in'
+          f'{stop_time - start_time: .1f} s with {count} identifiers.\n')
+
+
+def _cleanup_big(identifier_generator, directory, script_file):
+    """
+    Cleanup directory by going trough all subdirectories, collect results and
+    fix metadata.
+
+    :param directory: Directory of cleanup.
+    :return:
+    """
+    start_time = perf_counter()
+    # Get total/metadata
+    metadata, metametadata = _get_metadata(directory, warn=False)
+    if (metadata, metametadata) == ([], {}):
+        _init_metadata(identifier_generator, directory, script_file)
+
+        # Try again
+        metadata, metametadata = _get_metadata(directory, warn=False)
+        if (metadata, metametadata) == ([], {}):
+            raise ValueError("_init_metadata doesn't work")
+
+    # Convert metadata to dict
+    meta_dict = {}
+    for x in metadata:
+        # Keep only the last exception for given identifier.
+        if x[0] not in meta_dict or meta_dict[x[0]] is not True:
+            meta_dict[x[0]] = x[1]
+    del metadata
+
+    # Find mac-subdirectories
+    subdirs = set()
+    with os.scandir(join(base_dir, directory)) as it:
+        for entry in it:
+            if entry.is_dir() and entry.name.isdigit():
+                subdirs.add(entry.name)
+
+    # Find data-files and keep track of which exists in which subdir
+    files = {}
+    for subdir in subdirs:
+        with os.scandir(join(base_dir, directory, subdir)) as it:
+            for entry in it:
+                if entry.is_file() and entry.name != 'metadata.pkl':
+                    if entry.name not in files:
+                        files[entry.name] = []
+                    files[entry.name].append(subdir)
+
+    # Go through files, create file in total (if not existing), add data
+    # from files in subdirs and update meta_dict
+    count = 0
+    for file in files:
+        # Load file from total
+        try:
+            content, metadata = data.load(file=join(directory, 'total', file),
+                                          base_dir=base_dir)
+        except FileNotFoundError:
+            content, metadata = [], {}
+
+        # Convert content to dict
+        content_dict = _add_result_to_dict(content, {})
+        del content
+
+        # Add content from other files
+        for subdir in files[file]:
+            content_new, metadata_new = data.load(
+                file=join(directory, subdir, file), base_dir=base_dir)
+
+            content_dict = _add_result_to_dict(content_new, content_dict)
+
+            # Change metadata if no previous
+            if metadata == {}:
+                metadata = metadata_new
+                metadata['created_by'] = data.get_name()
+                metadata['created_datetime'] = datetime.now().\
+                    strftime("%Y-%m-%d, %H:%M:%S")
+
+        # Convert content_dict back to list and update meta_dict
+        content = []
+        for id_ in content_dict:
+            if id_ not in meta_dict or meta_dict[id_] is not True:
+                meta_dict[id_] = True
+
+            for result in content_dict[id_]:
+                count += 1
+                content.append([id_, result])
+
+        # Save file
+        data.save(file=join(directory, 'total', file), data=content,
+                  metadata=metadata, extract=True, base_dir=base_dir,
+                  disp=False)
+    del metadata
+
+    # Convert meta_dict back to list and save
+    metadata = []
+    for id_ in meta_dict:
+        metadata.append([id_, meta_dict[id_]])
+
+    data.save(file=join(directory, 'total', 'metadata'), base_dir=base_dir,
+              data=metadata, metadata=metametadata, extract=True, disp=False)
+
+    # Update metadata in subdirs
+    for subdir in subdirs:
+        try:
+            metametadata_new = data.load(
+                file=join(directory, subdir, 'metadata'), base_dir=base_dir)
+        except FileNotFoundError:
+            metametadata_new = metametadata
+
+        data.save(file=join(directory, subdir, 'metadata'), base_dir=base_dir,
+                  data=metadata, metadata=metametadata_new, extract=True,
+                  disp=False)
+
+    # Copy content of base_dir/directory/total to data.BASE_DIR/directory
+    destination = join(data.BASE_DIR, directory)
+    with os.scandir(join(base_dir, directory, 'total')) as it:
+        for entry in it:
+            if entry.is_file():
+                shutil.copy(entry.path, destination)
+
+    # Print some stats
+    stop_time = perf_counter()
+    print(f'\nCleanup completed in {stop_time - start_time: .1f} s.')
+    print(f'A total of {len(metadata)} identifiers where handled and {count} '
+          f'results saved.')
+
+
+def _add_result_to_dict(content, content_dict):
+    """
+    Adds content to dict.
+
+    :param content: Content to add.
+    :param content_dict: Dict to add to.
+    :return: Updated dict.
+    """
+    for id_, result in content:
+        if id_ not in content_dict:
+            content_dict[id_] = []
+        if result not in content_dict[id_]:
+            content_dict[id_].append(result)
+    return content_dict
+
+
+def _cleanup_small(metadata):
+    """
+    Cleanup metadata.
 
     :param metadata: unclean metadata
     :return: cleaned metadata
@@ -314,3 +518,62 @@ def cleanup_small(metadata):
         if x[0] not in meta_dict or meta_dict[x[0]] is not True:
             meta_dict[x[0]] = x[1]
     return [[x, meta_dict[x]] for x in meta_dict]
+
+
+def _get_metadata(directory, warn=True):
+    """
+    Look for metadata in directory. Return [] if not found.
+
+    :param directory: Directory to search through.
+    :return: Metadata.
+    """
+    try:
+        return data.load(join(directory, 'total', 'metadata'),
+                         base_dir=base_dir)
+    except FileNotFoundError:
+        if warn:
+            warnings.warn('Metadata has not been initialized correctly, '
+                          'run parallel.run with init=True and then with '
+                          'cleanup=True.')
+        return [], {}
+
+
+def _mark_running(directory, task):
+    """
+    Mark as running.
+
+    :param directory: Directory to save file in.
+    :param task: Task (run, init, or cleanup)
+    :return:
+    """
+    Path(join(base_dir, directory, f'{task}_{mac}')).touch()
+
+
+def _mark_not_running(directory, task):
+    """
+    Mark as not running (by removing the file created by _mark_running).
+
+    :param directory: Directory to remove file from.
+    :param task: Task (run, init, or cleanup)
+    :return:
+    """
+    try:
+        Path(join(base_dir, directory, f'{task}_{mac}')).unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _is_running(directory, tasks):
+    """
+    Check if anyone is running.
+
+    :param directory: Directory to check in.
+    :param tasks: tuple with tasks to check for.
+    :return:
+    """
+    with os.scandir(join(base_dir, directory)) as it:
+        for entry in it:
+            if entry.is_file() and entry.name.startswith(tasks) \
+                    and not entry.name.endswith(str(mac)):
+                return True
+    return False
