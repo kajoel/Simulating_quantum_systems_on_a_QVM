@@ -1,6 +1,10 @@
 """
 Module with function for running in parallel and doing cleanups after runs etc.
 
+BE AWARE: This module is not completely safe for use on multiple computers
+with shared file system. In particular, it's not safe to start init or
+cleanup at the same time as anything else.
+
 @author = Joel
 """
 import numpy as np
@@ -89,6 +93,8 @@ def script_input(args):
     :param args: Input sys.argv
     :return: kwargs to parallel.run
     """
+    # TODO: better script_input that can take string 'cleanup' and 'init'
+
     # Input number of workers
     if len(args) <= 1:
         num_workers = max_num_workers
@@ -135,7 +141,7 @@ def run(simulate,
         script_file,
         file_from_id,
         metadata_from_id,
-        num_workers=os.cpu_count(),
+        num_workers=max_num_workers,
         start_range=0,
         stop_range=np.inf,
         max_task=1,
@@ -331,15 +337,18 @@ def _run_internal(simulate,
         return success + fail
 
 
-def _init_metadata(identifier_generator, directory, script_file):
+def _init_metadata(identifier_generator, directory, script_file, force=False):
     """
     Initialize metadata.
 
     :param identifier_generator: id generator
     :param directory: directory
     :param script_file: name of script
+    :param force: if False raise RuntimeError if metadata is already existing.
     :return:
     """
+    if not force and _get_metadata(directory, warn=False) != ([], {}):
+        raise RuntimeError('Metadata has already been initialized.')
     # Fix directory and path
     directory = join(directory, 'total')
     path_metadata = join(directory, 'metadata')
@@ -467,7 +476,7 @@ def _cleanup_big(identifier_generator, directory, script_file):
     for subdir in subdirs:
         try:
             metametadata_new = data.load(
-                file=join(directory, subdir, 'metadata'), base_dir=base_dir)
+                file=join(directory, subdir, 'metadata'), base_dir=base_dir)[1]
         except FileNotFoundError:
             metametadata_new = metametadata
 
@@ -477,6 +486,7 @@ def _cleanup_big(identifier_generator, directory, script_file):
 
     # Copy content of base_dir/directory/total to data.BASE_DIR/directory
     destination = join(data.BASE_DIR, directory)
+    os.makedirs(destination, exist_ok=True)
     with os.scandir(join(base_dir, directory, 'total')) as it:
         for entry in it:
             if entry.is_file():
@@ -484,7 +494,7 @@ def _cleanup_big(identifier_generator, directory, script_file):
 
     # Print some stats
     stop_time = perf_counter()
-    print(f'\nCleanup completed in {stop_time - start_time: .1f} s.')
+    print(f'\nCleanup completed in {stop_time - start_time:.1f} s.')
     print(f'A total of {len(metadata)} identifiers where handled and {count} '
           f'results saved.')
 
@@ -500,9 +510,38 @@ def _add_result_to_dict(content, content_dict):
     for id_, result in content:
         if id_ not in content_dict:
             content_dict[id_] = []
-        if result not in content_dict[id_]:
+        if not _result_in_results(result, content_dict[id_]):
             content_dict[id_].append(result)
     return content_dict
+
+
+def _result_in_results(result, results):
+    """
+    Checks if result is in results (OptResults objects can't be compared).
+
+    :param result: result object to check for.
+    :param list results: list of results to check in.
+    :return:
+    """
+    return any(_cmp(result, x) for x in results)
+
+
+def _cmp(x, y):
+    """
+    Used to compare objects containing (among other things) numpy arrays.
+
+    TODO: better solution?
+
+    :param x:
+    :param y:
+    :return:
+    :rtype: bool
+    """
+    try:
+        np.testing.assert_equal(x, y, verbose=False)
+        return True
+    except AssertionError:
+        return False
 
 
 def _cleanup_small(metadata):
@@ -522,10 +561,10 @@ def _cleanup_small(metadata):
 
 def _get_metadata(directory, warn=True):
     """
-    Look for metadata in directory. Return [] if not found.
+    Look for metadata in directory. Returns [], {} if not found.
 
     :param directory: Directory to search through.
-    :return: Metadata.
+    :return: Metadata and meta-metadata.
     """
     try:
         return data.load(join(directory, 'total', 'metadata'),
@@ -546,7 +585,9 @@ def _mark_running(directory, task):
     :param task: Task (run, init, or cleanup)
     :return:
     """
-    Path(join(base_dir, directory, f'{task}_{mac}')).touch()
+    dir_complete = join(base_dir, directory)
+    os.makedirs(dir_complete, exist_ok=True)
+    Path(join(dir_complete, f'{task}_{mac}')).touch()
 
 
 def _mark_not_running(directory, task):
