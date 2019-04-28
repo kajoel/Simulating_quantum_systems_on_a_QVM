@@ -22,7 +22,6 @@ def smallest(H, qc, initial_params, vqe,
     :param vqe: Quantum variational eigensolver object
     :param ansatz_: ansatz function
     :param samples: number of samples on the qc
-    :param disp: displays run info from vqe_run
 
 
     :return: depending on return_all_data, either dict or only eigvect and param
@@ -49,9 +48,9 @@ def smallest(H, qc, initial_params, vqe,
     return eig
 
 
-def negative(h, qc, ansatz_, vqe, parameters, samples,
+def negative(h, qc, parameters, vqe, ansatz_, samples,
              topauli_method=matrix_to_op.multi_particle,
-             num_eigvals=None, bayes=True, disp_run_info=False):
+             num_eigvals=None):
     """
     Calculates all (or specified amount of) negative eigenvalues using an
     emulated quantum computer.
@@ -64,18 +63,11 @@ def negative(h, qc, ansatz_, vqe, parameters, samples,
     :param samples: total number of samples, or None
     :param topauli_method: method to convert matrix to paulisum
     :param num_eigvals: amount of eigenvalues to be found
-    :param bayes: True for baysian optimization, false for Nelder-Mead
+
     :param disp_run_info: do you want to kill your terminal?
     :return: list of dicts of results
 
     """
-    if bayes and not isinstance(parameters[0], tuple):
-        raise TypeError(
-            'parameters must be a list of tuples for Bayesian optimization')
-    elif not bayes and not isinstance(parameters, np.ndarray):
-        raise TypeError(
-            'parameters must be an ndarray for Classical Nelder-Mead '
-            'optimization')
 
     if num_eigvals is None:
         num_eigvals = h.shape[0]
@@ -83,17 +75,8 @@ def negative(h, qc, ansatz_, vqe, parameters, samples,
 
     for i in range(num_eigvals):
         H = topauli_method(h)
-        if bayes:
-            eig = smallest_bayes(H, qc,
-                                 dimension=parameters,
-                                 ansatz_=ansatz_,
-                                 samples=samples,
-                                 disp_run_info=disp_run_info)
-
-        else:
-            eig = smallest(H, qc, ansatz_=ansatz_, vqe=vqe, samples=samples,
-                           initial_params=parameters,
-                           disp=disp_run_info)
+        eig = smallest(H, qc, ansatz_=ansatz_, vqe=vqe, samples=samples,
+                       initial_params=parameters)
         if eig['fun'] >= 0:
             if num_eigvals != h.shape[0]:
                 print('Warning: Unable to find '
