@@ -502,7 +502,7 @@ def _cleanup_big(identifier_generator, directory, script_file):
     stop_time = perf_counter()
     print(f'\nCleanup completed in {stop_time - start_time:.1f} s.')
     print(f'A total of {len(metadata)} identifiers where handled and {count} '
-          f'results saved.')
+          f'results saved.\n')
 
 
 def _add_result_to_dict(content, content_dict):
