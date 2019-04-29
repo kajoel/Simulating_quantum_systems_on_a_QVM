@@ -31,7 +31,7 @@ class VQE_override(VQE):
     def vqe_run(self, variational_state_evolve, hamiltonian, initial_params,
                 gate_noise=None, measurement_noise=None,
                 jacobian=None, qc=None, disp=False, samples=None,
-                return_all=False, callback=None, max_fun_evals=np.inf):
+                return_all=False, callback=None, max_meas=np.inf):
         """
         functional minimization loop.
 
@@ -85,7 +85,7 @@ class VQE_override(VQE):
         else: pass
         """
 
-        if max_fun_evals <= 1:
+        if max_meas <= samples:
             raise ValueError('Need more than one fun eval.')
 
         self._disp_fun = print
@@ -94,6 +94,7 @@ class VQE_override(VQE):
         expectation_vals = []
         expectation_vars = []
         fun_evals = 0
+        meas = 0
         restarts = 0
         callback_idx = []
 
@@ -131,9 +132,10 @@ class VQE_override(VQE):
                                                     qc)
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
-            nonlocal fun_evals
+            nonlocal fun_evals, meas
             fun_evals += 1
-            if fun_evals >= max_fun_evals:
+            meas += samples
+            if meas >= max_meas:
                 raise RestartError  # attempt restart and break while below
 
             # Save params, exp_val and exp_var
@@ -170,7 +172,6 @@ class VQE_override(VQE):
             # call VQE's callback
             callback(iteration_params, expectation_vals, expectation_vars)
 
-
         if 'callback' in arguments:
             self.minimizer_kwargs['callback'] = wrap_callbacks
 
@@ -180,7 +181,7 @@ class VQE_override(VQE):
             self.minimizer_kwargs['jac'] = jacobian
 
         results = OptResults()
-        while fun_evals < max_fun_evals:
+        while meas < max_meas:
             break_ = True
             try:
                 result = self.minimizer(*args, **self.minimizer_kwargs)
@@ -192,7 +193,8 @@ class VQE_override(VQE):
                 break_ = False
                 args[1] = iteration_params[int(np.argmin(expectation_vals))]
                 if e.samples is not None:
-                    sample_list = calc_samples(e.samples, coeffs)
+                    samples = e.samples
+                    sample_list = calc_samples(samples, coeffs)
             else:
                 results.status = 0
                 results.message = 'Minimizer stopped naturally.'
@@ -212,10 +214,10 @@ class VQE_override(VQE):
                 break
         else:
             results.status = 1
-            results.message = 'Exceeded maximum number of function evaluations.'
+            results.message = 'Exceeded maximum number of measurements.'
             if disp:
-                print(f"Restarts exceeded maximum of {max_fun_evals} function "
-                      f"evalutations  and run was terminated.")
+                print(f"Exceeded maximum of {max_meas} measurements"
+                      f"and terminated.")
 
         # Save results in case of Break- or RestartError
         if not hasattr(results, 'x'):
@@ -240,6 +242,7 @@ class VQE_override(VQE):
             results.expectation_vars_all = expectation_vars
 
             results.fun_evals = fun_evals
+            results.meas = meas
             results.restarts = restarts
         return results
 
@@ -257,7 +260,7 @@ class VQE_override(VQE):
         :param pauli_sum: PauliSum representing the operator of which to calculate the expectation
             value or a numpy matrix representing the Hamiltonian tensored up to the appropriate
             size.
-        :param np.ndarray samples: The number of samples used to calculate the
+        :param Any samples: The number of samples used to calculate the
             expectation value. If samples
             is None then the expectation value is calculated by calculating <psi|O|psi>. Error
             models will not work if samples is None. Should be a list with
