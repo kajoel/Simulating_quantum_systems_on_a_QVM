@@ -42,7 +42,8 @@ def smallest(H, qc, initial_params, vqe,
     stop_time = perf_counter()
 
     x = eig['x']
-    eig['fun'] = vqe.expectation(ansatz_(x), H, samples=samples, qc=qc)[0]
+    eig['fun'], eig['var'] = vqe.expectation(ansatz_(x), H, samples=samples,
+                                             qc=qc)
     eig['fun_none'] = vqe.expectation(ansatz_(x), H, samples=None, qc=qc)[0]
     eig['time'] = stop_time - start_time
 
