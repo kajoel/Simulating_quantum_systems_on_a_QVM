@@ -7,7 +7,7 @@ This makes sure to save often and keeps the data in a single file.
 import core.interface
 from os.path import basename
 from functools import lru_cache
-from core.interface import hamiltonians_of_size, vqe_default_bayes
+from core.interface import hamiltonians_of_size, vqe_bayes
 from core import parallel, vqe_eig
 import numpy as np
 import sys
@@ -98,7 +98,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
              repeats, h, eig):
     intervall = [(-3.0, 3.0)]*(size-1)
     H, qc, ansatz_,_ = core.interface.create_and_convert(ansatz_name, h)
-    vqe = vqe_default_bayes(n_calls=n_calls)
+    vqe = vqe_bayes(n_calls=n_calls)
     result = vqe_eig.smallest(H, qc, intervall, vqe, ansatz_, samples,
                               return_all=True)
 

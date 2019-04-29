@@ -125,11 +125,11 @@ def vqe_nelder_mead(xatol=1e-2, fatol=None, samples=None, H=None, return_all=Fal
                                                        'options': disp_options})
 
 
-def vqe_default_bayes(acq_func="gp_hedge",
-                      n_calls=15,
-                      n_random_starts=4,
-                      random_state=123,
-                      n_jobs=1):
+def vqe_bayes(acq_func="gp_hedge",
+              n_calls=15,
+              n_random_starts=4,
+              random_state=123,
+              n_jobs=1):
     '''
     @author: Axel
     :param acq_func: Function to minimize over the gaussian prior.

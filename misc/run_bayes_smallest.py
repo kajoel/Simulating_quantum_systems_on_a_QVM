@@ -18,7 +18,7 @@ def run_bayes_opt(n_jobs=1):
     h = lipkin_quasi_spin.hamiltonian(j,V)[1]
     qubits = h.shape[0]
     qc = get_qc('{}q-qvm'.format(qubits))
-    vqe = core.interface.vqe_default_bayes(n_calls=15)
+    vqe = core.interface.vqe_bayes(n_calls=15)
     ansatz_ = ansatz.multi_particle(h)
     H = matrix_to_op.multi_particle(h)
     dimension = [(-20.0, 20.0) for i in range(h.shape[0]-1)]
