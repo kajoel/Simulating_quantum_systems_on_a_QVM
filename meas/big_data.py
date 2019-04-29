@@ -17,7 +17,7 @@ import sys
 # Input number of workers
 run_kwargs = parallel.script_input(sys.argv)
 
-version = 1
+version = 2
 
 directory = 'final'  # directory to save to
 
@@ -28,7 +28,7 @@ def identifier_generator():
         for ansatz_name in ['multi_particle', 'one_particle_ucc']:
             for minimizer in ['nelder-mead', 'bayes']:
                 # size of hamiltonian
-                for size in range(5, 6):
+                for size in range(4, 5):
                     # the index of the four hamiltonians
                     for hamiltonian_idx in range(4):
                         # number of measurements on qc
