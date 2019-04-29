@@ -7,7 +7,7 @@ single file.
 import core.interface
 from os.path import basename
 from functools import lru_cache
-from core.interface import hamiltonians_of_size, vqe_default_bayes
+from core.interface import hamiltonians_of_size, vqe_bayes
 from core import vqe_eig, parallel
 import numpy as np
 import sys
@@ -97,7 +97,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, n_calls,
     # TODO: run e.g. smallest here and return result.
     interval = [(-1.0, 1.0)]*(size-1)
     H, qc, ansatz_,_ = core.interface.create_and_convert(ansatz_name, h)
-    vqe = vqe_default_bayes(n_calls=n_calls)
+    vqe = vqe_bayes(n_calls=n_calls)
     result = vqe_eig.smallest(H, qc, interval, vqe, ansatz_, samples)
 
     result.correct = eig
