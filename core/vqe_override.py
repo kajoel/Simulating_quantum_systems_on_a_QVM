@@ -257,7 +257,7 @@ class VQE_override(VQE):
         :param pauli_sum: PauliSum representing the operator of which to calculate the expectation
             value or a numpy matrix representing the Hamiltonian tensored up to the appropriate
             size.
-        :param np.ndarray samples: The number of samples used to calculate the
+        :param samples: The number of samples used to calculate the
             expectation value. If samples
             is None then the expectation value is calculated by calculating <psi|O|psi>. Error
             models will not work if samples is None. Should be a list with
