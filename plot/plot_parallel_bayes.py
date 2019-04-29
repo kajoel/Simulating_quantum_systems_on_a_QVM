@@ -1,11 +1,3 @@
-''''
-Parameters in the saved data dict
-'para_error': [],
-'variance': [],
-'n_calls': [],
-'samples': [],
-'result': []
-'''
 
 from core import data
 import numpy as np
@@ -14,7 +6,7 @@ from constants import ROOT_DIR
 from os.path import join
 
 version = 3
-directory = f'bayes_total_evals_v{version}/total'
+directory = f'bayes_total_evals/v{version}'
 
 
 def load_data(ansatz_, size, matidx):
@@ -35,10 +27,19 @@ def load_multiple(ansatz_, size, mean=False):
             print(f"An exception occurred with matrix of index: {index}")
     return temp_dict
   
-def partitan_data(data_dict):
-    data_matrix = np.zeros( (6, len(data_dict[0])) )
+def partitan_data(data_dict, start_n_calls = 15):
+    for start_index, data_point in enumerate(data_dict[0]):
+        if data_point[0][4] >= start_n_calls: break
+
+    number_of_datapoints = len(data_dict[0]) - start_index  
+
+    data_matrix = np.zeros( (6, number_of_datapoints) )
     parameter = []
-    for index, data_point in enumerate(data_dict[0]):
+    
+
+    for i, data_point in enumerate(data_dict[0]):
+        if i < start_index: continue
+        index = i-start_index
         # Samples
         data_matrix[2,index] = data_point[0][3]
         # n_calls
@@ -57,13 +58,20 @@ def partitan_data(data_dict):
         parameter.append(data_point[1]['x'])
     return data_matrix, parameter
 
-def mean_partitan_data(data_dict, repeats=5):
-    data_matrix = np.zeros( (6, int(len(data_dict[0])/5)) )
+def mean_partitan_data(data_dict, start_n_calls = 15, repeats=5):
+    for start_index, data_point in enumerate(data_dict[0]):
+        if data_point[0][4] >= start_n_calls: break
+
+    number_of_datapoints = len(data_dict[0]) - start_index  
+
+    data_matrix = np.zeros( (6, int(number_of_datapoints/5)) )
+
     parameter = []
     temp = np.zeros(5)
     i, count = 0, 0
-    for data_point in data_dict[0]:
-        if i ==0:        
+    for index,data_point in enumerate(data_dict[0]):
+        if index < start_index: continue
+        if i == 0:        
             # Samples
             data_matrix[2,count] = data_point[0][3]
             # n_calls
@@ -95,12 +103,18 @@ def heatmap(ansatz_, size):
 
     temp_dict = load_multiple(ansatz_, size, mean=True)
     for i, value in temp_dict.items():
+        
+        samples = np.unique(value[0][2])
+        n_calls = np.unique(value[0][3])
+        eig_error = value[0][1]
+
+        '''
         x = value[0][2]
         y = value[0][3]
-        
         #y = [x[i]*temp_y[i] for i in range(len(x))]
 
         z = value[0][1]
+        
         xi = np.linspace(np.unique(x)[0], np.unique(x)[-1], int(len(x)/2))
         yi = np.linspace(np.unique(y)[0], np.unique(y)[-1], int(len(y)/2))
         zi = griddata((x, y), z, (xi[None,:], yi[:,None]), method='cubic')
@@ -125,7 +139,7 @@ def heatmap(ansatz_, size):
         df = DataFrame(error_mesh, index=samples, columns=n_calls)
         plt.figure()
         sns.heatmap(df)        
-        '''
+        
         
 
 
@@ -150,7 +164,8 @@ def plot_all_of_size(ansatz_, size, mean = False):
 # Main
 ################################################################################
 if __name__ == '__main__':
-    size = 3
+    size = 2
+    
     plt.figure()
     plot_all_of_size('multi_particle', size)
     plt.figure()
@@ -164,7 +179,7 @@ if __name__ == '__main__':
     plot_all_of_size('one_particle_ucc', size, True)
     
     heatmap('one_particle_ucc', size)    
-    '''
+    '''    
     plt.show()
 
 
