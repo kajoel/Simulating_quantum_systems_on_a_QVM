@@ -371,6 +371,8 @@ def _init_metadata(identifier_generator, directory, script_file, force=False):
     start_time = perf_counter()
     for identifier in identifier_generator:
         count += 1
+        if count % 1e4 == 0:
+            print(f'{count} identifiers saved.')
         data.append(path_metadata, [identifier, False], base_dir=base_dir)
     stop_time = perf_counter()
 

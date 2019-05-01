@@ -114,7 +114,7 @@ def simulate(n_calls, samples):
     facit = vqe_eig.smallest(H, qc, init_params.alternate_stereographic(h),
                              vqe_nm, temp_ansatz, disp=False)
     
-    vqe = core.interface.vqe_default_bayes(n_calls=n_calls)
+    vqe = core.interface.vqe_bayes(n_calls=n_calls)
     
     result = np.zeros(2)
     run_data = vqe_eig.smallest(H, qc, dimension, vqe, temp_ansatz, 
