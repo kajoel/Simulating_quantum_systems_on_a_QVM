@@ -103,6 +103,21 @@ def scatter(**kwargs):
     return callback
 
 
+def scatter3d(**kwargs):
+    """
+    @author: Eric (doesn)
+    :param kwargs:t get used
+    :return: callback function which can be passed to VQE.
+    """
+    def callback(x, y, *_, **__):
+        plt.clf()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(x[0][0], x[0][1], y[-1], **kwargs)
+        plt.pause(0.05)
+
+    return callback
+
 def stop_dynamically(xatol, fatol):
     """
     Callback for dynamical stopping.
