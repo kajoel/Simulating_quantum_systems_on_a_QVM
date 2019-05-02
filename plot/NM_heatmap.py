@@ -2,36 +2,9 @@
 # Imports
 import numpy as np
 import matplotlib.pyplot as plt
-import itertools
-from constants import ROOT_DIR
-from os.path import join
 
 from core import data
-from analyze import NM_fel_measmax
 from plot import tikzfigure
-
-version = 3
-size = 3
-ansatz_name = 'multi_particle'
-minimizer = 'nelder-mead'
-
-file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
-data_ = data.load(file)[0]
-max_meas, samples, fel = data_
-
-z_min = 0
-z_max = 20
-
-y_min = np.min(samples)
-y_max = np.max(samples)
-
-x_min = np.min(max_meas)
-x_max = np.max(max_meas)
-
-plt.figure(1)
-plt.pcolormesh(max_meas, samples, fel, cmap='viridis', vmin=z_min, vmax=30)
-plt.title(ansatz_name.replace('_', ' '))
-plt.colorbar()
 
 version = 3
 size = 3
@@ -42,10 +15,6 @@ file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
 data_ = data.load(file)[0]
 max_meas, samples, fel = data_
 
-np.savetxt('fel_nelder-mead_ucc.csv', fel, delimiter=",")
-np.savetxt('samples_nelder-mead_ucc.csv', samples, delimiter=",")
-np.savetxt('max_meas_nelder-mead_ucc.csv', max_meas, delimiter=",")
-
 z_min = 0
 z_max = 20
 
@@ -54,14 +23,24 @@ y_max = np.max(samples)
 
 x_min = np.min(max_meas)
 x_max = np.max(max_meas)
-'''
-plt.figure(2)
+
+
+for j, max_meas_ in enumerate(max_meas):
+    for i, sample in enumerate(samples):
+        print(f'{max_meas_}\t{sample}\t{fel[i][j]}')
+    print('\n')
+
+
+plt.figure(1)
 plt.pcolormesh(max_meas, samples, fel, cmap='viridis', vmin=z_min, vmax=30)
-plt.colorbar()
 plt.title(ansatz_name.replace('_', ' '))
-'''
-tikzfigure.save('heatmap_test')
+plt.colorbar()
 plt.show()
+
+
+
+
+
 
 '''
 plt.figure(2)
