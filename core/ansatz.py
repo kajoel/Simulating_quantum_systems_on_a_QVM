@@ -229,7 +229,7 @@ def trotterize(terms, trotter_order, trotter_steps) -> List[
     """
     Trotterize the terms. If terms = [[t11, t12], [t21, t22]] the
     Trotterization approximates exp(t11+t12)*exp(t21+t22) (not quite correct
-    but you get the idea).
+    but hopefully you get the idea).
 
     @author = Joel, Carl
 
