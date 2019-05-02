@@ -6,7 +6,7 @@ from os.path import join
 from core import data
 from analyze import NM_fel_measmax
 
-def save(version, size, ansatz_name, minimizer):
+def NM_save(version, size, ansatz_name, minimizer):
     base_dir = join(ROOT_DIR, f'data/final_nm/v{version}')
     data_file = f'{ansatz_name}_{minimizer}_size={size}.pkl'
 
@@ -61,9 +61,58 @@ def save(version, size, ansatz_name, minimizer):
     data.save(file, data2, extract=True)
 
 
+def bayes_save(version, size, ansatz_name, minimizer):
+    base_dir = join(ROOT_DIR, f'data/final_bayes/v{version}')
+    data_file = f'{ansatz_name}_{minimizer}_size={size}.pkl'
+
+    data_, _ = data.load(data_file, base_dir)
+
+    #identifier =size, ansatz_name, minimizer, repeats, hamiltonian_idx, \
+    #            int(max_meas),int(samples))
+
+    #for max_meas in np.linspace(1e6, 3e6, 41):
+    #for samples in np.linspace(1e4, 3e5, 41):
+
+    fel = np.zeros([41, 41])
+    samples_lst = []
+    max_meas_lst = []
+    nr = np.zeros([41, 41])
+
+    for i, y in enumerate(data_):
+        identifier, result = y
+        samples = identifier[6]
+        max_meas = identifier[5]
+        arr = np.asarray(np.abs(np.linspace(1e4, 3e5, 41) - samples))
+        samples_idx = np.argmin(arr)
+        max_meas_idx = np.argmin(np.abs(np.linspace(1e6, 3e6, 41) - max_meas))
+
+        eig = result['correct']
+        fun_none = result['fun_none']
+
+        error = (eig - fun_none) / eig * 100
+
+        max_meas_lst.append(max_meas)
+        samples_lst.append(samples)
+
+        fel[samples_idx][max_meas_idx] +=error
+        nr[samples_idx][max_meas_idx] +=1
+
+    i = 0
+    for row in nr:
+        for value in row:
+            if np.any(value==0):
+                i +=1
+
+    print(i)
+
+    file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
+    data2 = max_meas_lst, samples_lst, fel
+    #data.save(file, data2, extract=True)
+
+
 version = 3
 size = 3
 ansatz_name = 'one_particle_ucc'
-minimizer = 'nelder-mead'
+minimizer = 'bayes'
 
-save(version, size, ansatz_name, minimizer)
+bayes_save(version, size, ansatz_name, minimizer)
