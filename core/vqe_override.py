@@ -85,7 +85,7 @@ class VQE_override(VQE):
         else: pass
         """
 
-        if max_meas <= samples:
+        if samples is not None and max_meas <= samples:
             raise ValueError('Need more than one fun eval.')
 
         self._disp_fun = print
@@ -132,16 +132,18 @@ class VQE_override(VQE):
                                                     qc)
             self._current_variance = tmp_vars
             self._current_expectation = mean_value  # store for printing
-            nonlocal fun_evals, meas
-            fun_evals += 1
-            meas += samples
-            if meas >= max_meas:
-                raise RestartError  # attempt restart and break while below
 
             # Save params, exp_val and exp_var
             iteration_params.append(params)
-            expectation_vals .append(mean_value)
+            expectation_vals.append(mean_value)
             expectation_vars.append(tmp_vars)
+
+            nonlocal fun_evals, meas
+            fun_evals += 1
+            if samples is not None:
+                meas += samples
+                if meas >= max_meas:
+                    raise RestartError  # attempt restart and break while below
 
             return mean_value
 

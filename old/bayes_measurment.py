@@ -84,7 +84,7 @@ def bayes_iteration_sweep(h,
     
     all_data=[]
     for i,num_func_eval in enumerate(num_evals):
-        vqe = core.interface.vqe_default_bayes(n_calls=num_func_eval)
+        vqe = core.interface.vqe_bayes(n_calls=num_func_eval)
         
         temp_data=np.zeros( (3, measurments_per_step) )
         for j in range(measurments_per_step):

@@ -248,7 +248,7 @@ def trotterize(terms, trotter_order, trotter_steps) -> List[
                                                    trotter_steps)
         tmp = []
         for coeff, operator in order_slices:
-            tmp.append(exponential_map(-1j * coeff * term[operator]))
+            tmp.append(exponential_map(1j * coeff * term[operator]))
         exp_maps.append(tmp)
     return exp_maps
 
