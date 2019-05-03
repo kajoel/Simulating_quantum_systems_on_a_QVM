@@ -143,9 +143,9 @@ layout = go.Layout(
     ),
     scene=dict(
         xaxis=dict(
-            nticks=5, range=[-5, 0], title=r'$$\\theta_1$$'),
+            nticks=5, range=[-5, 0], title=r'$\\theta_1$'),
         yaxis=dict(
-            nticks=5, range=[-2, 3], title=r'$$\\theta_2$$'),
+            nticks=5, range=[-2, 3], title=r'$\\theta_2$'),
         zaxis=dict(
             nticks=8, range=[-8, 7], title='Energi')
     )
