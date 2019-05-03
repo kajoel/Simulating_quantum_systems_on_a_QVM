@@ -97,22 +97,22 @@ def bayes_save(version, size, ansatz_name, minimizer):
         fel[samples_idx][max_meas_idx] +=error
         nr[samples_idx][max_meas_idx] +=1
 
-    i = 0
-    for row in nr:
-        for value in row:
-            if np.any(value==0):
-                i +=1
+    for j in range(41):
+        for k in range(41):
+            if np.any(nr[j,k] != 0):
+                fel[j,k]/=nr[j,k]
+            else:
+                fel[j,k] = 5
 
-    print(i)
-
+        print(fel.shape[0])
     file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
-    data2 = max_meas_lst, samples_lst, fel
-    #data.save(file, data2, extract=True)
+    data2 = np.linspace(1e6, 3e6, 41), np.linspace(1e4, 3e5, 41), fel
+    data.save(file, data2, extract=True)
 
 
 version = 3
 size = 3
-ansatz_name = 'one_particle_ucc'
+ansatz_name = 'multi_particle'
 minimizer = 'bayes'
 
 bayes_save(version, size, ansatz_name, minimizer)

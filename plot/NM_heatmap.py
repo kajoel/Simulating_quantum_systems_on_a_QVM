@@ -8,12 +8,14 @@ from plot import tikzfigure
 
 version = 3
 size = 3
-ansatz_name = 'one_particle_ucc'
-minimizer = 'nelder-mead'
+ansatz_name = 'multi_particle'
+minimizer = 'bayes'
 
 file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
 data_ = data.load(file)[0]
 max_meas, samples, fel = data_
+
+print(len(max_meas))
 
 z_min = 0
 z_max = 20
@@ -27,12 +29,12 @@ x_max = np.max(max_meas)
 
 for j, max_meas_ in enumerate(max_meas):
     for i, sample in enumerate(samples):
-        print(f'{max_meas_}\t{sample}\t{fel[i][j]}')
+        print(f'{max_meas_}\t{sample}\t{fel[i,j]}')
     print('\n')
 
 
 plt.figure(1)
-plt.pcolormesh(max_meas, samples, fel, cmap='viridis', vmin=z_min, vmax=30)
+plt.pcolormesh(max_meas, samples, fel, cmap='viridis', vmin=z_min)
 plt.title(ansatz_name.replace('_', ' '))
 plt.colorbar()
 plt.show()
