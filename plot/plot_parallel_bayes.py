@@ -57,7 +57,7 @@ def partitan_data(data_dict):
     return data_matrix, parameter
 
 
-def select_data(data_matrix, samples_low=2000, n_calls_low=20, repeats=5):
+def select_data(data_matrix, samples_low=100, n_calls_low=5, repeats=5):
     uniq_samples = np.unique(data_matrix[2])
     uniq_calls = np.unique(data_matrix[3])
 
@@ -103,7 +103,7 @@ def select_data(data_matrix, samples_low=2000, n_calls_low=20, repeats=5):
             # error in eigenvalue
             new_matrix[1,count] = np.abs( np.linalg.norm(new_matrix[4,count] - 
                                                  new_matrix[5,count])
-                                                 / new_matrix[5,count] )
+                                                 / new_matrix[5,count] ) * 100
             j = 0
             count +=1
         
@@ -156,11 +156,14 @@ def heatmap(ansatz_, size):
     from scipy.interpolate import griddata
 
     temp_dict = load_multiple(ansatz_, size, mean=False)
+    plt.figure()
+    list_of_matrices = []
     for i, value in temp_dict.items():
         
         samples = np.unique(value[0][2])
         n_calls = np.unique(value[0][3])
         eig_error = value[0][1]
+        
 
         '''
         x = value[0][2]
@@ -190,9 +193,20 @@ def heatmap(ansatz_, size):
                     error_mesh[i_2,i_1] = eig_error[i_1*len(samples)+i_2]
                 except:
                     print(f"Ofullständig data för heatmap: {i}")
-        df = DataFrame(error_mesh, index=samples, columns=n_calls)
-        plt.figure()
-        sns.heatmap(df)        
+        list_of_matrices.append(error_mesh)
+    final_matrix = np.zeros( list_of_matrices[0].shape )
+    for value in list_of_matrices:
+        final_matrix += value * 0.25
+    
+    for i, row in enumerate(final_matrix):
+        print('\n')
+        for j, value in enumerate(row):
+            print(f'{n_calls[j]*samples[i]}\t{samples[i]}\t{value}')
+
+    
+    df = DataFrame(final_matrix, index=samples, columns=n_calls)  
+    sns.heatmap(df, vmax=20)       
+
         
         
 
@@ -211,21 +225,21 @@ def plot_all_of_size(ansatz_, size, mean = False):
     plt.xlabel('Evaluations on quantum computer')
     plt.ylabel('Eigenvalue error')
     plt.legend()
+
 ################################################################################
 # Main
 ################################################################################
 if __name__ == '__main__':
-    size = 4
+    size = 3
 
     plt.figure()
     plot_all_of_size('multi_particle', size)
-    
-    heatmap('multi_particle', size)    
-    plt.figure()
     plot_all_of_size('one_particle_ucc', size)
     
-    heatmap('one_particle_ucc', size)    
-        
+    
+    heatmap('multi_particle', size)    
+    heatmap('one_particle_ucc', size)  
+    
     plt.show()
 
 
