@@ -17,7 +17,7 @@ import sys
 # Input number of workers
 run_kwargs = parallel.script_input(sys.argv)
 
-version = 3
+version = 4
 
 directory = 'final_nm'  # directory to save to
 
@@ -31,11 +31,15 @@ def identifier_generator():
                     # number of measurements on qc
                     for max_meas in [3e6]:  # np.linspace(1e6, 3e6, 41):
                         # number of samples
-                        for samples in np.linspace(1e4, 3e5, 41):
-                            yield (size, ansatz_name, minimizer, repeats,
-                                   hamiltonian_idx,
-                                   int(max_meas),
-                                   int(samples))
+                        for samples in np.linspace(2750, 256500, 36):
+                            for repeats_extra in range(round(samples/5e4)):
+                                if round(max_meas/samples) > 4:
+                                    yield (size, ansatz_name, minimizer,
+                                           repeats,
+                                           hamiltonian_idx,
+                                           int(max_meas),
+                                           int(samples),
+                                           repeats_extra)
 
 
 @lru_cache(maxsize=1)
@@ -58,7 +62,7 @@ input_functions = {5: input_5,
 
 
 def simulate(size, ansatz_name, minimizer, repeats, hamiltonian_idx, max_meas,
-             samples, h, eig):
+             samples, repeats_extra, h, eig):
 
     H, qc, ansatz_, initial_params = \
         core.interface.create_and_convert(ansatz_name, h)
@@ -101,7 +105,7 @@ def metadata_from_id(identifier):
                            'identifier = data[:][0], result = data[:][1]',
             'identifier_description': ['ansatz_name', 'minimizer', 'repeats',
                                        'size', 'hamiltonian_idx', 'max_meas',
-                                       'samples'],
+                                       'samples', 'repeats_extra'],
             'max_same_para_nm': 3,
             'tol_para_nm': 1e-3,
             'size': identifier[0],
