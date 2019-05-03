@@ -259,7 +259,7 @@ def init_users(name):
                                'name}.',
                 'created_by': name,
                 }
-    save(USER_PATH, users, metadata)
+    save(USER_PATH, users, metadata, protocol=1)
 
 
 def add_user(name):
@@ -289,7 +289,7 @@ def _add_user(name, user, users):
     if user in users[0] and name != users[0][user]:
         print('\033[93mWarning: changing the name of existing user.\033[0m')
     users[0][user] = name
-    save(USER_PATH, data=users[0], metadata=users[1])
+    save(USER_PATH, data=users[0], metadata=users[1], protocol=1)
 
 
 def _display_internal(file, metadata):
