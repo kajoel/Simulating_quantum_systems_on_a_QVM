@@ -17,7 +17,7 @@ import sys
 # Input number of workers
 run_kwargs = parallel.script_input(sys.argv)
 
-version = 3
+version = 4
 
 directory = 'final_bayes'  # directory to save to
 
@@ -29,13 +29,14 @@ def identifier_generator():
             for repeats in range(5):
                 for hamiltonian_idx in range(4):
                     # number of measurements on qc
-                    for max_meas in np.linspace(1e6, 3e6, 41):
+                    for max_meas in np.linspace(50000, 3e6, 60):
                         # number of samples
-                        for samples in np.linspace(1e4, 3e5, 41):
-                            yield (size, ansatz_name, minimizer, repeats,
-                                   hamiltonian_idx,
-                                   int(max_meas),
-                                   int(samples))
+                        for samples in np.linspace(2750, 3e5, 42):
+                            if round(max_meas/samples) > 3: 
+                                yield (size, ansatz_name, minimizer, repeats,
+                                       hamiltonian_idx,
+                                       int(max_meas),
+                                       int(samples))
 
 
 @lru_cache(maxsize=1)
