@@ -6,49 +6,47 @@ import matplotlib.pyplot as plt
 import numpy as np
 from core import lipkin_quasi_spin
 
-def create(title):
-    tikz.save(title + ".tex")
+from matplotlib import rc
+
+# rc('font',**{'family':'serif','serif':['Computer Modern']})
+rc('text', usetex=True)
+
+
+def save(title, base_dir=join(ROOT_DIR, 'figures')):
+    title = join(base_dir, title)
+    tikz.save(title + ".tex",
+              figurewidth='14cm',
+              figureheight='8cm',
+              textsize=11.0,
+              tex_relative_path_to_data=None,
+              externalize_tables=False,
+              override_externals=False,
+              strict=True,
+              wrap=True,
+              add_axis_environment=True,
+              extra_axis_parameters=['font =\\footnotesize', 'scale only axis'],
+              extra_tikzpicture_parameters=None,
+              dpi=None,
+              show_info=False,
+              include_disclaimer=True,
+              standalone=False,
+              float_format="{:.15g}", )
 
 
 ###############################################################################
-# TEST
+# Color maps
+color_map_blue = np.array(
+    [(161, 218, 180), (65, 182, 196), (34, 94, 168), (37, 52, 148)]) / 255
+
+color_map_red = np.array(
+    [(254, 240, 217), (253, 204, 138), (252, 141, 89), (215, 48, 31)]) / 255
+
+color_map_gray = np.array(
+    [(204, 204, 204), (150, 150, 150), (99, 99, 99), (37, 37, 37)]) / 255
+
 ###############################################################################
-datatitle = join(ROOT_DIR, 'data', 'SampleErrorRunj2i1V1.pkl')
-
-data_, metadata = data.load(datatitle)
-print(data_['Expected_values'])
-print(metadata.keys())
-
-'''
-data_ = {'Samples' : samples,'Expected_values': exp_value,
-             'Parameter_error': para_error,'Variance': variance, 
-             'Iterations': iterations}
-'''
-
-facit = lipkin_quasi_spin.eigs(2,1)[1]
-print(facit)
-facit = float(facit[0])
-
-samples = data_['Samples']
-exp_val = data_['Expected_values']
-variance = data_['Variance']
-start = samples[0]
-stop = samples[-1]
-
-
-fig = plt.figure()  # create a figure object
-ax = fig.add_subplot(1, 1, 1)  # create an axes object in the figure
-#ax.plot([1, 2, 3, 4])
-#ax.set_ylabel('some numbers')
-
-
-plot_ = ax.hlines(facit, start, stop, colors='r', linestyles='dashed',
-           label='True eig: {}'.format(round(facit, 4)))
-ax.errorbar(samples, exp_val, variance, fmt='o',
-             label='Eig calculated with Nelder-Mead')
-ax.legend()
-ax.set_xlabel('Samples')
-ax.set_ylabel('Eigenvalue')
-
-plt.show()
-#create('test')
+# Line styles
+linestyles = ['-', '--', '-.', ':']
+linewidth = 1
+fontsize = 10
+###############################################################################

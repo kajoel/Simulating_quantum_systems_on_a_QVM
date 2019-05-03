@@ -19,7 +19,7 @@ from functools import lru_cache
 
 
 @lru_cache(maxsize=1)
-def hamiltonian(j, V, e=1):
+def hamiltonian(j, V, e=1.):
     """
     Function which returns quasi-spin hamiltonian-matrix for specified value
     of j. The function returns two matrices H1 and H2 and the full matrix is
@@ -65,6 +65,7 @@ def eigs(j, V, e=1):
         # calculated using sum(eigs) = trace(H).
         if H[i].shape[0] > 1:
             eigvals[i][0:-1] = eigsh(H[i], H[i].shape[0] - 1)[0]
+
             eigvals[i][-1] = np.sum(H[i].diagonal()) \
                              - np.sum(eigvals[i][0:-1])
         else:
@@ -110,3 +111,4 @@ def _quasi_internal(j, m_start, V, e):
 
     H = e * J_z.tocsr() + V / 2 * (J_p2 + J_m2)
     return H
+
