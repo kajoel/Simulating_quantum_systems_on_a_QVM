@@ -117,7 +117,6 @@ class VQE_override(VQE):
         sample_list = calc_samples(samples, coeffs)
 
         def objective_function(params):
-
             """
             closure representing the functional
 
