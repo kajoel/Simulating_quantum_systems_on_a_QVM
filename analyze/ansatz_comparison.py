@@ -1,17 +1,21 @@
 import numpy as np
 from core import ansatz
 from core import data
+from core.lipkin_quasi_spin import hamiltonian
 
 
 def compare_and_save():
     ansatzs = [ansatz.one_particle, ansatz.one_particle_ucc,
-               ansatz.multi_particle, ansatz.multi_particle_ucc]
+               ansatz.multi_particle_stereographic, ansatz.multi_particle_ucc]
+
+    m = 100
 
     metadata = {'description': '"gates" is a list of numpy arrays. Each array '
                                'contains the number of gates in a typical '
                                'ansatz-program for different matrix-sizes. '
                                'See "ansatz" in metadata for the ansätze and '
-                               '"mat_size" in data for matrix-sizes.',
+                               '"mat_size" in data for matrix-sizes. The '
+                               f'result is an average of {m} random vectors.',
                 'ansatz': [ansatz_.__name__ for ansatz_ in ansatzs]}
 
     file = 'mat_to_op and ansatz/ansatz_depth'
@@ -25,7 +29,7 @@ def compare_and_save():
     data_ = {'gates': gates, 'mat_size': mat_size}
 
     for ansatz_ in ansatzs:
-        nbr_ops = _test_depth(ansatz_, n_max=n_max, max_ops=max_ops)
+        nbr_ops = _test_depth(ansatz_, n_max=n_max, max_ops=max_ops, m=m)
         gates.append(nbr_ops)
         mat_size.append(np.linspace(2, 1+nbr_ops.size, nbr_ops.size,
                                     dtype=np.uint16))
@@ -33,14 +37,15 @@ def compare_and_save():
     data.save(file=file, data=data_, metadata=metadata)
 
 
-def _test_depth(ansatz, n_min=1, n_max=12, m=5, max_ops=10000):
+def _test_depth(ansatz, n_min=1, n_max=12, m=2, max_ops=10000):
     nn = n_max - n_min + 1
     nbr_ops = np.zeros(nn)
     for i in range(nn):
         n = n_min + i
+        h = hamiltonian(n, 1)[0]  # (n+1)x(n+1) maxtrix
         temp = np.empty(m)
         for j in range(m):
-            temp[j] = len(ansatz(n+1)(np.random.randn(n)))
+            temp[j] = len(ansatz(h)(np.random.randn(n)))
         nbr_ops[i] = np.average(temp)
         print(n)
         if nbr_ops[i] > max_ops:
