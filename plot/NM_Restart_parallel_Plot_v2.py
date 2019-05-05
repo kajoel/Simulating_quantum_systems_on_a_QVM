@@ -163,6 +163,7 @@ def plot_data_v2(meas, fel, status):
 
         ax[i].set_title(f'Maxpara: {max_para}')
         ax[i].legend(p, legend_text)
+
 fel_tol = 5
 min_meas = 1e6
 max_meas = 3e6
@@ -198,4 +199,5 @@ plot_pts(meas_v4, fel_v4, fel_tol, min_meas, max_meas)
 # plt.xlim(0,4000000)
 
 plt.legend()
+tikzfigure.save('NM_vs')
 plt.show()
