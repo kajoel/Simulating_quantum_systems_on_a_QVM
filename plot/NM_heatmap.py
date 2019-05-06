@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from core import data
 from plot import tikzfigure
 
-version = 3
+version = 4
 size = 3
 ansatz_name = 'one_particle_ucc'
 minimizer = 'bayes'
