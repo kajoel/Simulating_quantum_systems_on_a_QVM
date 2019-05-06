@@ -110,9 +110,9 @@ def bayes_save(version, size, ansatz_name, minimizer):
     data.save(file, data2, extract=True)
 
 
-version = 3
+version = 4
 size = 3
 ansatz_name = 'multi_particle'
-minimizer = 'bayes'
+minimizer = 'nelder-mead'
 
-bayes_save(version, size, ansatz_name, minimizer)
+NM_save(version, size, ansatz_name, minimizer)
