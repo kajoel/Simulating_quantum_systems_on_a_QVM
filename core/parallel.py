@@ -500,11 +500,13 @@ def _cleanup_big(identifier_generator, directory, script_file):
             if entry.is_file():
                 shutil.copy(entry.path, destination)
 
+    remaining = sum(x is not True for x in meta_dict.values())
+
     # Print some stats
     stop_time = perf_counter()
     print(f'\nCleanup completed in {stop_time - start_time:.1f} s.')
-    print(f'A total of {len(metadata)} identifiers where handled and {count} '
-          f'results saved.\n')
+    print(f'A total of {len(metadata)} identifiers where handled, {count} '
+          f'results saved and {remaining} tasks remaining.\n')
 
 
 def _add_result_to_dict(content, content_dict):
