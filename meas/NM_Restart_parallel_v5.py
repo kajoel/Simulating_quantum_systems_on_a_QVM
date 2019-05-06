@@ -40,9 +40,9 @@ def identifier_generator():
     # ansatz
     ansatz_name = 'multi_particle'
     # size of hamiltonian
-    for size in range(2, 4):
+    for size in range(4, 5):
         # the index of the four hamiltonians
-        for hamiltonian_idx in range(4):
+        for hamiltonian_idx in range(1):
             # number of samples
             for samples in np.linspace(400, 60000, 100):
                 # input_4 is effectively called here with four arguments
