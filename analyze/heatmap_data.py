@@ -112,7 +112,7 @@ def bayes_save(version, size, ansatz_name, minimizer):
 
 version = 4
 size = 3
-ansatz_name = 'multi_particle'
+ansatz_name = 'one_particle_ucc'
 minimizer = 'nelder-mead'
 
 NM_save(version, size, ansatz_name, minimizer)
