@@ -1,4 +1,4 @@
-# Carl 28/4
+# Carl 4/5
 ###############################################################################
 # Imports
 from core import data
@@ -53,7 +53,7 @@ def meas_fel(version, size, mat_idx):
     return meas, fel
 
 version=5
-size = 2
+size = 3
 mat_idx = 0
 ansatz_name ='multi_particle'
 
@@ -81,7 +81,7 @@ for i, x in enumerate(data_):
         exp_vals = result['expectation_vals_all']
         iter_params = result['iteration_params_all']
 
-        idx = [i for i, y in enumerate(iter_params) if np.linalg.norm(y-x)<1e-8]
+        idx = [i for i, y in enumerate(iter_params) if np.linalg.norm(y-x)<1e-3]
         print(exp_vals[idx])
         fun = np.mean(exp_vals[idx])
 
