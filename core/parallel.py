@@ -491,6 +491,8 @@ def _cleanup_big(identifier_generator, directory, script_file):
                   disp=False)
     del metadata
 
+    print('\nFinishing cleanup.')
+
     # Convert meta_dict back to list and save
     metadata = []
     for id_ in meta_dict:
