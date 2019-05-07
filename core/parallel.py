@@ -352,28 +352,40 @@ def _init_metadata(identifier_generator, directory, script_file, force=False):
     """
     if not force and _get_metadata(directory, warn=False) != ([], {}):
         raise RuntimeError('Metadata has already been initialized.')
-    # Fix directory and path
-    directory = join(directory, 'total')
-    path_metadata = join(directory, 'metadata')
-
-    # Save metadata file
-    metadata = []
-    metametadata = {
-        'description': "File that keeps track of what's been done "
-                       "previously in this script "
-                       f"({script_file}).",
-        'created_from': script_file}
-    data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, base_dir=base_dir)
-
-    # Add identifiers
-    count = 0
     start_time = perf_counter()
-    for identifier in identifier_generator:
-        count += 1
-        if count % 1e4 == 0:
-            print(f'{count} identifiers saved.')
-        data.append(path_metadata, [identifier, False], base_dir=base_dir)
+
+    # Try to load from data/directory
+    metadata, metametadata = _get_metadata(directory, False, data.BASE_DIR)
+    # Fix directory and path
+    path_metadata = join(directory, 'total', 'metadata')
+
+    if (metadata, metametadata) == ([], {}):
+        # Initialize from scratch
+
+        # Save metadata file
+        metadata = []
+        metametadata = {
+            'description': "File that keeps track of what's been done "
+                           "previously in this script "
+                           f"({script_file}).",
+            'created_from': script_file}
+        data.save(file=path_metadata, data=metadata, metadata=metametadata,
+                  extract=True, base_dir=base_dir)
+
+        # Add identifiers
+        count = 0
+
+        for identifier in identifier_generator:
+            count += 1
+            if count % 1e4 == 0:
+                print(f'{count} identifiers saved.')
+            data.append(path_metadata, [identifier, False], base_dir=base_dir)
+    else:
+        print(f'Initializing metadata from {join(data.BASE_DIR, directory)}.')
+        count = len(metadata)
+        data.save(file=path_metadata, data=metadata, metadata=metametadata,
+                  extract=True, base_dir=base_dir)
+
     stop_time = perf_counter()
 
     print(f'\nMetadata initialization completed in'
@@ -415,12 +427,15 @@ def _cleanup_big(identifier_generator, directory, script_file):
     with os.scandir(join(base_dir, directory)) as it:
         for entry in it:
             if entry.is_dir() and entry.name.isdigit():
-                subdirs.add(entry.name)
+                subdirs.add(join(base_dir, directory, entry.name))
+    # Add data/directory to subdirs to not overwrite data from other
+    # file-systems
+    subdirs.add(join(data.BASE_DIR, directory))
 
     # Find data-files and keep track of which exists in which subdir
     files = {}
     for subdir in subdirs:
-        with os.scandir(join(base_dir, directory, subdir)) as it:
+        with os.scandir(subdir) as it:
             for entry in it:
                 if entry.is_file() and entry.name != 'metadata.pkl':
                     if entry.name not in files:
@@ -431,6 +446,8 @@ def _cleanup_big(identifier_generator, directory, script_file):
     # from files in subdirs and update meta_dict
     count = 0
     for file in files:
+        print(f"\nSaving results in {join('total', file)}."
+              "\nUsing data from the following directories:")
         # Load file from total
         try:
             content, metadata = data.load(file=join(directory, 'total', file),
@@ -444,8 +461,10 @@ def _cleanup_big(identifier_generator, directory, script_file):
 
         # Add content from other files
         for subdir in files[file]:
+            print(subdir)
+
             content_new, metadata_new = data.load(
-                file=join(directory, subdir, file), base_dir=base_dir)
+                file=join(subdir, file), base_dir='')
 
             content_dict = _add_result_to_dict(content_new, content_dict)
 
@@ -484,11 +503,11 @@ def _cleanup_big(identifier_generator, directory, script_file):
     for subdir in subdirs:
         try:
             metametadata_new = data.load(
-                file=join(directory, subdir, 'metadata'), base_dir=base_dir)[1]
+                file=join(subdir, 'metadata'), base_dir='')[1]
         except FileNotFoundError:
             metametadata_new = metametadata
 
-        data.save(file=join(directory, subdir, 'metadata'), base_dir=base_dir,
+        data.save(file=join(subdir, 'metadata'), base_dir='',
                   data=metadata, metadata=metametadata_new, extract=True,
                   disp=False)
 
@@ -569,7 +588,7 @@ def _cleanup_small(metadata):
     return [[x, meta_dict[x]] for x in meta_dict]
 
 
-def _get_metadata(directory, warn=True):
+def _get_metadata(directory, warn=True, base=base_dir):
     """
     Look for metadata in directory. Returns [], {} if not found.
 
@@ -578,7 +597,7 @@ def _get_metadata(directory, warn=True):
     """
     try:
         return data.load(join(directory, 'total', 'metadata'),
-                         base_dir=base_dir)
+                         base_dir=base)
     except FileNotFoundError:
         if warn:
             warnings.warn('Metadata has not been initialized correctly, '
