@@ -9,13 +9,19 @@ def fel_measmax(x, fun, identifier, fun_evals):
     ansatz_name = identifier[1]
     size = identifier[0]
     for fun_evals_ in fun_evals:
+
+        fun_evals_ = int(fun_evals_)
+
         if len(fun) < fun_evals_:
             print(len(fun))
             raise ValueError(f'fun_evals={fun_evals_} is to big')
+
         fun_ = fun[:fun_evals_]
         idx = np.argmin(fun_)
+
         x_min = x[idx]
         mat_idx = identifier[4]
+
         h = hamiltonians_of_size(size)[0][mat_idx]
         H, qc, ansatz_, _ = create_and_convert(ansatz_name, h)
         fun_none_ = vqe.expectation(ansatz_(x_min), H, samples=None, qc=qc)[0]

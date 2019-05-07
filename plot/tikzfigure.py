@@ -6,11 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from core import lipkin_quasi_spin
 
-from matplotlib import rc
-
-# rc('font',**{'family':'serif','serif':['Computer Modern']})
-rc('text', usetex=True)
-
 
 def save(title, base_dir=join(ROOT_DIR, 'figures')):
     title = join(base_dir, title)
