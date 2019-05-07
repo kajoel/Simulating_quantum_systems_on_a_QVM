@@ -55,6 +55,7 @@ def NM_save(version, size, ansatz_name, minimizer):
     for i, rows in enumerate(fel):
         fel[i,:] = rows/nr[i]
 
+    samples_lst = np.array(samples_lst)
     sort_idx = np.argsort(samples_lst)
     samples_lst = samples_lst[sort_idx]
     fel = fel[sort_idx,:]
@@ -109,7 +110,7 @@ def bayes_save(version, size, ansatz_name, minimizer):
 
 version = 4
 size = 3
-ansatz_name = 'multi_particle'
+ansatz_name = 'one_particle_ucc'
 minimizer = 'nelder-mead'
 
 NM_save(version, size, ansatz_name, minimizer)
