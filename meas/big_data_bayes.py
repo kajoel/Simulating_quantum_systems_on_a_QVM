@@ -32,7 +32,7 @@ def identifier_generator():
                     for max_meas in np.linspace(50000, 3e6, 60):
                         # number of samples
                         for samples in np.linspace(2750, 256500, 36):
-                            if round(max_meas/samples) > 4: 
+                            if 4 < round(max_meas/samples) <= 300:
                                 yield (size, ansatz_name, minimizer, repeats,
                                        hamiltonian_idx,
                                        int(max_meas),
