@@ -80,9 +80,9 @@ def bayes_save(version, size, ansatz_name, minimizer):
         identifier, result = y
         samples = identifier[6]
         max_meas = identifier[5]
-        arr = np.asarray(np.abs(np.linspace(1e4, 3e5, 41) - samples))
+        arr = np.asarray(np.abs(np.linspace(2750, 256500, 36) - samples))
         samples_idx = np.argmin(arr)
-        max_meas_idx = np.argmin(np.abs(np.linspace(1e6, 3e6, 41) - max_meas))
+        max_meas_idx = np.argmin(np.abs(np.linspace(50000, 3e6, 60) - max_meas))
 
         eig = result['correct']
         fun_none = result['fun_none']
@@ -104,7 +104,7 @@ def bayes_save(version, size, ansatz_name, minimizer):
 
         print(fel.shape[0])
     file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
-    data2 = np.linspace(1e6, 3e6, 41), np.linspace(1e4, 3e5, 41), fel
+    data2 = np.linspace(50000, 3e6, 60), np.linspace(2750, 256500, 36), fel
     data.save(file, data2, extract=True)
 
 

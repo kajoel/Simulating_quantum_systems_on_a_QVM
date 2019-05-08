@@ -8,7 +8,7 @@ from plot import tikzfigure
 
 version = 4
 size = 3
-ansatz_name = 'multi_particle'
+ansatz_name = 'one_particle_ucc'
 minimizer = 'nelder-mead'
 
 file = f'NM_heatmap/v{version}/{ansatz_name}_{minimizer}_size={size}.pkl'
@@ -18,12 +18,12 @@ max_meas, samples, fel = data_
 
 def print_coord():
     for i, sample in enumerate(samples):
-        for j, max_meas_ in enumerate(reversed(max_meas)):
+        for j, max_meas_ in enumerate(max_meas):
             if sample<=256500:
                 if int(round(max_meas_/sample))>4:
-                    print(f'{max_meas_}\t{sample}\t{fel[i,-j]}')
+                    print(f'{max_meas_}\t{sample}\t{np.log10(fel[i,j])}')
                 else:
-                    print(f'{max_meas_}\t{sample}\trgb=1,1,1')
+                    print(f'{max_meas_}\t{sample}\tnan')
         print('\n')
 
 
@@ -34,6 +34,7 @@ def plot_heatmap():
     plt.colorbar()
     plt.show()
 
+print_coord()
 plot_heatmap()
 
 

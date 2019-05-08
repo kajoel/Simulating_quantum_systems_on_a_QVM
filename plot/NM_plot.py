@@ -53,7 +53,7 @@ def meas_fel(version, size, mat_idx):
     return meas, fel
 
 version=5
-size = 3
+size = 4
 mat_idx = 0
 ansatz_name ='multi_particle'
 
@@ -108,4 +108,5 @@ for i, _ in enumerate(samples_lst):
     if samples_lst[i]:
         print(f'{samples_lst[i]}\t{fun_lst[i]}\t{error_lst[i]}')
 
+print(eig)
 plt.show()
