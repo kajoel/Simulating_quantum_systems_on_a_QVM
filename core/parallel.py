@@ -11,7 +11,7 @@ import numpy as np
 import warnings
 import shutil
 import os
-from os.path import join, isfile
+from os.path import join, isfile, isdir
 from multiprocessing import Pool
 from time import perf_counter, sleep
 from datetime import datetime
@@ -430,7 +430,9 @@ def _cleanup_big(identifier_generator, directory, script_file):
                 subdirs.add(join(base_dir, directory, entry.name))
     # Add data/directory to subdirs to not overwrite data from other
     # file-systems
-    subdirs.add(join(data.BASE_DIR, directory))
+    data_dir = join(data.BASE_DIR, directory)
+    if isdir(data_dir):
+        subdirs.add(data_dir)
 
     # Find data-files and keep track of which exists in which subdir
     files = {}
@@ -445,6 +447,7 @@ def _cleanup_big(identifier_generator, directory, script_file):
     # Go through files, create file in total (if not existing), add data
     # from files in subdirs and update meta_dict
     count = 0
+    metadata = None  # To not crash at del metadata if no file.
     for file in files:
         print(f"\nSaving results in {join('total', file)}."
               "\nUsing data from the following directories:")
