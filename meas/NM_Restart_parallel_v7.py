@@ -106,7 +106,7 @@ def simulate(ansatz_name, size, hamiltonian_idx, samples, max_same_para,
     max_fun_evals = 200
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
-                              callback=callback, max_fun_evals=max_fun_evals)
+                              callback=callback, max_meas=samples*max_fun_evals)
     result.correct = eig
     return result
 
