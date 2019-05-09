@@ -1,4 +1,4 @@
-# @author = Carl, 30/4
+# @author = Carl, 9/5
 # Imports
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,6 +37,3 @@ def plot_heatmap():
 
 print_coord()
 plot_heatmap()
-
-
-
