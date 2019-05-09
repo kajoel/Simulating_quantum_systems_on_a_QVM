@@ -177,7 +177,8 @@ def extend(file, data, base_dir=BASE_DIR, force_extension=True):
         _extend_internal(data, file_)
 
 
-def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
+def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True,
+         return_path=False):
     """
     Load data and metadata from a file.
 
@@ -187,8 +188,9 @@ def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
     :param string base_dir: prepended to file
     :param bool force_extension: if True load will add the extension '.pkl' if
         the file variable is missing extension.
+    :param return_path: if True, return data, metadata, file
     :return: (data, metadata)
-    :rtype: (Any, dictionary )
+    :rtype: tuple
     """
     # UI get file if is None.
     if file is None:
@@ -214,13 +216,18 @@ def load(file=None, base_dir=join(ROOT_DIR, 'data'), force_extension=True):
 
     # Format output based on protocol
     if protocol == 1:
-        return _format_1(raw)
+        ret = _format_1(raw)
     elif protocol == 2:
-        return _format_2(raw)
+        ret = _format_2(raw)
     else:
         warn(f"Can't format data with protocol {protocol}. Returning raw "
              f"content.")
-        return raw
+        ret = raw
+
+    if return_path:
+        ret += (file,)
+
+    return ret
 
 
 def display(files=None):
