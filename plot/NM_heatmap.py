@@ -9,10 +9,10 @@ from plot import tikzfigure
 version = 4
 heatmap_version = 2
 size = 3
-ansatz_name = 'one_particle_ucc'
-minimizer = 'nelder-mead'
+ansatz_name = 'multi_particle'
+minimizer = 'nm'
 
-file = f'NM_heatmap/v{heatmap_version}/{ansatz_name}_{minimizer}_size={size}.pkl'
+file = f'heatmap_data/v{heatmap_version}/{minimizer}_{ansatz_name}_size={size}.pkl'
 data_ = data.load(file)[0]
 max_meas, samples, fel = data_
 

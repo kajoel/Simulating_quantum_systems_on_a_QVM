@@ -98,8 +98,7 @@ def NM_save(version, size, ansatz_name, matidx=None):
     for y in data_:
         identifier, result = y
         samples = identifier[-2]
-        if identifier in identifier_set or samples > 256500 or not (
-                matidx != None and matidx == identifier[4]):
+        if identifier in identifier_set or samples > 256500:
             continue
 
         identifier_set.add(identifier)
@@ -145,4 +144,4 @@ version = 4
 size = 3
 ansatz_name = 'multi_particle'
 
-NM_save(version, size, ansatz_name, 0)
+NM_save(version, size, ansatz_name)
