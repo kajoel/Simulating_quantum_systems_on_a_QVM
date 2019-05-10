@@ -182,6 +182,7 @@ class VQE_override(VQE):
             self.minimizer_kwargs['jac'] = jacobian
 
         results = OptResults()
+        result = None
         while meas < max_meas:
             break_ = True
             try:
@@ -245,6 +246,17 @@ class VQE_override(VQE):
             results.fun_evals = fun_evals
             results.meas = meas
             results.restarts = restarts
+
+            # Return last model from bayes
+            if hasattr(result, 'models') and hasattr(result, 'space'):
+                x_gp = results.x
+                if isinstance(x_gp, np.ndarray):
+                    x_gp = [x_gp.tolist()]
+                x_gp = result.space.transform(x_gp)
+                gp = result.models[-1]
+                fun, var = gp.predict(x_gp, return_std=True)
+                results.var = var
+
         return results
 
     @staticmethod
