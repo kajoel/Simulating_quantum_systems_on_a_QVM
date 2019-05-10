@@ -26,68 +26,47 @@ directory = 'hero_run_bayes'  # directory to save to
 
 
 def identifier_generator():
-    size = 3
-    for ansatz_name in ['multi_particle', 'one_particle_ucc']:
-        for minimizer in ['bayes']:
-            for repeats in range(5):
-                for hamiltonian_idx in range(4):
-                    # number of measurements on qc
-                    for max_meas in np.linspace(50000, 3e6, 60):
-                        # number of samples
-                        for samples in np.linspace(2750, 256500, 36):
-                            if 4 < round(max_meas/samples) <= 300:
-                                yield (size, ansatz_name, minimizer, repeats,
-                                       hamiltonian_idx,
-                                       int(max_meas),
-                                       int(samples))
+    for size, max_meas, samples in zip([2, 3, 4], [100e3, 0.5e6, 3e6],
+                                      [9e3, 25e3, 68e3]):
+        for V in [0., 0.1, 0.2, 0.5, 1., 2., 5., 10, np.inf]:
+            for hamiltonian_idx in [1,2]:
+                yield (size, hamiltonian_idx, V, int(max_meas), int(samples))
 
 
 @lru_cache(maxsize=1)
-def input_5(size, ansatz_name, minimizer, repeats, hamiltonian_idx):
-    h, eig = hamiltonians_of_size(size)
+def input_3(size, hamiltonian_idx, V):
+    if V == np.inf:
+        e = 0.
+        V = 1.
+    else:
+        e = 1
+    h, eig = hamiltonians_of_size(size, V, e)
     return h[hamiltonian_idx], eig[hamiltonian_idx]
 
 
 @lru_cache(maxsize=1)
-def input_7(size, ansatz_name, minimizer, repeats, hamiltonian_idx, max_meas,
-            samples):
-    print(f'Ansatz={ansatz_name}, minimizer={minimizer}, repeat={repeats}, '
-          f'size={size}, Hamiltonian_idx={hamiltonian_idx}, '
+def input_5(size, hamiltonian_idx, V, max_meas, samples):
+    print(f'size={size}, Hamiltonian_idx={hamiltonian_idx}, V={V}'
           f'max_meas={max_meas}, samples={samples}')
     return ()
 
 
-input_functions = {5: input_5,
-                   7: input_7}
+input_functions = {3: input_3,
+                   5: input_5}
 
 
-def simulate(size, ansatz_name, minimizer, repeats, hamiltonian_idx, max_meas,
-             samples, h, eig):
+def simulate(size, hamiltonian_idx, V, max_meas, samples, h, eig):
 
     H, qc, ansatz_, initial_params = \
-        core.interface.create_and_convert(ansatz_name, h)
+        core.interface.create_and_convert('multi_particle', h)
 
-    if minimizer == 'nelder-mead':
-        vqe = vqe_nelder_mead(samples=samples, H=H, fatol=0, xatol=0)
-        tol_para = 1e-3
-        max_same_para = 3
-        callback = cb.restart(max_same_para, tol_para)
+    n_calls = int(round(max_meas/samples))
+    vqe = vqe_bayes(n_calls=n_calls)
 
-    elif minimizer == 'bayes':
-        n_calls = int(round(max_meas/samples))
-        vqe = vqe_bayes(n_calls=n_calls)
+    def callback(*args, **kwargs):
+        pass
 
-        def callback(*args, **kwargs):
-            pass
-
-        if ansatz_name == 'multi_particle':
-            initial_params = [(-1.0, 1.0)]*(size - 1)
-        elif ansatz_name == 'one_particle_ucc':
-            initial_params = [(-3.0, 3.0)] * (size - 1)
-        else:
-            raise RuntimeError("Don't know that ansatz.")
-    else:
-        raise RuntimeError('Bad minimizer')
+    initial_params = [(-1.0, 1.0)]*(size - 1)
 
     result = vqe_eig.smallest(H, qc, initial_params, vqe,
                               ansatz_, samples,
@@ -97,21 +76,16 @@ def simulate(size, ansatz_name, minimizer, repeats, hamiltonian_idx, max_meas,
 
 
 def file_from_id(identifier):
-    return f'{identifier[1]}_{identifier[2]}_size={identifier[0]}'
+    return f'size={identifier[0]}'
 
 
 def metadata_from_id(identifier):
-    return {'description': 'Data for heatmaps, both Nelder-Mead and Bayes. '
-                           'identifier = data[:][0], result = data[:][1]',
-            'identifier_description': ['ansatz_name', 'minimizer', 'repeats',
-                                       'size', 'hamiltonian_idx', 'max_meas',
-                                       'samples'],
+    return {'description': 'Data for hero run.',
+            'identifier_description': ['size', 'hamiltonian_idx', 'V',
+                                       'max_meas', 'samples'],
             'max_same_para_nm': 3,
             'tol_para_nm': 1e-3,
-            'size': identifier[0],
-            'matidx': identifier[4],
-            'ansatz': identifier[1],
-            'minimizer': identifier[2]}
+            'size': identifier[0]}
 
 
 parallel.run(

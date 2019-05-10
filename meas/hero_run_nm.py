@@ -30,28 +30,34 @@ directory = 'hero_run_nm'  # directory to save to
 def identifier_generator():
     max_meas = 3e6
     for size, samples in zip([3, 4], [132e3, 68e3]):
-        for hamiltonian_idx in [1,2]:
-            yield (size, hamiltonian_idx, int(max_meas), int(samples))
+        for V in [0., 0.1, 0.2, 0.5, 1., 2., 5., 10, np.inf]:
+            for hamiltonian_idx in [1, 2]:
+                yield (size, hamiltonian_idx, V, int(max_meas), int(samples))
 
 
 @lru_cache(maxsize=1)
-def input_2(size, hamiltonian_idx):
-    h, eig = hamiltonians_of_size(size)
+def input_3(size, hamiltonian_idx, V):
+    if V == np.inf:
+        e = 0.
+        V = 1.
+    else:
+        e = 1
+    h, eig = hamiltonians_of_size(size, V, e)
     return h[hamiltonian_idx], eig[hamiltonian_idx]
 
 
 @lru_cache(maxsize=1)
-def input_4(size, hamiltonian_idx, max_meas, samples):
-    print(f'size={size}, Hamiltonian_idx={hamiltonian_idx}, '
+def input_5(size, hamiltonian_idx, V, max_meas, samples):
+    print(f'size={size}, Hamiltonian_idx={hamiltonian_idx}, V={V}'
           f'max_meas={max_meas}, samples={samples}')
     return ()
 
 
-input_functions = {2: input_2,
-                   4: input_4}
+input_functions = {3: input_3,
+                   5: input_5}
 
 
-def simulate(size, hamiltonian_idx, max_meas, samples, h, eig):
+def simulate(size, hamiltonian_idx, V, max_meas, samples, h, eig):
 
     H, qc, ansatz_, initial_params = \
         core.interface.create_and_convert('multi_particle', h)
@@ -74,12 +80,11 @@ def file_from_id(identifier):
 
 def metadata_from_id(identifier):
     return {'description': 'Data for hero run.',
-            'identifier_description': ['size', 'hamiltonian_idx', 'max_meas',
-                                       'samples'],
+            'identifier_description': ['size', 'hamiltonian_idx', 'V',
+                                       'max_meas', 'samples'],
             'max_same_para_nm': 3,
             'tol_para_nm': 1e-3,
-            'size': identifier[0],
-            'matidx': identifier[1]}
+            'size': identifier[0]}
 
 
 parallel.run(
