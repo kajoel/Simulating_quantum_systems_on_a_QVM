@@ -52,7 +52,7 @@ def meas_fel(version, size, mat_idx):
 
     return meas, fel
 
-version=5
+version=7
 size = 4
 mat_idx = 0
 ansatz_name ='multi_particle'
@@ -68,8 +68,8 @@ fun_lst = []
 eig=0
 for i, x in enumerate(data_):
     identifier, result = x
-
-    repeats = identifier[4]
+    print(identifier)
+    repeats = identifier[5]
     #size = identifier[3]
     #mat_idx = identifier[4]
     #max_meas = identifier[5]
@@ -98,6 +98,8 @@ samples_lst = np.array(samples_lst)[sort_idx]
 error_lst = np.array(error_lst)[sort_idx]
 fun_lst = np.array(fun_lst)[sort_idx]
 
+print(samples_lst)
+
 plt.hlines(y=eig,xmin=0, xmax=samples_lst[-1]*1.05, linewidth=1,
            color='r', linestyles='--')
 plt.errorbar(samples_lst, fun_lst, error_lst, marker='o', markersize=3,
@@ -107,6 +109,7 @@ plt.legend(['Egenvärde', 'Data'])
 for i, _ in enumerate(samples_lst):
     if samples_lst[i]:
         print(f'{samples_lst[i]}\t{fun_lst[i]}\t{error_lst[i]}')
+
 
 print(eig)
 plt.show()

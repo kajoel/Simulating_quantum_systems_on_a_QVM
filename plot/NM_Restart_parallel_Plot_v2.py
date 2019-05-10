@@ -164,7 +164,7 @@ def plot_data_v2(meas, fel, status):
         ax[i].set_title(f'Maxpara: {max_para}')
         ax[i].legend(p, legend_text)
 
-fel_tol = 5
+fel_tol = 1
 min_meas = 1e6
 max_meas = 3e6
 
@@ -175,17 +175,21 @@ meas_v6, fel_v6, status_v6 = meas_fel(6, size)
 meas_v4, fel_v4, status_v4 = meas_fel(4, size)
 meas_v5, fel_v5, status_v5 = meas_fel(5, size)
 
-plot_pts(meas_v5, fel_v5, fel_tol, min_meas, max_meas)
-plot_pts(meas_v4, fel_v4, fel_tol, min_meas, max_meas)
+#plot_pts(meas_v5, fel_v5, fel_tol, min_meas, max_meas)
+#plot_pts(meas_v4, fel_v4, fel_tol, min_meas, max_meas)
 # plot_pts(meas, fel, fel_tol, min_meas, max_meas)
 
-#plt.figure(1)
-#plot_data_v2(meas_v6, fel_v6, status_v6)
-
 #plt.figure(2)
-#plot_data_v2(meas_v5, fel_v5, status_v5)
-#plt.title(f'Matrix size = {size}, Version={6}, Maxpara={max_para}')
-# plt.xlim(0,4000000)
+#plot_data_v2(meas_v4, fel_v4, status_v4)
+
+
+plot_data_v2(meas_v5, fel_v5, status_v5)
+plt.title(f'Matrix size = {size}, Version={5}, Maxpara={max_para}')
+#plt.xlim(0,4000000)
+#print(status_v5[0])
+for meas, fel, status in zip(meas_v4[3], fel_v4[3], status_v4[3]):
+    if int(status) ==1:
+        print(f'{meas}\t{fel}')
 
 
 # plt.figure(2)
@@ -198,6 +202,6 @@ plot_pts(meas_v4, fel_v4, fel_tol, min_meas, max_meas)
 # plt.title(f'Matrix size = {size}, Version={5}')
 # plt.xlim(0,4000000)
 
-plt.legend()
-tikzfigure.save('NM_vs')
+#plt.legend()
+#tikzfigure.save('NM_stop_reason')
 plt.show()
