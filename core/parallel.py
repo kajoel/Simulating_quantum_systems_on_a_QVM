@@ -29,8 +29,9 @@ class Wrap:
     """
     Class for wrapping simulate (need pickable object for multiprocess Pool)
     """
-    def __init__(self, simulate):
+    def __init__(self, simulate, debug=False):
         self.simulate = simulate
+        self.debug = debug
 
     def __call__(self, x):
         # Use a broad try-except to not crash if we don't have to
@@ -39,6 +40,8 @@ class Wrap:
 
         except Exception as e:
             # This will be saved in the metadata file.
+            if self.debug:
+                raise e
             return x[0], e
 
 
@@ -94,7 +97,7 @@ def script_input(args):
     :return: kwargs to parallel.run
     """
     # Handle cleanup and init
-    if len(args) == 2 and args[1] in ['init', 'cleanup']:
+    if len(args) == 2 and args[1] in ['init', 'cleanup', 'debug']:
         print(f'\nStarting {args[1]}.\n')
         return {args[1]: True}
 
@@ -152,7 +155,8 @@ def run(simulate,
         restart=True,
         delay=5,
         init=False,
-        cleanup=False):
+        cleanup=False,
+        debug=False):
     """
     Run simulations, metadata initialization or cleanup.
     # TODO: param doc
@@ -174,6 +178,7 @@ def run(simulate,
     :param delay:
     :param init:
     :param cleanup:
+    :param debug:
     :return:
     """
     directory = join(directory, f'v{version}')
@@ -211,6 +216,7 @@ def run(simulate,
                     stop_range,
                     max_task,
                     chunksize,
+                    debug
                     ):
                 print(f'\nRestarting in {delay} s.\n')
                 sleep(delay)
@@ -229,7 +235,8 @@ def _run_internal(simulate,
                   start_range,
                   stop_range,
                   max_task,
-                  chunksize):
+                  chunksize,
+                  debug):
     """
     Internal parallel run.
 
@@ -268,7 +275,7 @@ def _run_internal(simulate,
     del metadata, metametadata
 
     # Wrap simulate to get expected input/output and handle exceptions
-    wrap = Wrap(simulate)
+    wrap = Wrap(simulate, debug=debug)
 
     # Generator for pool
     generator = Bookkeeper(identifier_generator, ids, input_functions,
@@ -311,6 +318,9 @@ def _run_internal(simulate,
                     # after saving result)
                     data.append(path_metadata, [identifier, True],
                                 base_dir=base_dir)
+    except Exception as e:
+        if debug:
+            raise e
     finally:
         stop_time = perf_counter()
         total = success + fail
@@ -337,7 +347,8 @@ def _run_internal(simulate,
         print(f'Total number of tasks remaining: {remaining}')
 
         # No success and no fail => no restart
-        return success + fail
+        if not debug:
+            return success + fail
 
 
 def _init_metadata(identifier_generator, directory, script_file, force=False):
