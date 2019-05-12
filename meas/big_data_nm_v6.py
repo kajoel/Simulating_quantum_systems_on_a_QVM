@@ -24,7 +24,7 @@ directory = 'final_nm'  # directory to save to
 
 def identifier_generator():
     size = 5
-    for ansatz_name in ['multi_particle', 'one_particle_ucc']:
+    for ansatz_name in ['multi_particle']:
         for minimizer in ['nelder-mead']:
             for repeats in range(5):
                 for hamiltonian_idx in range(4):
