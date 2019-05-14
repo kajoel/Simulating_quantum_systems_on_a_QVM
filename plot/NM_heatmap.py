@@ -8,7 +8,7 @@ from plot import tikzfigure
 
 version = 4
 heatmap_version = 2
-size = 3
+size = 5
 ansatz_name = 'multi_particle'
 minimizer = 'nm'
 
@@ -22,7 +22,7 @@ def print_coord():
         for j, max_meas_ in enumerate(max_meas):
             if sample<=256500:
                 if 4 < int(round(max_meas_/sample)):
-                    print(f'{max_meas_}\t{sample}\t{np.log10((fel[i,j]))}')
+                    print(f'{max_meas_}\t{sample}\t{(fel[i,j])}')
                 else:
                     print(f'{max_meas_}\t{sample}\tnan')
         print('\n')

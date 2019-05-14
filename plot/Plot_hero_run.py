@@ -31,7 +31,6 @@ for size in [3,4]:
         funs = np.array(result['expectation_vals_all'])
         params = np.array(result['iteration_params_all'])
         vars = np.array(result['expectation_vars_all'])
-        print(vars)
 
         idx = np.argmin(funs)
         x = params[idx, :]
@@ -67,9 +66,11 @@ for size in [3,4]:
 
     print(var_lst)
 
-    plt.errorbar(V_lst[0,:], fun_lst[0,:], yerr=var_lst[0,:], fmt='-o')
-    plt.errorbar(V_lst[1,:], fun_lst[1,:], yerr=var_lst[1,:], fmt='-o')
+    plt.plot(V_lst[0,:], fun_lst[0,:], '-o', label=f'Size={size} Matidx=1')
+    plt.plot(V_lst[1,:], fun_lst[1,:], '-o', label=f'Size={size} Matidx=2')
     plt.plot(V_lst[1,:], eigs1, ':', color='gray')
     plt.plot(V_lst[1,:], eigs2, ':', color='gray')
 
+plt.legend()
+tikzfigure.save('hero_run_nm')
 plt.show()

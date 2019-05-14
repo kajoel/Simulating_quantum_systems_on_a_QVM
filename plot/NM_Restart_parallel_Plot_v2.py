@@ -187,8 +187,8 @@ plot_data_v2(meas_v5, fel_v5, status_v5)
 plt.title(f'Matrix size = {size}, Version={5}, Maxpara={max_para}')
 #plt.xlim(0,4000000)
 #print(status_v5[0])
-for meas, fel, status in zip(meas_v4[3], fel_v4[3], status_v4[3]):
-    if int(status) ==1:
+for meas, fel, status in zip(meas_v5[0], fel_v5[0], status_v5[0]):
+    if int(status) ==0:
         print(f'{meas}\t{fel}')
 
 

@@ -140,8 +140,8 @@ def NM_save(version, size, ansatz_name, matidx=None):
     data.save(file, data2, extract=True)
 
 
-version = 4
-size = 3
+version = 6
+size = 5
 ansatz_name = 'multi_particle'
 
 NM_save(version, size, ansatz_name)
