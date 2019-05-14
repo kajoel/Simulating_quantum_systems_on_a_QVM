@@ -29,7 +29,7 @@ directory = 'hero_run_nm'  # directory to save to
 
 def identifier_generator():
     max_meas = 3e6
-    for size, samples in zip([3, 4], [132e3, 68e3]):
+    for size, samples in zip([2, 3, 4], [97e3, 132e3, 68e3]):
         for V in np.linspace(0, 1, 10):
             for hamiltonian_idx in [1, 2]:
                 yield (size, hamiltonian_idx, V, int(max_meas), int(samples))

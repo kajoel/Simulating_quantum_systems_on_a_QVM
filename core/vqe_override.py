@@ -249,13 +249,17 @@ class VQE_override(VQE):
 
             # Return last model from bayes
             if hasattr(result, 'models') and hasattr(result, 'space'):
-                x_gp = results.x
-                if isinstance(x_gp, np.ndarray):
-                    x_gp = [x_gp.tolist()]
-                x_gp = result.space.transform(x_gp)
-                gp = result.models[-1]
-                fun, var = gp.predict(x_gp, return_std=True)
-                results.var = var
+                results.bayes_special = [result.models[-1], result.space]
+                # x_gp = results.x
+                # if isinstance(x_gp, np.ndarray):
+                #     x_gp = [x_gp.tolist()]
+                # x_gp = result.space.transform(x_gp)
+                # try:  # Ugly code (seems like we get an index error here)
+                #     gp = result.models[-1]
+                # except:
+                #     print('Failed on gp = result.models[-1] in vqe_override')
+                # fun, var = gp.predict(x_gp, return_std=True)
+                # results.var = var
 
         return results
 
