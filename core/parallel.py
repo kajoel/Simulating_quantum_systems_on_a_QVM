@@ -11,7 +11,7 @@ import numpy as np
 import warnings
 import shutil
 import os
-from os.path import join, isfile
+from os.path import join, isfile, isdir
 from multiprocessing import Pool
 from time import perf_counter, sleep
 from datetime import datetime
@@ -29,8 +29,9 @@ class Wrap:
     """
     Class for wrapping simulate (need pickable object for multiprocess Pool)
     """
-    def __init__(self, simulate):
+    def __init__(self, simulate, debug=False):
         self.simulate = simulate
+        self.debug = debug
 
     def __call__(self, x):
         # Use a broad try-except to not crash if we don't have to
@@ -39,6 +40,8 @@ class Wrap:
 
         except Exception as e:
             # This will be saved in the metadata file.
+            if self.debug:
+                raise e
             return x[0], e
 
 
@@ -94,7 +97,7 @@ def script_input(args):
     :return: kwargs to parallel.run
     """
     # Handle cleanup and init
-    if len(args) == 2 and args[1] in ['init', 'cleanup']:
+    if len(args) == 2 and args[1] in ['init', 'cleanup', 'debug']:
         print(f'\nStarting {args[1]}.\n')
         return {args[1]: True}
 
@@ -152,7 +155,8 @@ def run(simulate,
         restart=True,
         delay=5,
         init=False,
-        cleanup=False):
+        cleanup=False,
+        debug=False):
     """
     Run simulations, metadata initialization or cleanup.
     # TODO: param doc
@@ -174,6 +178,7 @@ def run(simulate,
     :param delay:
     :param init:
     :param cleanup:
+    :param debug:
     :return:
     """
     directory = join(directory, f'v{version}')
@@ -211,6 +216,7 @@ def run(simulate,
                     stop_range,
                     max_task,
                     chunksize,
+                    debug
                     ):
                 print(f'\nRestarting in {delay} s.\n')
                 sleep(delay)
@@ -229,7 +235,8 @@ def _run_internal(simulate,
                   start_range,
                   stop_range,
                   max_task,
-                  chunksize):
+                  chunksize,
+                  debug):
     """
     Internal parallel run.
 
@@ -268,7 +275,7 @@ def _run_internal(simulate,
     del metadata, metametadata
 
     # Wrap simulate to get expected input/output and handle exceptions
-    wrap = Wrap(simulate)
+    wrap = Wrap(simulate, debug=debug)
 
     # Generator for pool
     generator = Bookkeeper(identifier_generator, ids, input_functions,
@@ -311,6 +318,9 @@ def _run_internal(simulate,
                     # after saving result)
                     data.append(path_metadata, [identifier, True],
                                 base_dir=base_dir)
+    except Exception as e:
+        if debug:
+            raise e
     finally:
         stop_time = perf_counter()
         total = success + fail
@@ -337,7 +347,8 @@ def _run_internal(simulate,
         print(f'Total number of tasks remaining: {remaining}')
 
         # No success and no fail => no restart
-        return success + fail
+        if not debug:
+            return success + fail
 
 
 def _init_metadata(identifier_generator, directory, script_file, force=False):
@@ -352,28 +363,40 @@ def _init_metadata(identifier_generator, directory, script_file, force=False):
     """
     if not force and _get_metadata(directory, warn=False) != ([], {}):
         raise RuntimeError('Metadata has already been initialized.')
-    # Fix directory and path
-    directory = join(directory, 'total')
-    path_metadata = join(directory, 'metadata')
-
-    # Save metadata file
-    metadata = []
-    metametadata = {
-        'description': "File that keeps track of what's been done "
-                       "previously in this script "
-                       f"({script_file}).",
-        'created_from': script_file}
-    data.save(file=path_metadata, data=metadata, metadata=metametadata,
-              extract=True, base_dir=base_dir)
-
-    # Add identifiers
-    count = 0
     start_time = perf_counter()
-    for identifier in identifier_generator:
-        count += 1
-        if count % 1e4 == 0:
-            print(f'{count} identifiers saved.')
-        data.append(path_metadata, [identifier, False], base_dir=base_dir)
+
+    # Try to load from data/directory
+    metadata, metametadata = _get_metadata(directory, False, data.BASE_DIR)
+    # Fix directory and path
+    path_metadata = join(directory, 'total', 'metadata')
+
+    if (metadata, metametadata) == ([], {}):
+        # Initialize from scratch
+
+        # Save metadata file
+        metadata = []
+        metametadata = {
+            'description': "File that keeps track of what's been done "
+                           "previously in this script "
+                           f"({script_file}).",
+            'created_from': script_file}
+        data.save(file=path_metadata, data=metadata, metadata=metametadata,
+                  extract=True, base_dir=base_dir)
+
+        # Add identifiers
+        count = 0
+
+        for identifier in identifier_generator:
+            count += 1
+            if count % 1e4 == 0:
+                print(f'{count} identifiers saved.')
+            data.append(path_metadata, [identifier, False], base_dir=base_dir)
+    else:
+        print(f'Initializing metadata from {join(data.BASE_DIR, directory)}.')
+        count = len(metadata)
+        data.save(file=path_metadata, data=metadata, metadata=metametadata,
+                  extract=True, base_dir=base_dir)
+
     stop_time = perf_counter()
 
     print(f'\nMetadata initialization completed in'
@@ -415,12 +438,17 @@ def _cleanup_big(identifier_generator, directory, script_file):
     with os.scandir(join(base_dir, directory)) as it:
         for entry in it:
             if entry.is_dir() and entry.name.isdigit():
-                subdirs.add(entry.name)
+                subdirs.add(join(base_dir, directory, entry.name))
+    # Add data/directory to subdirs to not overwrite data from other
+    # file-systems
+    data_dir = join(data.BASE_DIR, directory)
+    if isdir(data_dir):
+        subdirs.add(data_dir)
 
     # Find data-files and keep track of which exists in which subdir
     files = {}
     for subdir in subdirs:
-        with os.scandir(join(base_dir, directory, subdir)) as it:
+        with os.scandir(subdir) as it:
             for entry in it:
                 if entry.is_file() and entry.name != 'metadata.pkl':
                     if entry.name not in files:
@@ -430,7 +458,10 @@ def _cleanup_big(identifier_generator, directory, script_file):
     # Go through files, create file in total (if not existing), add data
     # from files in subdirs and update meta_dict
     count = 0
+    metadata = None  # To not crash at del metadata if no file.
     for file in files:
+        print(f"\nSaving results in {join('total', file)}."
+              "\nUsing data from the following directories:")
         # Load file from total
         try:
             content, metadata = data.load(file=join(directory, 'total', file),
@@ -444,8 +475,10 @@ def _cleanup_big(identifier_generator, directory, script_file):
 
         # Add content from other files
         for subdir in files[file]:
+            print(subdir)
+
             content_new, metadata_new = data.load(
-                file=join(directory, subdir, file), base_dir=base_dir)
+                file=join(subdir, file), base_dir='')
 
             content_dict = _add_result_to_dict(content_new, content_dict)
 
@@ -472,6 +505,8 @@ def _cleanup_big(identifier_generator, directory, script_file):
                   disp=False)
     del metadata
 
+    print('\nFinishing cleanup.')
+
     # Convert meta_dict back to list and save
     metadata = []
     for id_ in meta_dict:
@@ -484,11 +519,11 @@ def _cleanup_big(identifier_generator, directory, script_file):
     for subdir in subdirs:
         try:
             metametadata_new = data.load(
-                file=join(directory, subdir, 'metadata'), base_dir=base_dir)[1]
+                file=join(subdir, 'metadata'), base_dir='')[1]
         except FileNotFoundError:
             metametadata_new = metametadata
 
-        data.save(file=join(directory, subdir, 'metadata'), base_dir=base_dir,
+        data.save(file=join(subdir, 'metadata'), base_dir='',
                   data=metadata, metadata=metametadata_new, extract=True,
                   disp=False)
 
@@ -500,11 +535,13 @@ def _cleanup_big(identifier_generator, directory, script_file):
             if entry.is_file():
                 shutil.copy(entry.path, destination)
 
+    remaining = sum(x is not True for x in meta_dict.values())
+
     # Print some stats
     stop_time = perf_counter()
     print(f'\nCleanup completed in {stop_time - start_time:.1f} s.')
-    print(f'A total of {len(metadata)} identifiers where handled and {count} '
-          f'results saved.\n')
+    print(f'A total of {len(metadata)} identifiers where handled, {count} '
+          f'results saved and {remaining} tasks remaining.\n')
 
 
 def _add_result_to_dict(content, content_dict):
@@ -567,7 +604,7 @@ def _cleanup_small(metadata):
     return [[x, meta_dict[x]] for x in meta_dict]
 
 
-def _get_metadata(directory, warn=True):
+def _get_metadata(directory, warn=True, base=base_dir):
     """
     Look for metadata in directory. Returns [], {} if not found.
 
@@ -576,7 +613,7 @@ def _get_metadata(directory, warn=True):
     """
     try:
         return data.load(join(directory, 'total', 'metadata'),
-                         base_dir=base_dir)
+                         base_dir=base)
     except FileNotFoundError:
         if warn:
             warnings.warn('Metadata has not been initialized correctly, '

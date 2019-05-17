@@ -31,8 +31,8 @@ def identifier_generator():
                     # number of measurements on qc
                     for max_meas in np.linspace(50000, 3e6, 60):
                         # number of samples
-                        for samples in np.linspace(2750, 3e5, 42):
-                            if round(max_meas/samples) > 3: 
+                        for samples in np.linspace(2750, 256500, 36):
+                            if 4 < round(max_meas/samples) <= 300:
                                 yield (size, ansatz_name, minimizer, repeats,
                                        hamiltonian_idx,
                                        int(max_meas),

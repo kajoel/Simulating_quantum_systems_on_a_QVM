@@ -1,2 +1,0 @@
-This will make the directory "Test" visible in the repo.
-Testing
