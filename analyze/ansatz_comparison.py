@@ -7,6 +7,7 @@ from core.lipkin_quasi_spin import hamiltonian
 def compare_and_save():
     ansatzs = [ansatz.one_particle, ansatz.one_particle_ucc,
                ansatz.multi_particle_stereographic, ansatz.multi_particle_ucc]
+    ansatzs = [ansatz.multi_particle_stereographic]
 
     m = 100
 
@@ -46,6 +47,9 @@ def _test_depth(ansatz, n_min=1, n_max=12, m=2, max_ops=10000):
         temp = np.empty(m)
         for j in range(m):
             temp[j] = len(ansatz(h)(np.random.randn(n)))
+        if np.any(temp[0] != temp):
+            print(f'\nDifferent lengths for {ansatz}')
+            print(temp)
         nbr_ops[i] = np.average(temp)
         print(n)
         if nbr_ops[i] > max_ops:
